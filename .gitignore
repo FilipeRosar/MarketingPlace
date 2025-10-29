@@ -1,0 +1,19 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build
+bin/
+obj/
+out/
+
+# Configurações locais
+appsettings.Development.json
+*.log
+
+# Ferramentas
+node_modules/
+.env
