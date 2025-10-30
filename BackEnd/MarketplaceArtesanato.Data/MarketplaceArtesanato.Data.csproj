@@ -6,4 +6,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MarketplaceArtesanato.API\MarketplaceArtesanato.API.csproj" />
+    <ProjectReference Include="..\MarketplaceArtesanato.Core\MarketplaceArtesanato.Core.csproj" />
+  </ItemGroup>
+
 </Project>
