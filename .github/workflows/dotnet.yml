@@ -1,4 +1,4 @@
-name:  Build & Test - .NET API
+name: Build & Test - .NET API
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-    name: Build and Test .NET Project
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +30,6 @@ jobs:
 
       - name: Publish API
         run: dotnet publish ./MarketingPlace/BackEnd/MarketplaceArtesanato.API/MarketplaceArtesanato.API.csproj -c Release -o ./publish
-
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
