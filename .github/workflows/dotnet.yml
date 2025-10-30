@@ -10,6 +10,9 @@ jobs:
   build:
     name: Build and Test .NET Project
     runs-on: ubuntu-latest
+    defaults:
+        run:
+          working-directory: ./BackEnd
 
     steps:
       - name: Checkout source
@@ -21,16 +24,17 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Restore dependencies
-        run: dotnet restore ./BackEnd/MarketplaceArtesanato.sln
+        run: dotnet restore MarketplaceArtesanato.sln
 
       - name: Build
-        run: dotnet build ./BackEnd/MarketplaceArtesanato.sln --configuration Release --no-restore
+        run: dotnet build MarketplaceArtesanato.sln --configuration Release --no-restore
 
       - name: Run Tests
-        run: dotnet test ./BackEnd/MarketplaceArtesanato.Tests/MarketplaceArtesanato.Tests.csproj --no-build --verbosity normal
+        run: dotnet test MarketplaceArtesanato.Tests/MarketplaceArtesanato.Tests.csproj --no-build --verbosity normal
 
       - name: Publish API
-        run: dotnet publish ./BackEnd/MarketplaceArtesanato.API/MarketplaceArtesanato.API.csproj -c Release -o ./publish
+        run: dotnet publish MarketplaceArtesanato.API/MarketplaceArtesanato.API.csproj -c Release -o ./publish
+
 
 
       - name: Upload build artifact
