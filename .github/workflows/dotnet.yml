@@ -1,4 +1,4 @@
-name: Build & Test - .NET API
+name:  Build & Test - .NET API
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: Build and Test .NET Project
     runs-on: ubuntu-latest
 
     steps:
@@ -20,16 +21,17 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Restore dependencies
-        run: dotnet restore ./MarketingPlace/BackEnd/MarketplaceArtesanato.sln
+        run: dotnet restore ./BackEnd/MarketplaceArtesanato.sln
 
       - name: Build
-        run: dotnet build ./MarketingPlace/BackEnd/MarketplaceArtesanato.sln --configuration Release --no-restore
+        run: dotnet build ./BackEnd/MarketplaceArtesanato.sln --configuration Release --no-restore
 
       - name: Run Tests
-        run: dotnet test ./MarketingPlace/BackEnd/MarketplaceArtesanato.Tests/MarketplaceArtesanato.Tests.csproj --no-build --verbosity normal
+        run: dotnet test ./BackEnd/MarketplaceArtesanato.Tests/MarketplaceArtesanato.Tests.csproj --no-build --verbosity normal
 
       - name: Publish API
-        run: dotnet publish ./MarketingPlace/BackEnd/MarketplaceArtesanato.API/MarketplaceArtesanato.API.csproj -c Release -o ./publish
+        run: dotnet publish ./BackEnd/MarketplaceArtesanato.API/MarketplaceArtesanato.API.csproj -c Release -o ./publish
+
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
