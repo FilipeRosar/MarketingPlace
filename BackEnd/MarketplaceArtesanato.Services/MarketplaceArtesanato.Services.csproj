@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MarketplaceArtesanato.Data\MarketplaceArtesanato.Data.csproj" />
+  </ItemGroup>
+
 </Project>

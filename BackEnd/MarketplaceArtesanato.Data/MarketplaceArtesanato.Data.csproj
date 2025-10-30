@@ -11,7 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MarketplaceArtesanato.API\MarketplaceArtesanato.API.csproj" />
     <ProjectReference Include="..\MarketplaceArtesanato.Core\MarketplaceArtesanato.Core.csproj" />
   </ItemGroup>
 
