@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.API", "MarketplaceArtesanato.API\MarketplaceArtesanato.API.csproj", "{77BD041E-5AC4-416D-BF9B-AC521AC38C4A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.API", "MarketplaceArtesanato.API/MarketplaceArtesanato.API.csproj", "{77BD041E-5AC4-416D-BF9B-AC521AC38C4A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Core", "MarketplaceArtesanato.Core\MarketplaceArtesanato.Core.csproj", "{582FA0D5-87E6-4CC3-9E0B-9C36F96A96E1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Core", "MarketplaceArtesanato.Core/MarketplaceArtesanato.Core.csproj", "{582FA0D5-87E6-4CC3-9E0B-9C36F96A96E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Data", "MarketplaceArtesanato.Data\MarketplaceArtesanato.Data.csproj", "{D5988836-5824-4BA2-87FD-081F0E2BEC8F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Data", "MarketplaceArtesanato.Data/MarketplaceArtesanato.Data.csproj", "{D5988836-5824-4BA2-87FD-081F0E2BEC8F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Infrastructure", "MarketplaceArtesanato.Infrastructure\MarketplaceArtesanato.Infrastructure.csproj", "{252E3574-58FA-4658-AD97-519154FDC21E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Infrastructure", "MarketplaceArtesanato.Infrastructure/MarketplaceArtesanato.Infrastructure.csproj", "{252E3574-58FA-4658-AD97-519154FDC21E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Services", "MarketplaceArtesanato.Services\MarketplaceArtesanato.Services.csproj", "{7F726145-29C3-4E27-8A17-A4D8A4B4EB2C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Services", "MarketplaceArtesanato.Services/MarketplaceArtesanato.Services.csproj", "{7F726145-29C3-4E27-8A17-A4D8A4B4EB2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Tests", "MarketplaceArtesanato.Tests\MarketplaceArtesanato.Tests.csproj", "{EBFAF806-51C4-4454-93F4-944C7175B90D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketplaceArtesanato.Tests", "MarketplaceArtesanato.Tests/MarketplaceArtesanato.Tests.csproj", "{EBFAF806-51C4-4454-93F4-944C7175B90D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
