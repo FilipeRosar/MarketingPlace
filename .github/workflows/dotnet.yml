@@ -35,6 +35,9 @@ jobs:
       - name: Publish API
         run: dotnet publish MarketplaceArtesanato.API/MarketplaceArtesanato.API.csproj -c Release -o ./publish
 
+      - name: Fix sln paths for Linux
+        run: sed -i 's#\\#/#g' MarketplaceArtesanato.sln
+
 
 
       - name: Upload build artifact
