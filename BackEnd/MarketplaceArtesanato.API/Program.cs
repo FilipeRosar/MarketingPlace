@@ -1,15 +1,20 @@
 using MarketplaceArtesanato.Data.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer(); 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddAutoMapper(typeof(Program));
+
+
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
 {
@@ -17,6 +22,10 @@ builder.Services.AddDbContext<ArtesianDbContext>(options =>
 });
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddControllers();
+
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -29,7 +38,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(key)
         };
     });
 builder.Services.AddSwaggerGen(c =>
@@ -57,12 +66,15 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+builder.Services.AddAuthorization();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "MarketplaceArtesanato API", 
-        Version = "v1"});
+    c.SwaggerDoc("v1", new()
+    {
+        Title = "MarketplaceArtesanato API",
+        Version = "v1"
+    });
 });
 var app = builder.Build();
 
@@ -71,6 +83,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -79,6 +92,8 @@ app.UseSwaggerUI(c =>
     c.DisplayRequestDuration();
 });
 app.UseHttpsRedirection();
+app.MapControllers();
+app.UseAuthorization();
 
 app.Run();
 

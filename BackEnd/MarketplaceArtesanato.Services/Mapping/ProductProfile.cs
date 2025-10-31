@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using AutoMapper;
 using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.API.Models;
 using MarketplaceArtesanato.API.Models.Responses;
 
@@ -14,7 +15,7 @@ namespace MarketplaceArtesanato.Services.Mapping
         public ProductProfile()
         {
             CreateMap<Product, ProductResponseDto>()
-                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => (int)src.Category))
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => (ProductCategory)src.Category))
                 .ForMember(dest => dest.Seller, opt => opt.MapFrom(src => src.Seller));
 
             CreateMap<User, SellerResponseDto>()

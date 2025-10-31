@@ -3,8 +3,10 @@ using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Data.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace MarketplaceArtesanato.API.Controllers
 {
@@ -88,21 +90,36 @@ namespace MarketplaceArtesanato.API.Controllers
 
         // POST: api/products
         [HttpPost]
+        [Authorize(Roles = "Seller")]
         public async Task<ActionResult<ProductResponseDto>> CreateProduct(CreateProductDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             // TODO: Pegar SellerId do JWT
-            // var sellerId = User.GetUserId();
-            var sellerId = dto.SellerId;
+            var sellerId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            dto.SellerId = sellerId;
+       
 
             if (!await _context.Users.AnyAsync(u => u.Id == sellerId))
-                return BadRequest("Vendedor não encontrado.");
+            {
+                return BadRequest("Seller not found");
+            }
+                
 
             var product = _mapper.Map<Product>(dto);
             product.Id = Guid.NewGuid();
-            product.SellerId = sellerId;
             product.CreatedAt = DateTime.UtcNow;
+
+            product.Ratings = dto.Ratings.Select(r => new Ratings
+            {
+                Stars = r.Stars,
+                Review = r.Review,
+                UserId = 1,
+                ProductId = product.Id
+            }).ToList();
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();

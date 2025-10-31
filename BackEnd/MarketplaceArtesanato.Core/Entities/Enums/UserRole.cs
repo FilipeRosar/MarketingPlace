@@ -11,6 +11,6 @@ namespace MarketplaceArtesanato.Core.Entities.Enums
         Customer,
         Admin,
         Artisan,
-        Moderator
+        Seller
     }
 }

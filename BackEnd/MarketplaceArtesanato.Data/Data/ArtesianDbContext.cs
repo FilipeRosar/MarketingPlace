@@ -19,6 +19,7 @@ namespace MarketplaceArtesanato.Data.Data
         public DbSet<Ratings> Ratings { get; set; }
         public DbSet<Order> Orders => Set<Order>();
         public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+        public DbSet<Address> Addresses { get; set; } 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -26,6 +27,10 @@ namespace MarketplaceArtesanato.Data.Data
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Address)
+                .WithOne(a => a.User)
+                .HasForeignKey<User>(u => u.AddressId);
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Seller)
                 .WithMany()

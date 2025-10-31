@@ -23,6 +23,9 @@ namespace MarketplaceArtesanato.Core.Entities
         public string PasswordHash { get; set; }
         public UserRole Role { get; set; } = UserRole.Customer;
         public string? Phone { get; set; }
+        [Required]
+        public string CPF { get; set; }
+        public Guid AddressId { get; set; }
         public Address Address { get; set; }
         [DataType(DataType.DateTime)]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -43,6 +46,9 @@ namespace MarketplaceArtesanato.Core.Entities
         public string ZipCode { get; set; }
         [Required]
         public string Country { get; set; }
+
+        public Guid UserId { get; set; }
+        public User User { get; set; } = null!;
 
     }
 }

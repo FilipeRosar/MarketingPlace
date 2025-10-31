@@ -4,6 +4,7 @@ using MarketplaceArtesanato.Data.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MarketplaceArtesanato.Data.Migrations
 {
     [DbContext(typeof(ArtesianDbContext))]
-    partial class ArtesianDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251031122006_UpdateMigration")]
+    partial class UpdateMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,16 +51,13 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("ZipCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Addresses");
+                    b.ToTable("Address");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Order", b =>
@@ -170,7 +170,7 @@ namespace MarketplaceArtesanato.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid?>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Review")
@@ -199,10 +199,6 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Property<Guid>("AddressId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("CPF")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -226,8 +222,7 @@ namespace MarketplaceArtesanato.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AddressId")
-                        .IsUnique();
+                    b.HasIndex("AddressId");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -276,26 +271,18 @@ namespace MarketplaceArtesanato.Data.Migrations
                 {
                     b.HasOne("MarketplaceArtesanato.Core.Entities.Product", null)
                         .WithMany("Ratings")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ProductId");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.User", b =>
                 {
                     b.HasOne("MarketplaceArtesanato.Core.Entities.Address", "Address")
-                        .WithOne("User")
-                        .HasForeignKey("MarketplaceArtesanato.Core.Entities.User", "AddressId")
+                        .WithMany()
+                        .HasForeignKey("AddressId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Address");
-                });
-
-            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Address", b =>
-                {
-                    b.Navigation("User")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Order", b =>
