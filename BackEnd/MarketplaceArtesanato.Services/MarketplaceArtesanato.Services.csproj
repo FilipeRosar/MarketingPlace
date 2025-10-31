@@ -7,12 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="15.1.0" />
     <PackageReference Include="BCrypt.Net-Core" Version="1.6.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.10" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MarketplaceArtesanato.API\MarketplaceArtesanato.API.csproj" />
     <ProjectReference Include="..\MarketplaceArtesanato.Data\MarketplaceArtesanato.Data.csproj" />
   </ItemGroup>
 

@@ -1,15 +1,12 @@
-﻿using MarketplaceArtesanato.Core.Entities.Enums;
-using System;
-using System.Collections.Generic;
+﻿using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Entities.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
-namespace MarketplaceArtesanato.Core.Entities
+namespace MarketplaceArtesanato.API.Models.Responses
 {
-    public class Product
+    public class ProductResponseDto
     {
         public Guid Id { get; set; }
         [Required]
@@ -23,18 +20,12 @@ namespace MarketplaceArtesanato.Core.Entities
         [Required]
         public int StockQuantity { get; set; } = 0;
         public List<string> Images { get; set; } = new List<string>();
-        public ProductCategory Category { get; set; } 
+        public ProductCategory Category { get; set; }
         public string Status { get; set; }
         public List<Ratings> Ratings { get; set; } = new List<Ratings>();
         public Guid SellerId { get; set; }
+        [JsonPropertyName("seller")]
         public User Seller { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    }
-    public class Ratings
-    {
-        public int Id { get; set; }
-        public int UserId { get; set; }
-        public int Stars { get; set; }
-        public string Review { get; set; } = string.Empty;
     }
 }
