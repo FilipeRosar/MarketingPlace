@@ -1,19 +1,17 @@
-# Visual Studio
-.vs/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
+# Arquivos sensíveis
+appsettings.Development.json
+secrets.json
+*.env
 
-# Build
+# Pastas do .NET
 bin/
 obj/
-out/
+*.csproj.user
+*.vs/
+*.vscode/
 
-# Configurações locais
-appsettings.Development.json
+# Logs
 *.log
 
-# Ferramentas
-node_modules/
-.env
+# Azure
+*.azure

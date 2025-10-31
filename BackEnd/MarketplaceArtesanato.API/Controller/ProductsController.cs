@@ -2,6 +2,7 @@
 using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.DTO;
+using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,14 @@ namespace MarketplaceArtesanato.API.Controllers
     {
         private readonly ArtesianDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IStorageService _storage;
+        
 
-        public ProductsController(ArtesianDbContext context, IMapper mapper)
+        public ProductsController(ArtesianDbContext context, IMapper mapper, IStorageService storage)
         {
             _context = context;
             _mapper = mapper;
+            _storage = storage;
         }
 
         // GET: api/products
@@ -91,7 +95,8 @@ namespace MarketplaceArtesanato.API.Controllers
         // POST: api/products
         [HttpPost]
         [Authorize(Roles = "Seller")]
-        public async Task<ActionResult<ProductResponseDto>> CreateProduct(CreateProductDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ProductResponseDto>> CreateProduct([FromForm] CreateProductDto dto)
         {
             if (!ModelState.IsValid)
             {
@@ -99,27 +104,43 @@ namespace MarketplaceArtesanato.API.Controllers
             }
 
             // TODO: Pegar SellerId do JWT
-            var sellerId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            dto.SellerId = sellerId;
+            var sellerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (sellerIdClaim == null || !Guid.TryParse(sellerIdClaim.Value, out var sellerId))
+            {
+                return Unauthorized("Invalid seller ID.");
+            }
        
 
             if (!await _context.Users.AnyAsync(u => u.Id == sellerId))
             {
                 return BadRequest("Seller not found");
             }
-                
+            if (dto.Images == null || !dto.Images.Any())
+            {
+                return BadRequest("At least one image is required.");
+            }
+
+            var imageUrls = new List<string>();
+            foreach (var file in dto.Images)
+            {
+                if (file.Length > 0 && IsImage(file))
+                {
+                    var imageUrl = await _storage.UploadFileAsync(file);
+                    imageUrls.Add(imageUrl);
+                }
+                else
+                {
+                    return BadRequest("Invalid image file.");
+                }
+            }
 
             var product = _mapper.Map<Product>(dto);
             product.Id = Guid.NewGuid();
             product.CreatedAt = DateTime.UtcNow;
+            product.SellerId = sellerId;
+            product.Images = imageUrls;
 
-            product.Ratings = dto.Ratings.Select(r => new Ratings
-            {
-                Stars = r.Stars,
-                Review = r.Review,
-                UserId = 1,
-                ProductId = product.Id
-            }).ToList();
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
@@ -141,7 +162,7 @@ namespace MarketplaceArtesanato.API.Controllers
             // if (product.SellerId != User.GetUserId()) return Forbid();
 
             _mapper.Map(dto, product);
-            product.CreatedAt = DateTime.UtcNow; // ou manter original
+            product.CreatedAt = DateTime.UtcNow; 
 
             try
             {
@@ -158,6 +179,7 @@ namespace MarketplaceArtesanato.API.Controllers
 
         // DELETE: api/products/{id}
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Seller,Admin")]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -171,7 +193,11 @@ namespace MarketplaceArtesanato.API.Controllers
 
             return NoContent();
         }
-
+        private bool IsImage(IFormFile file)
+        {
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            return new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" }.Contains(ext);
+        }
         private bool ProductExists(Guid id) => _context.Products.Any(e => e.Id == id);
     }
 }

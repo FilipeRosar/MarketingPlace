@@ -1,10 +1,9 @@
-﻿using System;
+﻿using MarketplaceArtesanato.Core.Entities.Enums;
+using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+using System.Text.Json.Serialization;
 namespace MarketplaceArtesanato.Core.Entities.DTO
 {
     public class CreateProductDto
@@ -21,17 +20,16 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         [Required, Range(0, 100000)]
         public int StockQuantity { get; set; }
 
-        public List<string> Images { get; set; } = new();
+        [Required]
+        public List<IFormFile> Images { get; set; } = new();
 
         [Required]
-        public int Category { get; set; }
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public ProductCategory Category { get; set; }
 
-        public string Status { get; set; } = "Ativo";
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public ProductStatus Status { get; set; } = ProductStatus.Active;
 
-        public List<CreateRatingDto> Ratings { get; set; } = new();
-
-        [Required]
-        public Guid SellerId { get; set; }
     }
     public class UpdateProductDto : CreateProductDto
     {

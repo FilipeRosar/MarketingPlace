@@ -1,5 +1,6 @@
 ﻿using MarketplaceArtesanato.API.Models.Requests;
 using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Data.Data;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +14,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using BCrypt.Net;
 
 namespace MarketplaceArtesanato.API.Controller
 {
@@ -121,18 +123,21 @@ namespace MarketplaceArtesanato.API.Controller
 
             var token = GenerateJwtToken(costumer);
 
+            var response = new UserResponseDto
+            {
+                Id = costumer.Id,
+                Name = costumer.Name,
+                Email = costumer.Email,
+                CPF = costumer.CPF,
+                Role = costumer.Role.ToString(),
+                Phone = costumer.Phone
+            };
+
             return Ok(new
             {
                 message = "Costumer created",
                 token,
-                user = new
-                {
-                    costumer.Id,
-                    costumer.Name,
-                    costumer.Email,
-                    costumer.CPF,
-                    costumer.Role
-                }
+                user = response
 
             });
         }
