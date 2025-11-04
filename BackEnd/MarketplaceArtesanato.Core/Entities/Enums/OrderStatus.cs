@@ -6,11 +6,13 @@ using System.Threading.Tasks;
 
 namespace MarketplaceArtesanato.Core.Entities.Enums
 {
-    public enum Status
+    public enum OrderStatus
     {
         Pending,
         Paid,
+        Processing,
         Sent,
-        Delivered
+        Delivered,
+        Canceled
     }
 }

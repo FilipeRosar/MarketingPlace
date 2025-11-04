@@ -1,6 +1,10 @@
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
+using MarketplaceArtesanato.Infrastructure.Consumers;
+using MarketplaceArtesanato.Services;
+using MarketplaceArtesanato.Services.Mapping;
 using MarketplaceArtesanato.Services.Services;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -8,7 +12,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +29,7 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+builder.Services.AddAutoMapper(typeof(ProductProfile));
 builder.Services.AddScoped<IStorageService,BlobService>();
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
@@ -88,6 +92,35 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 builder.Services.AddAuthorization();
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<PaymentConsumer>();  
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var rabbitConfig = builder.Configuration.GetConnectionString("RabbitMQ");
+        if (string.IsNullOrEmpty(rabbitConfig))
+        {
+            cfg.Host("localhost", "/", h =>
+            {
+                h.Username("guest");
+                h.Password("guest");
+            });
+        }
+        else
+        {
+            cfg.Host(rabbitConfig);
+        }
+
+        cfg.ReceiveEndpoint("payment-queue", e =>
+        {
+            e.ConfigureConsumer<PaymentConsumer>(context);
+            e.ConcurrentMessageLimit = 8; 
+        });
+    });
+});
+builder.Services.AddMassTransitHostedService();
+
 
 builder.Services.AddSwaggerGen(c =>
 {

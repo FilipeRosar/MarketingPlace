@@ -24,18 +24,11 @@ namespace MarketplaceArtesanato.Core.Entities
         public int StockQuantity { get; set; } = 0;
         public List<string> Images { get; set; } = new List<string>();
         public ProductCategory Category { get; set; } 
-        public string Status { get; set; }
-        public List<Ratings> Ratings { get; set; } = new List<Ratings>();
+        public ProductStatus Status { get; set; }
+        public List<Rating> Ratings { get; set; } = new List<Rating>();
         public Guid SellerId { get; set; }
-        public User Seller { get; set; }
+        public Seller Seller { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
-    public class Ratings
-    {
-        public int Id { get; set; }
-        public int UserId { get; set; }
-        public int Stars { get; set; }
-        public Guid ProductId { get; set; }
-        public string Review { get; set; } = string.Empty;
-    }
+    
 }

@@ -14,31 +14,40 @@ namespace MarketplaceArtesanato.Data.Data
         {
         }
 
-        public DbSet<User> Users { get; set; }
+        public DbSet<Seller> Seller { get; set; }
+        public DbSet<Customer> Customers { get; set; }
         public DbSet<Product> Products { get; set; }
-        public DbSet<Ratings> Ratings { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
         public DbSet<Order> Orders => Set<Order>();
         public DbSet<OrderItem> OrderItems => Set<OrderItem>();
-        public DbSet<Address> Addresses { get; set; } 
+        public DbSet<Address> Addresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
-            modelBuilder.Entity<User>()
-                .HasOne(u => u.Address)
-                .WithOne(a => a.User)
-                .HasForeignKey<User>(u => u.AddressId);
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Seller)
-                .WithMany()
-                .HasForeignKey(p => p.SellerId);
-            modelBuilder.Entity<Ratings>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-            });
+                .WithMany(s => s.Products)
+                .HasForeignKey(p => p.SellerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Rating>()
+                .HasOne(r => r.Customer)
+                .WithMany(c => c.Ratings)
+                .HasForeignKey(r => r.CustomerId)
+                .OnDelete(DeleteBehavior.NoAction);   
+
+            modelBuilder.Entity<Rating>()
+                .HasOne(r => r.Product)
+                .WithMany(p => p.Ratings)
+                .HasForeignKey(r => r.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Product>()
+                .HasIndex(p => p.Category);
+
+            modelBuilder.Entity<Product>()
+                .HasIndex(p => p.Status);
         }
     }
 }
+

@@ -22,10 +22,11 @@ namespace MarketplaceArtesanato.API.Models.Responses
         public List<string> Images { get; set; } = new List<string>();
         public ProductCategory Category { get; set; }
         public string Status { get; set; }
-        public List<Ratings> Ratings { get; set; } = new List<Ratings>();
+        public double AverageRating { get; set; }  
+        public int TotalRatings { get; set; }
         public Guid SellerId { get; set; }
         [JsonPropertyName("seller")]
-        public User Seller { get; set; }
+        public SellerResponseDto Seller { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

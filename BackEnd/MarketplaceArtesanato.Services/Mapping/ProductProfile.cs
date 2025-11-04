@@ -1,12 +1,12 @@
-﻿using System;
+﻿using AutoMapper;
+using MarketplaceArtesanato.API.Models;
+using MarketplaceArtesanato.API.Models.Responses;
+using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Entities.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using AutoMapper;
-using MarketplaceArtesanato.Core.Entities;
-using MarketplaceArtesanato.Core.Entities.Enums;
-using MarketplaceArtesanato.API.Models;
-using MarketplaceArtesanato.API.Models.Responses;
 
 namespace MarketplaceArtesanato.Services.Mapping
 {
@@ -14,15 +14,22 @@ namespace MarketplaceArtesanato.Services.Mapping
     {
         public ProductProfile()
         {
-            CreateMap<Product, ProductResponseDto>()
-                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => (ProductCategory)src.Category))
+            IMappingExpression<Product, ProductResponseDto> mappingExpression = CreateMap<Product, ProductResponseDto>()
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+                .ForMember(dest => dest.AverageRating, opt => opt.MapFrom(src =>
+                    src.Ratings.Any() ? src.Ratings.Average(r => r.Stars) : 0))
+                .ForMember(dest => dest.TotalRatings, opt => opt.MapFrom(src => src.Ratings.Count))
                 .ForMember(dest => dest.Seller, opt => opt.MapFrom(src => src.Seller));
 
-            CreateMap<User, SellerResponseDto>()
-           .ForMember(dest => dest.Role, opt => opt.MapFrom(src => (int)src.Role));
+            CreateMap<Seller, SellerResponseDto>()
+                .ForMember(dest => dest.CPF, opt => opt.MapFrom(src => src.CPF ?? "N/A"))
+                .ForMember(dest => dest.CNPJ, opt => opt.MapFrom(src => src.CNPJ ?? "N/A"));
 
             CreateMap<Address, AddressResponseDto>();
-            CreateMap<Ratings, RatingResponseDto>();
+
+            CreateMap<Rating, RatingResponseDto>()
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name));
         }
     }
 }

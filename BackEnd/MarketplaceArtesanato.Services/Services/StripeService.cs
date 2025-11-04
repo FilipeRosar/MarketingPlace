@@ -1,24 +1,92 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Events;
+using MassTransit;
+using Microsoft.Extensions.Configuration;
 using Stripe;
-using Stripe.Checkout;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Stripe.Checkout;  
 
-namespace MarketplaceArtesanato.Services.Services
+namespace MarketplaceArtesanato.Infrastructure.Services
 {
-    public class StripeService
+    public class StripePaymentService
     {
-        private readonly string _secretKey;
-        private readonly string _webhookSecret;
+        private readonly IConfiguration _config;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public StripeService (IConfiguration configuration)
+        public StripePaymentService(IConfiguration config, IPublishEndpoint publishEndpoint)
         {
-            _secretKey = configuration["Stripe:SecretKey"];
-            _webhookSecret = configuration["Stripe:WebhookSecret"];
-            StripeConfiguration.ApiKey = _secretKey;
+            _config = config;
+            _publishEndpoint = publishEndpoint;
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+        }
+
+        public async Task<string> CreateCheckoutSessionAsync(Order order)
+        {
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card", "boleto", "pix" },
+                LineItems = order.Items.Select(item => new SessionLineItemOptions
+                {
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        Currency = "brl",
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = item.Product.Name,
+                            Description = item.Product.Description
+                        },
+                        UnitAmount = (long)(item.UnitPrice * 100)
+                    },
+                    Quantity = item.Quantity
+                }).ToList(),
+                Mode = "payment",
+                SuccessUrl = _config["Stripe:SuccessUrl"] + "?session_id={CHECKOUT_SESSION_ID}",
+                CancelUrl = _config["Stripe:CancelUrl"],
+                Metadata = new Dictionary<string, string>
+                {
+                    { "orderId", order.Id.ToString() },
+                    { "customerId", order.BuyerId.ToString() }
+                }
+            };
+
+            var service = new SessionService(); 
+            var session = await service.CreateAsync(options); 
+
+            return session.Url;
+        }
+
+        public async Task<bool> HandleWebhookAsync(string payload, string signature)
+        {
+            try
+            {
+                var stripeEvent = EventUtility.ConstructEvent(
+                    payload, signature, _config["Stripe:WebhookSecret"]);
+
+                if (stripeEvent.Type == "checkout.session.completed")
+                {
+                    var session = stripeEvent.Data.Object as Session;
+                    if (session == null) return false;
+
+                    var orderId = Guid.Parse(session.Metadata["orderId"]);
+
+                    var evt = new PaymentProcessedEvent
+                    {
+                        OrderId = orderId,
+                        CustomerId = Guid.Parse(session.Metadata["customerId"]),
+                        Total = (decimal)(session.AmountTotal / 100m),
+                        StripeSessionId = session.Id,
+                        PaymentIntentId = session.PaymentIntentId
+                    };
+
+                    await _publishEndpoint.Publish(evt);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Webhook error: {ex.Message}");
+            }
+
+            return false;
         }
     }
 }
