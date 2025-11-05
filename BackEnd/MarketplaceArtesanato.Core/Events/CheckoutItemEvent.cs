@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MarketplaceArtesanato.Core.Entities.DTO
+namespace MarketplaceArtesanato.Core.Events
 {
     public class CheckoutItemEvent
     {

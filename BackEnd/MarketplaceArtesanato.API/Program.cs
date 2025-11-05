@@ -117,18 +117,28 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 builder.Services.AddAuthorization();
 builder.Services.AddMassTransit(x =>
 {
-    x.AddConsumer<CheckoutConsumer>();
-    x.AddConsumer<PaymentConsumer>(); // já tinha
+    x.AddConsumer<PaymentConsumer>();  
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        var rabbit = builder.Configuration.GetConnectionString("RabbitMQ") ?? "localhost";
-        cfg.Host(rabbit);
-
-        cfg.ReceiveEndpoint("checkout-queue", e =>
+        var rabbitConfig = builder.Configuration.GetConnectionString("RabbitMQ");
+        if (string.IsNullOrEmpty(rabbitConfig))
         {
-            e.ConfigureConsumer<CheckoutConsumer>(context);
-            e.ConcurrentMessageLimit = 8;
+            cfg.Host("localhost", "/", h =>
+            {
+                h.Username("guest");
+                h.Password("guest");
+            });
+        }
+        else
+        {
+            cfg.Host(rabbitConfig);
+        }
+
+        cfg.ReceiveEndpoint("payment-queue", e =>
+        {
+            e.ConfigureConsumer<PaymentConsumer>(context);
+            e.ConcurrentMessageLimit = 8; 
         });
     });
 });
