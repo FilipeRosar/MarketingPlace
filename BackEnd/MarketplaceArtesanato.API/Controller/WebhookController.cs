@@ -1,4 +1,5 @@
 ﻿using MarketplaceArtesanato.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [Route("api/webhook")]

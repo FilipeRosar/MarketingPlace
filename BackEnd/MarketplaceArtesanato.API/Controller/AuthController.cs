@@ -88,7 +88,7 @@ namespace MarketplaceArtesanato.API.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            if (await _context.Seller.AnyAsync(s => s.Email == dto.Email))
+            if (await _context.Sellers.AnyAsync(s => s.Email == dto.Email))
                 return Conflict("Email already in use.");
 
             if (string.IsNullOrWhiteSpace(dto.CPF) && string.IsNullOrWhiteSpace(dto.CNPJ))
@@ -122,7 +122,7 @@ namespace MarketplaceArtesanato.API.Controllers
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Seller.Add(seller);
+            _context.Sellers.Add(seller);
             await _context.SaveChangesAsync();
 
             var token = GenerateJwtToken(seller.Id, "Seller", seller.Name, seller.Email);
@@ -155,7 +155,7 @@ namespace MarketplaceArtesanato.API.Controllers
                 .FirstOrDefaultAsync(c => c.Email == dto.Email);
 
             // Busca em Sellers
-            var seller = await _context.Seller
+            var seller = await _context.Sellers
                 .Include(s => s.Address)
                 .FirstOrDefaultAsync(s => s.Email == dto.Email);
 
@@ -212,7 +212,6 @@ namespace MarketplaceArtesanato.API.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        // Helpers
         private string GetPasswordHash(object user) => user is Customer c ? c.PasswordHash : ((Seller)user).PasswordHash;
         private Guid GetUserId(object user) => user is Customer c ? c.Id : ((Seller)user).Id;
         private string GetUserName(object user) => user is Customer c ? c.Name : ((Seller)user).Name;

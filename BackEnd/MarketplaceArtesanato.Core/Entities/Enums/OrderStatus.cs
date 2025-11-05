@@ -13,6 +13,7 @@ namespace MarketplaceArtesanato.Core.Entities.Enums
         Processing,
         Sent,
         Delivered,
-        Canceled
+        Canceled,
+        Refunded
     }
 }

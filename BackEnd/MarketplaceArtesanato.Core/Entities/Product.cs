@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace MarketplaceArtesanato.Core.Entities
 {
-    public class Product
+    [Table("Products")]
+    public class Product : BaseEntity
     {
-        public Guid Id { get; set; }
         [Required]
         [StringLength(100)]
         public string Name { get; set; } = string.Empty;
@@ -28,7 +28,6 @@ namespace MarketplaceArtesanato.Core.Entities
         public List<Rating> Ratings { get; set; } = new List<Rating>();
         public Guid SellerId { get; set; }
         public Seller Seller { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
     
 }

@@ -10,8 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 using System.Text;
 using System.Text.Json.Serialization;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -91,31 +93,42 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "MarketplaceArtesanato:";
+});
+
+builder.Services.AddScoped<ICartService, CartService>();
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var redisConnectionString = builder.Configuration.GetConnectionString("Redis")
+        ?? "localhost:6379";
+
+    var configuration = ConfigurationOptions.Parse(redisConnectionString);
+    configuration.AllowAdmin = false;
+    configuration.ConnectTimeout = 5000;
+    configuration.AbortOnConnectFail = false;
+
+    return ConnectionMultiplexer.Connect(configuration);
+});
+
 builder.Services.AddAuthorization();
 builder.Services.AddMassTransit(x =>
 {
-    x.AddConsumer<PaymentConsumer>();  
+    x.AddConsumer<CheckoutConsumer>();
+    x.AddConsumer<PaymentConsumer>(); // já tinha
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        var rabbitConfig = builder.Configuration.GetConnectionString("RabbitMQ");
-        if (string.IsNullOrEmpty(rabbitConfig))
-        {
-            cfg.Host("localhost", "/", h =>
-            {
-                h.Username("guest");
-                h.Password("guest");
-            });
-        }
-        else
-        {
-            cfg.Host(rabbitConfig);
-        }
+        var rabbit = builder.Configuration.GetConnectionString("RabbitMQ") ?? "localhost";
+        cfg.Host(rabbit);
 
-        cfg.ReceiveEndpoint("payment-queue", e =>
+        cfg.ReceiveEndpoint("checkout-queue", e =>
         {
-            e.ConfigureConsumer<PaymentConsumer>(context);
-            e.ConcurrentMessageLimit = 8; 
+            e.ConfigureConsumer<CheckoutConsumer>(context);
+            e.ConcurrentMessageLimit = 8;
         });
     });
 });

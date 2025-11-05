@@ -108,7 +108,7 @@ namespace MarketplaceArtesanato.API.Controllers
             if (!Guid.TryParse(sellerIdClaim, out var sellerId))
                 return Unauthorized("Invalid token.");
 
-            var seller = await _context.Seller.FindAsync(sellerId);
+            var seller = await _context.Sellers.FindAsync(sellerId);
             if (seller == null) return Unauthorized("Seller not found.");
 
             if (dto.Images == null || !dto.Images.Any())

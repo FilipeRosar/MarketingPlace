@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace MarketplaceArtesanato.Core.Entities
 {
+    [Table("Addresses")]
     public class Address
     {
         public Guid Id { get; set; } = Guid.NewGuid();

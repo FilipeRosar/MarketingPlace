@@ -25,7 +25,7 @@ namespace MarketplaceArtesanato.Services.Services
         }
         public async Task<bool> IsEmailRegisteredAsync(string email)
         {
-            return await _context.Seller.AnyAsync(u => u.Email == email);
+            return await _context.Sellers.AnyAsync(u => u.Email == email);
         }
 
     }

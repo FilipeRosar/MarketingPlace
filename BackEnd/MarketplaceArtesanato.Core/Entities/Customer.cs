@@ -21,6 +21,7 @@ namespace MarketplaceArtesanato.Core.Entities
         public string PasswordHash { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string CPF { get; set; } = string.Empty;
+        public Cart? Cart { get; set; }
 
         public Guid AddressId { get; set; }
         public Address Address { get; set; } = null!;

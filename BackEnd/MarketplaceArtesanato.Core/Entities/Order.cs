@@ -1,34 +1,37 @@
-﻿using MarketplaceArtesanato.Core.Entities.Enums;
-using System;
-using System.Collections.Generic;
+﻿// Core/Entities/Order.cs
+using MarketplaceArtesanato.Core.Entities.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json;
 
-namespace MarketplaceArtesanato.Core.Entities
+namespace MarketplaceArtesanato.Core.Entities;
+
+[Table("Orders")]
+public class Order : BaseEntity
 {
-    [Table("Orders")]
-    public class Order
+    public Guid BuyerId { get; set; }
+    public Customer Buyer { get; set; } = null!;
+
+    public List<OrderItem> Items { get; set; } = new();
+
+    [NotMapped]
+    public decimal Total => Items.Sum(i => i.UnitPrice * i.Quantity);
+
+    public string? StripeSessionId { get; set; }
+    public string? StripePaymentIntentId { get; set; }
+
+    public OrderStatus Status { get; set; } = OrderStatus.Pending;
+
+    [NotMapped]
+    public Dictionary<Guid, decimal> SellerCommissions { get; set; } = new();
+
+    public string? SellerCommissionsJson
     {
-        [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
-
-        public Guid BuyerId { get; set; }
-        public Customer Buyer { get; set; } = null!;
-
-        public Guid? SellerId { get; set; }
-        public Seller? Seller { get; set; }
-
-        public List<OrderItem> Items { get; set; } = new();
-        public decimal Total { get; set; }
-        public string StripeSessionId { get; set; } = string.Empty;
-        public string? StripePaymentIntentId { get; set; }
-
-        public OrderStatus Status { get; set; } = OrderStatus.Pending;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
+        get => SellerCommissions == null || !SellerCommissions.Any()
+            ? null
+            : JsonSerializer.Serialize(SellerCommissions);
+        set => SellerCommissions = string.IsNullOrEmpty(value)
+            ? new()
+            : JsonSerializer.Deserialize<Dictionary<Guid, decimal>>(value)!;
     }
-
 }

@@ -22,6 +22,9 @@ namespace MarketplaceArtesanato.Core.Entities
 
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
+
+        public Guid SellerId => Product.SellerId;
+        public decimal Subtotal => UnitPrice * Quantity;
     }
 
 }

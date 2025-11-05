@@ -30,20 +30,29 @@ public class OrdersController : ControllerBase
         {
             Id = Guid.NewGuid(),
             BuyerId = customerId,
-            Items = dto.Items.Select(i => new OrderItem
-            {
-                ProductId = i.ProductId,
-                Quantity = i.Quantity,
-                UnitPrice = _context.Products.First(p => p.Id == i.ProductId).Price
-            }).ToList(),
-            Total = dto.Items.Sum(i => i.Quantity * _context.Products.First(p => p.Id == i.ProductId).Price),
-            Status = OrderStatus.Pending
+            Status = OrderStatus.Pending,
+            Items = new List<OrderItem>()
         };
+
+        foreach (var itemDto in dto.Items)
+        {
+            var product = await _context.Products.FindAsync(itemDto.ProductId)
+                ?? throw new KeyNotFoundException($"Produto {itemDto.ProductId} não encontrado");
+
+            if (product.StockQuantity < itemDto.Quantity)
+                throw new InvalidOperationException($"Estoque insuficiente para {product.Name}");
+
+            order.Items.Add(new OrderItem
+            {
+                ProductId = itemDto.ProductId,
+                Quantity = itemDto.Quantity,
+                UnitPrice = product.Price
+            });
+        }
 
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
 
-        var sessionUrl = await _stripeService.CreateCheckoutSessionAsync(order);
-        return Ok(new { url = sessionUrl });
+        return Ok(new { order.Id, order.Total, order.Status });
     }
 }
