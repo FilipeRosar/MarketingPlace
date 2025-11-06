@@ -1,0 +1,95 @@
+﻿// API/Controllers/CheckoutController.cs
+using MarketplaceArtesanato.API.Extensions;
+using MarketplaceArtesanato.Core.Events;
+using MarketplaceArtesanato.Core.Interfaces;
+using MassTransit;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Stripe;
+using Stripe.Checkout;
+
+namespace MarketplaceArtesanato.API.Controllers;
+
+[Authorize(Roles = "Customer")]
+[Route("api/checkout")]
+[ApiController]
+public class CheckoutController : ControllerBase
+{
+    private readonly ICartService _cartService;
+    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IConfiguration _config;
+
+    public CheckoutController(
+        ICartService cartService,
+        IPublishEndpoint publishEndpoint,
+        IConfiguration config)
+    {
+        _cartService = cartService;
+        _publishEndpoint = publishEndpoint;
+        _config = config;
+    }
+
+    [HttpPost("create-session")]
+    public async Task<IActionResult> CreateCheckoutSession()
+    {
+        var customerId = User.GetUserId();
+        var cart = await _cartService.GetCartAsync(customerId);
+
+        if (!cart.Items.Any())
+            return BadRequest(new { message = "Carrinho vazio" });
+
+
+        var domain = _config["AppUrl"] ?? "https://localhost:7113";
+        var options = new SessionCreateOptions
+        {
+            PaymentMethodTypes = new List<string> { "card" },
+            LineItems = cart.Items.Select(i => new SessionLineItemOptions
+            {
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    Currency = "brl",
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name = i.ProductName,
+                        Images = i.ProductImage != null ? new List<string> { i.ProductImage } : null
+                    },
+                    UnitAmount = (long)(i.Price * 100) // centavos
+                },
+                Quantity = i.Quantity
+            }).ToList(),
+            Mode = "payment",
+            SuccessUrl = $"{domain}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
+            CancelUrl = $"{domain}/checkout/cancel",
+            Metadata = new Dictionary<string, string>
+            {
+                { "CustomerId", customerId.ToString() }
+            }
+        };
+
+        var service = new SessionService();
+        var session = await service.CreateAsync(options);
+
+        var @event = new CheckoutInitiatedEvent
+        {
+            CustomerId = customerId,
+            StripeSessionId = session.Id,
+            Items = cart.Items.Select(i => new CheckoutItemEvent
+            {
+                ProductId = i.ProductId,
+                Quantity = i.Quantity,
+                UnitPrice = i.Price
+            }).ToList(),
+            Total = cart.TotalPrice,
+            InitiatedAt = DateTime.UtcNow
+        };
+
+        await _publishEndpoint.Publish(@event);
+
+        return Ok(new
+        {
+            sessionId = session.Id,
+            url = session.Url,
+            message = "Sessão criada. Redirecione o cliente para o pagamento."
+        });
+    }
+}

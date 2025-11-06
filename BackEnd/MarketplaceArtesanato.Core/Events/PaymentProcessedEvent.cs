@@ -13,6 +13,7 @@ namespace MarketplaceArtesanato.Core.Events
         public decimal Total { get; init; }
         public string StripeSessionId { get; init; } = string.Empty;
         public string? PaymentIntentId { get; init; }
+        public decimal? Amount { get; set; }
         public DateTime ProcessedAt { get; init; } = DateTime.UtcNow;
     }
 }

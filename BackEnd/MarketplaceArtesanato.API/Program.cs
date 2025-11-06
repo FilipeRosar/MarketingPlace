@@ -1,3 +1,4 @@
+using MarketplaceArtesanato.Application.Services;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
 using MarketplaceArtesanato.Infrastructure.Consumers;
@@ -11,6 +12,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
+using Stripe;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -33,6 +35,7 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddAutoMapper(typeof(ProductProfile));
 builder.Services.AddScoped<IStorageService,BlobService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
 {
@@ -115,30 +118,22 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 });
 
 builder.Services.AddAuthorization();
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+
+// MassTransit
 builder.Services.AddMassTransit(x =>
 {
-    x.AddConsumer<PaymentConsumer>();  
+    x.AddConsumer<CheckoutConsumer>();
+    x.AddConsumer<PaymentConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        var rabbitConfig = builder.Configuration.GetConnectionString("RabbitMQ");
-        if (string.IsNullOrEmpty(rabbitConfig))
-        {
-            cfg.Host("localhost", "/", h =>
-            {
-                h.Username("guest");
-                h.Password("guest");
-            });
-        }
-        else
-        {
-            cfg.Host(rabbitConfig);
-        }
+        cfg.Host(builder.Configuration.GetConnectionString("RabbitMQ") ?? "localhost");
 
-        cfg.ReceiveEndpoint("payment-queue", e =>
+        cfg.ReceiveEndpoint("checkout-queue", e =>
         {
-            e.ConfigureConsumer<PaymentConsumer>(context);
-            e.ConcurrentMessageLimit = 8; 
+            e.ConfigureConsumer<CheckoutConsumer>(context);
+            e.ConcurrentMessageLimit = 8;
         });
     });
 });
