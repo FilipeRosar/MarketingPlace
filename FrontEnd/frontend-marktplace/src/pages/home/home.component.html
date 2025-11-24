@@ -1,0 +1,154 @@
+<!-- 1. HERO SECTION: O Cartão de Visitas -->
+<div class="relative h-[85vh] min-h-[600px] w-full bg-stone-900 overflow-hidden flex items-center">
+
+  <div class="absolute inset-0 z-0">
+    <img class="w-full h-full object-cover opacity-50 transform scale-105 animate-subtle-zoom"
+         src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80"
+         alt="Artesanato feito à mão">
+    <div class="absolute inset-0 bg-gradient-to-r from-stone-900/95 via-stone-900/70 to-transparent"></div>
+  </div>
+
+  <!-- Conteúdo do Hero -->
+  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    <div class="max-w-2xl">
+      <span class="inline-block py-1 px-3 rounded-full bg-primary/20 text-primary-light text-sm font-semibold tracking-wider mb-6 border border-primary/30 backdrop-blur-sm">
+        MARKETPLACE EXCLUSIVO
+      </span>
+
+      <h1 class="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight mb-6">
+        Feito à mão,<br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-orange-200">
+          feito com alma.
+        </span>
+      </h1>
+
+      <p class="text-lg md:text-xl text-stone-300 mb-10 leading-relaxed font-light max-w-lg">
+        Conectamos você diretamente aos melhores artesãos do Brasil.
+        Peças únicas que carregam história, cultura e afeto em cada detalhe.
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-4">
+        <a href="#produtos" class="inline-flex justify-center items-center px-8 py-4 border border-transparent text-base font-medium rounded-full text-white bg-primary hover:bg-primary-light transition-all duration-300 shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1">
+          Explorar Coleção
+        </a>
+        <a routerLink="/register-seller" class="inline-flex justify-center items-center px-8 py-4 border border-stone-600 text-base font-medium rounded-full text-stone-200 hover:bg-white/10 hover:border-white transition-all duration-300 backdrop-blur-sm">
+          Seja um Vendedor
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. BARRA DE VANTAGENS (Trust Bar) -->
+<section class="bg-white border-b border-stone-100 relative z-20 -mt-8 mx-4 md:mx-auto max-w-6xl rounded-xl shadow-xl p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+  <div class="flex items-center space-x-4">
+    <div class="p-3 bg-orange-50 rounded-full text-primary">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-900">Curadoria Exclusiva</h3>
+      <p class="text-sm text-gray-500">Apenas artesãos verificados</p>
+    </div>
+  </div>
+
+  <div class="flex items-center space-x-4">
+    <div class="p-3 bg-orange-50 rounded-full text-primary">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-900">Compra Segura</h3>
+      <p class="text-sm text-gray-500">Proteção total ao comprador</p>
+    </div>
+  </div>
+
+  <div class="flex items-center space-x-4">
+    <div class="p-3 bg-orange-50 rounded-full text-primary">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-900">Apoie o Local</h3>
+      <p class="text-sm text-gray-500">Valorize a cultura brasileira</p>
+    </div>
+  </div>
+</section>
+
+<section class="py-20 bg-surface">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl font-bold text-gray-900 mb-10 text-center">Navegue por Categoria</h2>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <a href="#" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all">
+        <img src="https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+          <span class="text-white font-bold text-xl">Cerâmica</span>
+        </div>
+      </a>
+      <a href="#" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all">
+        <img src="https://images.unsplash.com/photo-1606293926075-69a00dbfde81?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+          <span class="text-white font-bold text-xl">Têxteis</span>
+        </div>
+      </a>
+       <a href="#" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all">
+        <img src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+          <span class="text-white font-bold text-xl">Madeira</span>
+        </div>
+      </a>
+       <a href="#" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all">
+        <img src="https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+          <span class="text-white font-bold text-xl">Decoração</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<div id="produtos" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+  <div class="flex flex-col sm:flex-row justify-between items-end mb-12 gap-4">
+    <div>
+      <span class="text-primary font-semibold tracking-wider text-sm uppercase">Novidades</span>
+      <h2 class="text-4xl font-bold text-gray-900 mt-2">Destaques da Semana</h2>
+    </div>
+
+    <a href="#" class="group flex items-center gap-2 text-stone-600 hover:text-primary font-medium transition-colors">
+      Ver coleção completa
+      <span class="group-hover:translate-x-1 transition-transform">→</span>
+    </a>
+  </div>
+
+  <div class="min-h-[400px]">
+    @if (isLoading) {
+      <div class="flex justify-center items-center h-64">
+        <app-loading-spinner></app-loading-spinner>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        @for (product of products; track product.id) {
+          <app-product-card [product]="product"></app-product-card>
+        }
+      </div>
+
+      @if (products.length === 0) {
+        <div class="text-center py-20 bg-white rounded-2xl border border-stone-100">
+          <p class="text-stone-400 text-lg">Nenhum produto encontrado no momento.</p>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<section class="bg-stone-900 py-24">
+  <div class="max-w-7xl mx-auto px-4 text-center">
+    <h2 class="text-3xl font-bold text-white mb-4">Junte-se à nossa comunidade</h2>
+    <p class="text-stone-400 mb-8 max-w-2xl mx-auto">Receba novidades sobre novos artesãos, ofertas exclusivas e histórias inspiradoras diretamente no seu e-mail.</p>
+
+    <form class="max-w-md mx-auto flex gap-2">
+      <input type="email" placeholder="Seu melhor e-mail" class="flex-1 px-6 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-primary">
+      <button class="px-8 py-3 bg-primary hover:bg-primary-light text-white rounded-full font-medium transition-colors">
+        Inscrever
+      </button>
+    </form>
+  </div>
+</section>

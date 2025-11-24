@@ -1,0 +1,189 @@
+<div class="min-h-screen bg-surface">
+
+  <div class="bg-white border-b border-stone-200 sticky top-16 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <h1 class="text-xl font-bold text-gray-800">Painel do Vendedor</h1>
+
+        <div class="flex space-x-1 bg-stone-100 p-1 rounded-lg">
+          <button (click)="setActiveTab('overview')"
+                  [class.bg-white]="activeTab === 'overview'"
+                  [class.shadow-sm]="activeTab === 'overview'"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                  [ngClass]="activeTab === 'overview' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
+            Visão Geral
+          </button>
+          <button (click)="setActiveTab('products')"
+                  [class.bg-white]="activeTab === 'products'"
+                  [class.shadow-sm]="activeTab === 'products'"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                  [ngClass]="activeTab === 'products' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
+            Meus Produtos
+          </button>
+          <button (click)="setActiveTab('orders')"
+                  [class.bg-white]="activeTab === 'orders'"
+                  [class.shadow-sm]="activeTab === 'orders'"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                  [ngClass]="activeTab === 'orders' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
+            Vendas
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    @if (isLoading) {
+      <app-loading-spinner></app-loading-spinner>
+    } @else {
+
+      @if (activeTab === 'overview') {
+        <div class="space-y-8 animate-fade-in-up">
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-medium text-gray-500">Receita Total</h3>
+                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">+12%</span>
+              </div>
+              <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.totalRevenue | currencyBr }}</p>
+              <p class="text-xs text-gray-400 mt-1">nos últimos 30 dias</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-medium text-gray-500">Vendas Realizadas</h3>
+                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">+5%</span>
+              </div>
+              <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.totalSales }}</p>
+              <p class="text-xs text-gray-400 mt-1">pedidos processados</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-medium text-gray-500">Produtos Ativos</h3>
+                <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">Loja</span>
+              </div>
+              <p class="text-3xl font-bold text-gray-900 mt-2">{{ products.length }}</p>
+              <p class="text-xs text-gray-400 mt-1">itens no catálogo</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+            <h3 class="text-lg font-bold text-gray-900 mb-6">Desempenho de Vendas</h3>
+            <div class="flex items-end space-x-2 sm:space-x-6 h-64 pb-2 border-b border-stone-200">
+              <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 40%">
+                  <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">R$ 400</span>
+                </div>
+                <span class="text-xs text-gray-500 mt-2">Seg</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 70%"></div>
+                <span class="text-xs text-gray-500 mt-2">Ter</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 55%"></div>
+                <span class="text-xs text-gray-500 mt-2">Qua</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-primary/80 hover:bg-primary transition-all rounded-t-md relative" style="height: 90%">
+                  <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">R$ 900 (Hoje)</span>
+                </div>
+                <span class="text-xs text-gray-500 mt-2 font-bold text-primary">Qui</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 30%"></div>
+                <span class="text-xs text-gray-500 mt-2">Sex</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 60%"></div>
+                <span class="text-xs text-gray-500 mt-2">Sab</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 45%"></div>
+                <span class="text-xs text-gray-500 mt-2">Dom</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      }
+
+      @if (activeTab === 'products') {
+        <div class="animate-fade-in-up">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-gray-900">Catálogo de Produtos</h3>
+            <a routerLink="/add-product" class="inline-flex items-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-all">
+              + Novo Produto
+            </a>
+          </div>
+
+          @if (products.length === 0) {
+            <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-stone-300">
+              <p class="text-gray-500">Você ainda não cadastrou produtos.</p>
+            </div>
+          } @else {
+            <div class="bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
+              <ul role="list" class="divide-y divide-gray-100">
+                @for (product of products; track product.id) {
+                  <li class="p-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
+                    <div class="flex items-center">
+                      <img [src]="product.imageUrl" class="h-16 w-16 rounded-lg object-cover bg-gray-100 border border-stone-100">
+                      <div class="ml-4">
+                        <h4 class="text-base font-bold text-gray-900">{{ product.name }}</h4>
+                        <p class="text-sm text-gray-500">Estoque: {{ product.stockQuantity }}</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-sm font-bold text-primary">{{ product.price | currencyBr }}</p>
+                      <button class="text-xs text-red-500 hover:underline mt-1">Excluir</button>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      }
+
+      @if (activeTab === 'orders') {
+        <div class="animate-fade-in-up bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
+          <div class="px-6 py-4 border-b border-stone-100">
+            <h3 class="text-lg font-bold text-gray-900">Últimas Vendas</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-stone-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                @for (order of recentOrders; track order.id) {
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{{ order.id }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.customer }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.date }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        {{ order.status }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ order.total | currencyBr }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+    }
+  </div>
+</div>

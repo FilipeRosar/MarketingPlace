@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MarketplaceArtesanato.Core.Entities.Enums;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 namespace MarketplaceArtesanato.Core.Entities
 {
     [Table("Customer")]
-    public class Customer
+    public class Customer : BaseEntity
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
@@ -22,13 +23,12 @@ namespace MarketplaceArtesanato.Core.Entities
         public string Phone { get; set; } = string.Empty;
         public string CPF { get; set; } = string.Empty;
         public Cart? Cart { get; set; }
+        public UserRole Role { get; set; } = UserRole.Customer;
 
         public Guid AddressId { get; set; }
         public Address Address { get; set; } = null!;
 
         public List<Order> Orders { get; set; } = new();
         public List<Rating> Ratings { get; set; } = new();
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

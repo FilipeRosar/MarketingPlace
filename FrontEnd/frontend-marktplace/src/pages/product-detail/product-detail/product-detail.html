@@ -1,0 +1,129 @@
+<div class="min-h-screen py-8 sm:py-12 bg-surface">
+
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="flex justify-center items-center h-96">
+      <app-loading-spinner></app-loading-spinner>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error) {
+    <div class="max-w-7xl mx-auto px-4 text-center py-20">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Ops!</h2>
+      <p class="text-gray-600 mb-8">{{ error }}</p>
+      <button (click)="goBack()" class="text-primary hover:underline font-medium">
+        &larr; Voltar para a loja
+      </button>
+    </div>
+  }
+
+  <!-- Product Content -->
+  @if (product && !isLoading) {
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <!-- Breadcrumb / Voltar -->
+      <nav class="flex mb-8 text-sm font-medium text-gray-500 hover:text-primary transition-colors cursor-pointer" (click)="goBack()">
+        <span class="mr-2">&larr;</span> Voltar
+      </nav>
+
+      <div class="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
+
+        <!-- Coluna Esquerda: Imagem -->
+        <div class="product-image-container mb-10 lg:mb-0">
+          <div class="aspect-square rounded-3xl overflow-hidden bg-gray-100 relative shadow-soft group">
+            <img [src]="product.imageUrl"
+                 [alt]="product.name"
+                 class="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700">
+
+            <!-- Badge de Categoria -->
+            <span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+              {{ product.category }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Coluna Direita: Detalhes -->
+        <div class="product-info flex flex-col justify-center">
+
+          <!-- Info Vendedor -->
+          <div class="flex items-center mb-6">
+            <div class="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-primary font-bold mr-3">
+              {{ product.sellerName.charAt(0) }}
+            </div>
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">Vendido por</p>
+              <p class="text-sm font-semibold text-gray-900">{{ product.sellerName }}</p>
+            </div>
+          </div>
+
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-4">
+            {{ product.name }}
+          </h1>
+
+          <div class="mt-4 mb-8">
+            <h2 class="sr-only">Product information</h2>
+            <p class="text-4xl font-bold text-primary tracking-tight">
+              {{ product.price | currencyBr }}
+            </p>
+            <p class="text-sm text-gray-500 mt-1">
+              Em até 12x de {{ (product.price / 12) | currencyBr }}
+            </p>
+          </div>
+
+          <!-- Descrição -->
+          <div class="prose prose-sm text-gray-500 mb-10 leading-relaxed">
+            <p>{{ product.description }}</p>
+          </div>
+
+          <!-- Ações -->
+          <div class="flex flex-col sm:flex-row gap-4">
+            <button (click)="addToCart()"
+                    class="flex-1 bg-primary border border-transparent rounded-full py-4 px-8 flex items-center justify-center text-base font-bold text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-lg shadow-orange-500/30 transition-all transform hover:-translate-y-1">
+              Adicionar ao Carrinho
+            </button>
+
+            <button class="flex-1 bg-white border border-stone-200 rounded-full py-4 px-8 flex items-center justify-center text-base font-bold text-gray-900 hover:bg-stone-50 hover:border-stone-300 transition-all">
+              <span class="mr-2">♥</span> Salvar
+            </button>
+          </div>
+          <!-- Trecho dentro de product-detail.component.html -->
+<div class="flex items-center mb-6 cursor-pointer hover:opacity-80 transition-opacity"
+     [routerLink]="['/sellers', product.sellerId]"> <!-- Link Adicionado -->
+  <div class="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-primary font-bold mr-3">
+    {{ product.sellerName.charAt(0) }}
+  </div>
+  <div>
+    <p class="text-xs text-gray-500 uppercase tracking-wide">Vendido por</p>
+    <p class="text-sm font-semibold text-gray-900 underline">{{ product.sellerName }}</p>
+  </div>
+</div>
+
+Agora, ao clicar no nome do vendedor na página de um produto, o cliente será levado para a vitrine exclusiva dele! Lembre-se de reiniciar o Backend para pegar o novo Controller.
+          <!-- Garantias (Trust Signals) -->
+          <div class="mt-10 border-t border-gray-100 pt-8 grid grid-cols-2 gap-4">
+            <div class="flex items-center">
+              <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="text-sm text-gray-600">Devolução Grátis</span>
+            </div>
+            <div class="flex items-center">
+              <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span class="text-sm text-gray-600">Pagamento Seguro</span>
+            </div>
+            <div class="flex items-center">
+              <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <span class="text-sm text-gray-600">Envio para todo Brasil</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+</div>

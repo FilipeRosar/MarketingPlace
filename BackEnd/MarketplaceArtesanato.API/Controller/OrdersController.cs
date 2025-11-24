@@ -53,6 +53,6 @@ public class OrdersController : ControllerBase
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
 
-        return Ok(new { order.Id, order.Total, order.Status });
+        return Ok(new { order.Id, order.TotalAmount, order.Status });
     }
 }

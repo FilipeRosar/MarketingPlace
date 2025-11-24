@@ -1,5 +1,4 @@
-﻿// API/Controllers/ProductsController.cs
-using AutoMapper;
+﻿using AutoMapper;
 using MarketplaceArtesanato.API.Models.Requests;
 using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
@@ -30,7 +29,7 @@ namespace MarketplaceArtesanato.API.Controllers
 
         // GET: api/products
         [HttpGet]
-        public async Task<ActionResult> GetProducts( [FromQuery] string? search = null,[FromQuery] int? category = null, [FromQuery] decimal? minPrice = null, [FromQuery] decimal? maxPrice = null, [FromQuery] int page = 1,[FromQuery] int pageSize = 10)
+        public async Task<ActionResult> GetProducts([FromQuery] string? search = null, [FromQuery] int? category = null, [FromQuery] decimal? minPrice = null, [FromQuery] decimal? maxPrice = null, [FromQuery] Guid? sellerId = null,  [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             {
                 var query = _context.Products
@@ -39,6 +38,11 @@ namespace MarketplaceArtesanato.API.Controllers
                     .Include(p => p.Ratings!)
                         .ThenInclude(r => r.Customer)
                     .AsQueryable();
+
+                if (sellerId.HasValue)
+                {
+                    query = query.Where(p => p.SellerId == sellerId.Value);
+                }
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {

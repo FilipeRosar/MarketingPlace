@@ -1,0 +1,89 @@
+<div class="min-h-screen bg-surface flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="text-center cursor-pointer" routerLink="/">
+      <span class="text-4xl font-bold text-primary-dark tracking-tight">
+        Tra<span class="text-primary font-light">ma</span>.
+      </span>
+    </div>
+    <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+      Crie sua conta
+    </h2>
+    <p class="mt-2 text-center text-sm text-gray-600">
+      Já tem uma conta?
+      <a routerLink="/login" class="font-medium text-primary hover:text-primary-dark transition-colors">
+        Faça login
+      </a>
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="bg-white py-8 px-4 shadow-soft rounded-2xl sm:px-10 border border-stone-100">
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-4">
+
+        <!-- Nome Completo -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Nome Completo</label>
+          <div class="mt-1">
+            <input type="text" formControlName="name" class="appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+          </div>
+          <div *ngIf="registerForm.get('name')?.touched && registerForm.get('name')?.invalid" class="text-red-500 text-xs mt-1">
+            Nome é obrigatório (min. 3 caracteres).
+          </div>
+        </div>
+
+        <!-- E-mail -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">E-mail</label>
+          <div class="mt-1">
+            <input type="email" formControlName="email" class="appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+          </div>
+        </div>
+
+        <!-- CPF e Telefone (Grid) -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">CPF</label>
+            <div class="mt-1">
+              <input type="text" formControlName="cpf" placeholder="Apenas números" class="appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Telefone</label>
+            <div class="mt-1">
+              <input type="tel" formControlName="phone" class="appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+          </div>
+        </div>
+
+        <!-- Senha -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Senha</label>
+          <div class="mt-1">
+            <input type="password" formControlName="password" class="appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+          </div>
+          <div *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid" class="text-red-500 text-xs mt-1">
+            Senha deve ter no mínimo 6 caracteres.
+          </div>
+        </div>
+
+        <!-- Mensagem de Erro -->
+        <div *ngIf="errorMessage" class="rounded-md bg-red-50 p-4">
+           <h3 class="text-sm font-medium text-red-800">{{ errorMessage }}</h3>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" [disabled]="registerForm.invalid || isLoading"
+                  class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5">
+            <span *ngIf="!isLoading">Criar Conta</span>
+            <span *ngIf="isLoading" class="flex items-center">Processando...</span>
+          </button>
+        </div>
+      </form>
+
+      <p class="mt-6 text-xs text-center text-gray-500">
+        Ao se registrar, você concorda com nossos Termos de Uso e Política de Privacidade.
+      </p>
+    </div>
+  </div>
+</div>

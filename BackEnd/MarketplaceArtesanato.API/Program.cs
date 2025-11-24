@@ -33,9 +33,13 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
 builder.Services.AddAutoMapper(typeof(ProductProfile));
-builder.Services.AddScoped<IStorageService,BlobService>();
+
+builder.Services.AddScoped<IStorageService, BlobService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
 {
@@ -64,7 +68,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddEnvironmentVariables(); 
+    .AddEnvironmentVariables();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -95,14 +99,25 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
+
+    // Configuração para Upload de Arquivo no Swagger
+    c.SwaggerDoc("v1", new()
+    {
+        Title = "MarketplaceArtesanato API",
+        Version = "v1"
+    });
+    c.MapType<IFormFile>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "binary"
+    });
 });
+
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
     options.InstanceName = "MarketplaceArtesanato:";
 });
-
-builder.Services.AddScoped<ICartService, CartService>();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
@@ -120,7 +135,6 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 builder.Services.AddAuthorization();
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
-// MassTransit
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<CheckoutConsumer>();
@@ -139,34 +153,10 @@ builder.Services.AddMassTransit(x =>
 });
 builder.Services.AddMassTransitHostedService();
 
-
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new()
-    {
-        Title = "MarketplaceArtesanato API",
-        Version = "v1"
-    });
-    c.MapType<IFormFile>(() => new OpenApiSchema
-    {
-        Type = "string",
-        Format = "binary"
-    });
-    c.MapType<List<IFormFile>>(() => new OpenApiSchema
-    {
-        Type = "array",
-        Items = new OpenApiSchema
-        {
-            Type = "string",
-            Format = "binary"
-        }
-    });
-});
 var app = builder.Build();
 
 app.UseCors("AllowAll");
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -179,9 +169,9 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
     c.DisplayRequestDuration();
 });
+
 app.UseHttpsRedirection();
 app.MapControllers();
 app.UseAuthorization();
 
 app.Run();
-

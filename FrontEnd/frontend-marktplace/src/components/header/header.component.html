@@ -1,0 +1,235 @@
+<header class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-200 shadow-sm transition-all duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+
+      <!-- 1. Logo -->
+      <div class="flex-shrink-0 flex items-center cursor-pointer group" routerLink="/">
+        <span class="text-2xl font-bold text-primary-dark tracking-tight group-hover:opacity-80 transition-opacity">
+          Tra<span class="text-primary font-light">ma</span>.
+        </span>
+      </div>
+
+      <!-- 2. Barra de Busca (Desktop) -->
+      <div class="hidden md:flex flex-1 max-w-lg mx-8">
+        <div class="relative w-full">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          <input type="text"
+                 class="block w-full pl-10 pr-3 py-2 border border-stone-200 rounded-full leading-5 bg-stone-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-primary-light focus:border-transparent transition duration-150 ease-in-out sm:text-sm"
+                 placeholder="O que você procura hoje?">
+        </div>
+      </div>
+
+      <!-- 3. Navegação Desktop -->
+      <div class="hidden md:flex items-center space-x-6">
+
+        <!-- Dropdown Categorias -->
+        <div class="relative group">
+          <button class="flex items-center text-gray-600 hover:text-primary font-medium transition-colors py-2">
+            Categorias
+            <svg class="ml-1 h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Menu Flutuante -->
+          <div class="absolute left-0 mt-0 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+            <div class="rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden bg-white mt-2">
+              <div class="py-1 grid grid-cols-1">
+                @for (cat of categories; track cat.value) {
+                  <a [routerLink]="['/products']" [queryParams]="{category: cat.value}"
+                     class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-primary transition-colors">
+                    <span class="mr-3">{{ cat.icon }}</span>
+                    {{ cat.label }}
+                  </a>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LÓGICA DO BOTÃO VENDER (Desktop) -->
+        <!-- Aqui usamos 'as user' para poder acessar user.role -->
+        @if (currentUser$ | async; as user) {
+          @if (user.role === 'Seller') {
+            <a routerLink="/add-product" class="text-gray-600 hover:text-primary font-medium transition-colors">Vender</a>
+          } @else {
+            <a routerLink="/register-seller" class="text-gray-600 hover:text-primary font-medium transition-colors">Vender</a>
+          }
+        } @else {
+          <a routerLink="/register-seller" class="text-gray-600 hover:text-primary font-medium transition-colors">Vender</a>
+        }
+
+        <!-- Carrinho (Desktop) -->
+        @if (currentUser$ | async) {
+          <a routerLink="/cart"
+             class="relative p-2 text-gray-500 hover:text-primary transition-colors group cursor-pointer"
+             title="Ir para o carrinho">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+            </svg>
+
+            <!-- A BOLINHA (BADGE) -->
+            @if (cartService.count() > 0) {
+              <span class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-primary rounded-full">
+                {{ cartService.count() }}
+              </span>
+            }
+          </a>
+        } @else {
+          <a routerLink="/login" class="relative p-2 text-gray-500 hover:text-primary transition-colors cursor-pointer">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+            </svg>
+          </a>
+        }
+
+        <!-- LÓGICA DE LOGIN / PERFIL (Desktop) -->
+        @if (currentUser$ | async; as user) {
+          <!-- Avatar do Usuário -->
+          <div class="relative group">
+            <button class="h-9 w-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm hover:ring-2 hover:ring-offset-2 hover:ring-primary transition-all shadow-sm cursor-pointer">
+              {{ user.name.charAt(0).toUpperCase() }}
+            </button>
+
+            <!-- Dropdown -->
+            <div class="absolute right-0 mt-0 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+              <div class="rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden bg-white mt-2 py-1">
+                <div class="px-4 py-2 border-b border-stone-100">
+                  <p class="text-xs text-gray-500">Olá,</p>
+                  <p class="text-sm font-bold text-gray-900 truncate">{{ user.name }}</p>
+                </div>
+
+                <!-- LINK INTELIGENTE PERFIL -->
+                @if (user.role === 'Seller') {
+                  <a [routerLink]="['/sellers', user.id]" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary">Minha Loja (Perfil)</a>
+                } @else {
+                  <a routerLink="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary">Meu Perfil</a>
+                }
+
+                <button (click)="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                  Sair
+                </button>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="flex items-center space-x-3">
+            <a routerLink="/login" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors cursor-pointer">
+              Entrar
+            </a>
+            <a routerLink="/register" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-primary hover:bg-primary-dark transition-all shadow-sm hover:shadow cursor-pointer">
+              Criar conta
+            </a>
+          </div>
+        }
+
+      </div>
+
+      <!-- 4. Botão Menu Mobile -->
+      <div class="flex md:hidden items-center space-x-4">
+        <!-- Ícone Carrinho Mobile -->
+        @if (currentUser$ | async) {
+          <a routerLink="/cart" class="relative p-2 text-gray-500 hover:text-primary transition-colors cursor-pointer">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+            </svg>
+            @if (cartService.count() > 0) {
+              <span class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-primary rounded-full">
+                {{ cartService.count() }}
+              </span>
+            }
+          </a>
+        }
+
+        <button (click)="toggleMobileMenu()" class="text-gray-500 hover:text-primary p-2">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            @if (!isMobileMenuOpen) {
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            } @else {
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            }
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Menu Mobile (Sanfona) -->
+  @if (isMobileMenuOpen) {
+    <div class="md:hidden bg-white border-t border-stone-100 max-h-[calc(100vh-4rem)] overflow-y-auto shadow-xl animate-fade-in-up">
+      <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+
+        <!-- CORREÇÃO: Usar 'as user' aqui também para exibir o nome -->
+        @if (currentUser$ | async; as user) {
+          <div class="px-3 py-4 mb-2 bg-orange-50/50 rounded-lg flex items-center space-x-3">
+            <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+              {{ user.name.charAt(0).toUpperCase() }}
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900">Olá, {{ user.name }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
+            </div>
+          </div>
+        }
+
+        <a routerLink="/" (click)="closeMenus()" class="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50">Início</a>
+
+        <!-- MENU SANFONA -->
+        <div>
+          <button (click)="toggleCategoryMenu()" class="w-full flex justify-between items-center px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50 transition-colors">
+            <span>Categorias</span>
+            <svg class="h-5 w-5 transform transition-transform duration-200" [class.rotate-180]="isCategoryMenuOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          @if (isCategoryMenuOpen) {
+            <div class="pl-4 space-y-1 bg-stone-50/30 border-l-2 border-primary/20 ml-3 my-1 rounded-r-md">
+              @for (cat of categories; track cat.value) {
+                <a [routerLink]="['/products']" [queryParams]="{category: cat.value}" (click)="closeMenus()" class="block px-3 py-3 text-sm font-medium text-gray-600 hover:text-primary hover:bg-orange-50 rounded-md transition-colors flex items-center">
+                  <span class="mr-3 opacity-70">{{ cat.icon }}</span>
+                  {{ cat.label }}
+                </a>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- LÓGICA VENDER MOBILE -->
+        @if (currentUser$ | async; as user) {
+          @if (user.role === 'Seller') {
+            <a routerLink="/add-product" (click)="closeMenus()" class="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50">Vender (Adicionar Produto)</a>
+          } @else {
+            <a routerLink="/register-seller" (click)="closeMenus()" class="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50">Seja um Vendedor</a>
+          }
+        } @else {
+          <a routerLink="/register-seller" (click)="closeMenus()" class="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50">Seja um Vendedor</a>
+        }
+
+        <!-- Ações de Conta Mobile (CORREÇÃO PRINCIPAL) -->
+        <div class="border-t border-stone-100 mt-4 pt-4">
+          <!-- ADICIONADO '; as user' PARA QUE user.role FUNCIONE -->
+          @if (currentUser$ | async; as user) {
+
+            <!-- LINK INTELIGENTE MOBILE -->
+            @if (user.role === 'Seller') {
+              <a [routerLink]="['/sellers', user.id]" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-gray-700 hover:text-primary">Minha Loja (Perfil)</a>
+            } @else {
+              <a routerLink="/profile" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-gray-700 hover:text-primary">Meu Perfil</a>
+            }
+
+            <button (click)="logout()" class="block w-full text-left px-3 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-md">Sair da conta</button>
+          } @else {
+            <a routerLink="/login" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-primary hover:bg-orange-50 rounded-md">Entrar na conta</a>
+            <a routerLink="/register" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-gray-700 hover:text-primary">Criar conta grátis</a>
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+</header>
+<div class="h-16"></div>

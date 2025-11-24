@@ -85,14 +85,14 @@ public class PaymentConsumer : IConsumer<PaymentProcessedEvent>
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Pagamento confirmado: Pedido {OrderId} | Total: {Total:C}", order.Id, order.Total);
+            _logger.LogInformation("Pagamento confirmado: Pedido {OrderId} | Total: {Total:C}", order.Id, order.TotalAmount);
 
             // 6. PUBLICA EVENTO DE SUCESSO COM COMISSÕES
             await _publishEndpoint.Publish(new OrderPaidEvent
             {
                 OrderId = order.Id,
                 CustomerId = order.BuyerId,
-                Total = order.Total,
+                Total = order.TotalAmount,
                 PaidAt = DateTime.UtcNow,
                 SellerCommissions = order.SellerCommissions ?? new()
             });

@@ -20,13 +20,15 @@ namespace MarketplaceArtesanato.API.Models.Responses
         [Required]
         public int StockQuantity { get; set; } = 0;
         public List<string> Images { get; set; } = new List<string>();
+        public string ImageUrl => Images.FirstOrDefault() ?? "";
         public ProductCategory Category { get; set; }
-        public string Status { get; set; }
+        public ProductStatus Status { get; set; }
         public double AverageRating { get; set; }  
         public int TotalRatings { get; set; }
         public Guid SellerId { get; set; }
         [JsonPropertyName("seller")]
         public SellerResponseDto Seller { get; set; }
+        public string SellerName => Seller?.Name ?? "";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

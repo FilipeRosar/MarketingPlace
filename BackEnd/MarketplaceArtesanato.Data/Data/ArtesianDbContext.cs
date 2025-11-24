@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Linq.Expressions;
 using System.Reflection;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MarketplaceArtesanato.Data.Data;
 
@@ -73,12 +74,16 @@ public class ArtesianDbContext : DbContext
             .HasForeignKey(r => r.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Índices e propriedades
+
         modelBuilder.Entity<Order>()
             .Property(o => o.SellerCommissionsJson)
             .HasColumnName("SellerCommissions")
             .HasColumnType("nvarchar(max)")
             .IsRequired(false);
+
+        modelBuilder.Entity<Product>().Property(p => p.Price).HasPrecision(18, 2);
+        modelBuilder.Entity<OrderItem>().Property(oi => oi.UnitPrice).HasPrecision(18, 2);
+        modelBuilder.Entity<Order>().Property(o => o.TotalAmount).HasPrecision(18, 2);
 
         modelBuilder.Entity<Product>().HasIndex(p => p.Category);
         modelBuilder.Entity<Product>().HasIndex(p => p.Status);
@@ -86,7 +91,6 @@ public class ArtesianDbContext : DbContext
         modelBuilder.Entity<Order>().HasIndex(o => o.BuyerId);
         modelBuilder.Entity<OrderItem>().HasIndex(oi => oi.OrderId);
 
-        // Soft delete global
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))

@@ -14,8 +14,7 @@ public class Order : BaseEntity
 
     public List<OrderItem> Items { get; set; } = new();
 
-    [NotMapped]
-    public decimal Total => Items.Sum(i => i.UnitPrice * i.Quantity);
+    public decimal TotalAmount { get; set; }
 
     public string? StripeSessionId { get; set; }
     public string? StripePaymentIntentId { get; set; }
@@ -33,5 +32,10 @@ public class Order : BaseEntity
         set => SellerCommissions = string.IsNullOrEmpty(value)
             ? new()
             : JsonSerializer.Deserialize<Dictionary<Guid, decimal>>(value)!;
+    }
+
+    public void CalculateTotal()
+    {
+        TotalAmount = Items.Sum(i => i.UnitPrice * i.Quantity);
     }
 }

@@ -110,7 +110,7 @@ public class OrderService : IOrderService
         await _publishEndpoint.Publish(new OrderPaidEvent
         {
             OrderId = order.Id,
-            Total = order.Total,
+            Total = order.TotalAmount,
             SellerCommissions = order.SellerCommissions
         });
 

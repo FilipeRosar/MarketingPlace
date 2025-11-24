@@ -1,0 +1,66 @@
+<div class="min-h-screen bg-surface py-8">
+
+  @if (isLoading) {
+    <app-loading-spinner></app-loading-spinner>
+  } @else {
+    @if (seller) {
+      <div class="bg-white shadow-sm border-b border-stone-200 mb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <button (click)="goBack()" class="mb-6 text-sm text-stone-500 hover:text-primary flex items-center">
+            &larr; Voltar
+          </button>
+
+          <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+            <div class="h-24 w-24 md:h-32 md:w-32 rounded-full bg-primary text-white flex items-center justify-center text-4xl font-bold shadow-lg border-4 border-white">
+              {{ seller.name.charAt(0).toUpperCase() }}
+            </div>
+
+            <div class="text-center md:text-left flex-1">
+              <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ seller.name }}</h1>
+
+              <div class="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-gray-500 mb-4">
+                @if (seller.address) {
+                  <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    {{ seller.address.city }}, {{ seller.address.state }}
+                  </span>
+                }
+                <span class="flex items-center">
+                  <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                  {{ products.length }} Produtos
+                </span>
+              </div>
+
+              <p class="max-w-2xl text-gray-600">
+                Bem-vindo à minha loja na Trama! Aqui você encontra peças feitas com dedicação e carinho.
+              </p>
+            </div>
+
+            <div>
+              <button class="inline-flex items-center px-6 py-3 border border-stone-300 shadow-sm text-sm font-medium rounded-full text-gray-700 bg-white hover:bg-stone-50">
+                <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Contatar Artesão
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Produtos de {{ seller.name }}</h2>
+
+        @if (products.length === 0) {
+          <div class="text-center py-20">
+            <p class="text-gray-500">Este vendedor ainda não publicou produtos.</p>
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            @for (product of products; track product.id) {
+              <app-product-card [product]="product"></app-product-card>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

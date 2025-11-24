@@ -1,0 +1,122 @@
+<div class="min-h-screen bg-surface py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+
+    <div class="md:flex md:items-center md:justify-between mb-8">
+      <div class="flex-1 min-w-0">
+        <h2 class="text-3xl font-bold leading-7 text-gray-900 sm:text-4xl sm:truncate">Novo Produto</h2>
+        <p class="mt-2 text-sm text-gray-500">Adicione uma nova peça única ao catálogo da Trama.</p>
+      </div>
+    </div>
+
+    <div class="bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
+      <form [formGroup]="productForm" (ngSubmit)="onSubmit()" class="space-y-8 divide-y divide-gray-100 p-8">
+
+        <div class="space-y-8 divide-y divide-gray-100">
+
+          <!-- Upload de Imagem -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-4">Foto do Produto <span class="text-red-500">*</span></label>
+            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:bg-stone-50 transition-colors relative cursor-pointer group"
+                 [class.border-red-300]="!selectedFile && productForm.touched">
+
+              <input type="file" (change)="onFileSelected($event)" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+
+              <div class="space-y-1 text-center" *ngIf="!imagePreview">
+                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="flex text-sm text-gray-600 justify-center">
+                  <span class="relative bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none">Enviar um arquivo</span>
+                </div>
+                <p class="text-xs text-gray-500">PNG, JPG, GIF até 5MB</p>
+              </div>
+
+              <div *ngIf="imagePreview" class="relative w-full h-64">
+                <img [src]="imagePreview" class="w-full h-full object-contain rounded-lg">
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                  <span class="text-white font-medium">Trocar Imagem</span>
+                </div>
+              </div>
+            </div>
+            <!-- Mensagem de Erro da Imagem -->
+            <div *ngIf="!selectedFile" class="text-red-500 text-xs mt-2">
+              <span *ngIf="productForm.touched || productForm.dirty">A imagem é obrigatória.</span>
+            </div>
+          </div>
+
+          <!-- Dados do Produto -->
+          <div class="pt-8 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+
+            <div class="sm:col-span-4">
+              <label class="block text-sm font-medium text-gray-700">Nome da Peça <span class="text-red-500">*</span></label>
+              <div class="mt-1">
+                <input type="text" formControlName="name" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border">
+              </div>
+              <div *ngIf="productForm.get('name')?.invalid && (productForm.get('name')?.dirty || productForm.get('name')?.touched)" class="text-red-500 text-xs mt-1">
+                Mínimo 3 caracteres.
+              </div>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Categoria <span class="text-red-500">*</span></label>
+              <div class="mt-1">
+                <select formControlName="category" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border bg-white">
+                  <option value="" disabled>Selecione</option>
+                  <option *ngFor="let cat of categories" [value]="cat.value">{{ cat.label }}</option>
+                </select>
+              </div>
+              <div *ngIf="productForm.get('category')?.invalid && productForm.get('category')?.touched" class="text-red-500 text-xs mt-1">
+                Selecione uma categoria.
+              </div>
+            </div>
+
+            <div class="sm:col-span-6">
+              <label class="block text-sm font-medium text-gray-700">Descrição <span class="text-red-500">*</span></label>
+              <div class="mt-1">
+                <textarea formControlName="description" rows="4" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border"></textarea>
+              </div>
+              <div *ngIf="productForm.get('description')?.invalid && (productForm.get('description')?.dirty || productForm.get('description')?.touched)" class="text-red-500 text-xs mt-1">
+                Descreva a peça (mínimo 5 caracteres).
+              </div>
+            </div>
+
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">Preço (R$) <span class="text-red-500">*</span></label>
+              <div class="mt-1 relative rounded-md shadow-sm">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="text-gray-500 sm:text-sm">R$</span>
+                </div>
+                <input type="number" formControlName="price" min="0.01" step="0.01" class="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md p-3 border" placeholder="0.00">
+              </div>
+              <div *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched" class="text-red-500 text-xs mt-1">
+                Preço inválido (min 0.01).
+              </div>
+            </div>
+
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">Estoque <span class="text-red-500">*</span></label>
+              <div class="mt-1">
+                <input type="number" formControlName="stockQuantity" min="1" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border">
+              </div>
+              <div *ngIf="productForm.get('stockQuantity')?.invalid && productForm.get('stockQuantity')?.touched" class="text-red-500 text-xs mt-1">
+                Mínimo 1 unidade.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-8 flex flex-col items-end">
+          <div *ngIf="productForm.invalid || !selectedFile" class="text-xs text-gray-500 mb-2 mr-2">
+            Preencha todos os campos obrigatórios (*) e adicione uma foto.
+          </div>
+
+          <button type="submit" [disabled]="productForm.invalid || !selectedFile || isLoading"
+                  class="ml-3 inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5">
+            <span *ngIf="isLoading">Salvando...</span>
+            <span *ngIf="!isLoading">Publicar Produto</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

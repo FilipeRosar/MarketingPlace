@@ -23,7 +23,9 @@ namespace MarketplaceArtesanato.Core.Entities
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
 
+        [NotMapped]
         public Guid SellerId => Product.SellerId;
+        [NotMapped]
         public decimal Subtotal => UnitPrice * Quantity;
     }
 

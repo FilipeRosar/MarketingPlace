@@ -8,19 +8,23 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
 {
     public class CreateProductDto
     {
-        [Required, StringLength(100)] 
+        [Required]
         public string Name { get; set; } = string.Empty;
-        [StringLength(1000)] 
+
+        [Required]
         public string Description { get; set; } = string.Empty;
-        [Required] 
+
+        [Required]
         public decimal Price { get; set; }
+
         [Required]
         public int StockQuantity { get; set; }
+
+        [Required]
+        public ProductCategory Category { get; set; }
+
         [Required]
         public List<IFormFile> Images { get; set; } = new();
-        [Required] 
-        public ProductCategory Category { get; set; }
-        public ProductStatus Status { get; set; } = ProductStatus.Active;
     }
     public class UpdateProductDto
     {

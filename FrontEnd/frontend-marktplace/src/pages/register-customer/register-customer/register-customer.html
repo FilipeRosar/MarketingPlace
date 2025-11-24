@@ -1,0 +1,122 @@
+<div class="min-h-screen bg-surface flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="text-center cursor-pointer" routerLink="/">
+      <span class="text-4xl font-bold text-primary-dark tracking-tight">
+        Tra<span class="text-primary font-light">ma</span>.
+      </span>
+    </div>
+    <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+      Crie sua conta
+    </h2>
+    <p class="mt-2 text-center text-sm text-gray-600">
+      Já tem uma conta?
+      <a routerLink="/login" class="font-medium text-primary hover:text-primary-dark transition-colors">
+        Faça login
+      </a>
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
+    <div class="bg-white py-8 px-4 shadow-soft rounded-2xl sm:px-10 border border-stone-100">
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-4">
+
+        <!-- Seção: Dados Pessoais -->
+        <div>
+          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Dados Pessoais</h3>
+
+          <!-- Nome Completo -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Nome Completo</label>
+            <div class="mt-1">
+              <input type="text" formControlName="name" class="appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+            <div *ngIf="registerForm.get('name')?.touched && registerForm.get('name')?.invalid" class="text-red-500 text-xs mt-1">
+              Nome é obrigatório.
+            </div>
+          </div>
+
+          <!-- E-mail -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">E-mail</label>
+            <div class="mt-1">
+              <input type="email" formControlName="email" class="appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+          </div>
+
+          <!-- CPF e Telefone -->
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">CPF</label>
+              <input type="text" formControlName="cpf" placeholder="Apenas números" class="mt-1 appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Telefone</label>
+              <input type="tel" formControlName="phone" class="mt-1 appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+          </div>
+
+          <!-- Senha -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Senha</label>
+            <div class="mt-1">
+              <input type="password" formControlName="password" class="appearance-none block w-full px-3 py-3 border border-stone-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+            <div *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid" class="text-red-500 text-xs mt-1">
+              Mínimo 6 caracteres.
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção: Endereço (Novo, Obrigatório pelo Backend) -->
+        <div formGroupName="address" class="pt-4 border-t border-gray-100">
+          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Endereço de Entrega</h3>
+
+          <div class="grid grid-cols-6 gap-4">
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700">CEP</label>
+              <input type="text" formControlName="zipCode" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+            <div class="col-span-4">
+              <label class="block text-sm font-medium text-gray-700">Rua</label>
+              <input type="text" formControlName="street" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Número</label>
+              <input type="text" formControlName="number" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+            <div class="col-span-4">
+              <label class="block text-sm font-medium text-gray-700">Cidade</label>
+              <input type="text" formControlName="city" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+            <div class="col-span-3">
+              <label class="block text-sm font-medium text-gray-700">Estado</label>
+              <input type="text" formControlName="state" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensagem de Erro -->
+        <div *ngIf="errorMessage" class="rounded-md bg-red-50 p-4 mt-4">
+           <h3 class="text-sm font-medium text-red-800">{{ errorMessage }}</h3>
+        </div>
+
+        <!-- Botão -->
+        <div class="pt-6">
+          <button type="submit" [disabled]="registerForm.invalid || isLoading"
+                  class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5">
+            <span *ngIf="!isLoading">Criar Conta</span>
+            <span *ngIf="isLoading" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              Processando...
+            </span>
+          </button>
+        </div>
+      </form>
+
+      <p class="mt-6 text-xs text-center text-gray-500">
+        Ao se registrar, você concorda com nossos Termos de Uso e Política de Privacidade.
+      </p>
+    </div>
+  </div>
+</div>

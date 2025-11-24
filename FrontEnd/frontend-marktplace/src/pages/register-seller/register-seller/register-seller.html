@@ -1,0 +1,123 @@
+<div class="min-h-screen bg-surface flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="text-center cursor-pointer" routerLink="/">
+      <span class="text-4xl font-bold text-primary-dark tracking-tight">
+        Tra<span class="text-primary font-light">ma</span>.
+      </span>
+    </div>
+    <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+      Abra sua Loja
+    </h2>
+    <p class="mt-2 text-center text-sm text-gray-600">
+      Junte-se a milhares de artesãos e venda para todo o Brasil.
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
+    <div class="bg-white py-8 px-4 shadow-soft rounded-2xl sm:px-10 border border-stone-100">
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
+
+        <!-- Seção: Dados da Loja/Artesão -->
+        <div>
+          <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Dados da Loja</h3>
+
+          <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-6">
+
+            <!-- Nome -->
+            <div class="sm:col-span-6">
+              <label class="block text-sm font-medium text-gray-700">Nome da Loja ou Artesão</label>
+              <input type="text" formControlName="name" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+              <div *ngIf="registerForm.get('name')?.touched && registerForm.get('name')?.invalid" class="text-red-500 text-xs mt-1">Nome obrigatório.</div>
+            </div>
+
+            <!-- Email -->
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">E-mail Comercial</label>
+              <input type="email" formControlName="email" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <!-- Senha -->
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">Senha</label>
+              <input type="password" formControlName="password" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <!-- Documentos -->
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">CPF</label>
+              <input type="text" formControlName="cpf" placeholder="Apenas números" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">CNPJ (Opcional)</label>
+              <input type="text" formControlName="cnpj" placeholder="Apenas números" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <div class="sm:col-span-6">
+              <label class="block text-sm font-medium text-gray-700">Telefone / WhatsApp</label>
+              <input type="tel" formControlName="phone" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção: Endereço (Nested Form Group) -->
+        <div formGroupName="address">
+          <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4 pt-4">Endereço de Envio</h3>
+
+          <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-6">
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">CEP</label>
+              <input type="text" formControlName="zipCode" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <div class="sm:col-span-4">
+              <label class="block text-sm font-medium text-gray-700">Rua</label>
+              <input type="text" formControlName="street" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Número</label>
+              <input type="text" formControlName="number" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Cidade</label>
+              <input type="text" formControlName="city" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Estado</label>
+              <input type="text" formControlName="state" class="mt-1 block w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensagem de Erro -->
+        <div *ngIf="errorMessage" class="rounded-md bg-red-50 p-4 mt-4">
+           <div class="flex">
+             <div class="flex-shrink-0">
+               <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+             </div>
+             <div class="ml-3">
+               <h3 class="text-sm font-medium text-red-800">{{ errorMessage }}</h3>
+             </div>
+           </div>
+        </div>
+
+        <!-- Botão -->
+        <div class="pt-4">
+          <button type="submit" [disabled]="registerForm.invalid || isLoading"
+                  class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-base font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5">
+            <span *ngIf="!isLoading">Criar Minha Loja</span>
+            <span *ngIf="isLoading" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              Processando...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

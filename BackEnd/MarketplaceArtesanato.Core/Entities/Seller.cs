@@ -1,4 +1,5 @@
 ﻿
+using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Validators;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -7,7 +8,7 @@ namespace MarketplaceArtesanato.Core.Entities
 {
     [SellerDocument]
     [Table("Sellers")]
-    public class Seller
+    public class Seller : BaseEntity
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
@@ -28,11 +29,11 @@ namespace MarketplaceArtesanato.Core.Entities
         public string Document => CPF ?? CNPJ ?? throw new ValidationException("CPF ou CNPJ requerido");
         public Guid AddressId { get; set; }
         public Address Address { get; set; } = null!;
+        public UserRole Role { get; set; } = UserRole.Seller;
 
         public List<Product> Products { get; set; } = new();
         public List<Order> OrdersReceived { get; set; } = new();
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
 
