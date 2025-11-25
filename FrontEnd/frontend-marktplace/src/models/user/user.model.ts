@@ -2,7 +2,12 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: string; // e.g., 'buyer', 'seller', 'admin'
+  role: string;
+  profileImageUrl?: string;
+  phone?: string;
+  cpf?: string;
+  address?: any;
+
   createdAt: string;
   updatedAt: string;
 }

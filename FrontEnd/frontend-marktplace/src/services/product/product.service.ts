@@ -12,12 +12,25 @@ export class ProductService {
 
   constructor(private http: HttpClient) {}
 
-  getAllProducts(page: number = 1, pageSize: number = 10): Observable<Product[]> {
+  getAllProducts(
+    page: number = 1,
+    pageSize: number = 10,
+    search: string = '',
+    category: string = ''
+  ): Observable<any> {
+
     let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
 
-    return this.http.get<Product[]>(this.apiUrl, { params });
+    if (search) {
+      params = params.set('search', search);
+    }
+    if (category) {
+      params = params.set('category', category);
+    }
+
+    return this.http.get<any>(this.apiUrl, { params });
   }
 
   getProductById(id: string): Observable<Product> {

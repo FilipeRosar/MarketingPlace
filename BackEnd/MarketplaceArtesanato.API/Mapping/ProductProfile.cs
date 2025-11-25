@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace MarketplaceArtesanato.Services.Mapping
+namespace MarketplaceArtesanato.API.Mapping
 {
     public class ProductProfile : Profile
     {
@@ -17,6 +17,8 @@ namespace MarketplaceArtesanato.Services.Mapping
         {
             CreateMap<CreateProductDto, Product>()
                 .ForMember(dest => dest.Images, opt => opt.Ignore());
+
+            CreateMap<Address, AddressResponseDto>();
 
             CreateMap<UpdateProductDto, Product>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));

@@ -25,7 +25,6 @@ export class AuthService {
     this.loadUserFromStorage();
   }
 
-  // --- LOGIN ---
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap(response => {
@@ -37,8 +36,6 @@ export class AuthService {
   registerCustomer(data: RegisterCustomer): Observable<AuthResponse> {
     const payload = { ...data, role: 'Customer' };
 
-    // Nota: Certifique-se que no Backend a rota é 'register/customer' ou apenas 'register'
-    // No seu último código backend estava como 'register/customer', então vou manter assim:
     return this.http.post<AuthResponse>(`${this.apiUrl}/register/customer`, payload).pipe(
       tap(response => {
         this.handleAuthSuccess(response);
@@ -55,6 +52,12 @@ export class AuthService {
       })
     );
   }
+  updateCurrentUser(user: User) {
+    if (isPlatformBrowser(this.platformId)) {
+        localStorage.setItem('user', JSON.stringify(user));
+    }
+    this.currentUserSubject.next(user);
+  }
 
   logout() {
     if (isPlatformBrowser(this.platformId)) {
@@ -63,7 +66,6 @@ export class AuthService {
     }
     this.currentUserSubject.next(null);
   }
-
 
   private handleAuthSuccess(response: AuthResponse) {
     if (isPlatformBrowser(this.platformId)) {
@@ -89,7 +91,8 @@ export class AuthService {
       const userJson = localStorage.getItem('user');
       if (userJson) {
         try {
-          this.currentUserSubject.next(JSON.parse(userJson));
+          const user = JSON.parse(userJson);
+          this.currentUserSubject.next(user);
         } catch (e) {
           console.error('Erro ao ler usuário do storage', e);
           this.logout();

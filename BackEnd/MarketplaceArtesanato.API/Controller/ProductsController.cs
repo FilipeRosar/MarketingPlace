@@ -29,58 +29,64 @@ namespace MarketplaceArtesanato.API.Controllers
 
         // GET: api/products
         [HttpGet]
-        public async Task<ActionResult> GetProducts([FromQuery] string? search = null, [FromQuery] int? category = null, [FromQuery] decimal? minPrice = null, [FromQuery] decimal? maxPrice = null, [FromQuery] Guid? sellerId = null,  [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult> GetProducts(
+            [FromQuery] string? search = null,
+            [FromQuery] int? category = null,
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] Guid? sellerId = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            CancellationToken cancellationToken = default) 
         {
+            var query = _context.Products
+                .Include(p => p.Seller!)
+                    .ThenInclude(s => s.Address)
+                .Include(p => p.Ratings!)
+                    .ThenInclude(r => r.Customer)
+                .AsQueryable();
+
+            if (sellerId.HasValue)
             {
-                var query = _context.Products
-                    .Include(p => p.Seller!)
-                        .ThenInclude(s => s.Address)
-                    .Include(p => p.Ratings!)
-                        .ThenInclude(r => r.Customer)
-                    .AsQueryable();
-
-                if (sellerId.HasValue)
-                {
-                    query = query.Where(p => p.SellerId == sellerId.Value);
-                }
-
-                if (!string.IsNullOrWhiteSpace(search))
-                {
-                    var lowerSearch = search.Trim().ToLower();
-                    query = query.Where(p =>
-                        p.Name.ToLower().Contains(lowerSearch) ||
-                    (p.Description != null && p.Description.ToLower().Contains(lowerSearch)) ||
-                    p.Seller!.Name.ToLower().Contains(lowerSearch));
-                }
-
-                if (category.HasValue)
-                    query = query.Where(p => (int)p.Category == category.Value);
-
-                if (minPrice.HasValue)
-                    query = query.Where(p => p.Price >= minPrice.Value);
-
-                if (maxPrice.HasValue)
-                    query = query.Where(p => p.Price <= maxPrice.Value);
-
-                var total = await query.CountAsync();
-                var products = await query
-                    .OrderByDescending(p => p.CreatedAt)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                var dtos = _mapper.Map<List<ProductResponseDto>>(products);
-
-                return Ok(new
-                {
-                    data = dtos,
-                    total,
-                    page,
-                    pageSize,
-                    pages = (int)Math.Ceiling(total / (double)pageSize)
-                });
+                query = query.Where(p => p.SellerId == sellerId.Value);
             }
 
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var lowerSearch = search.Trim().ToLower();
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(lowerSearch) ||
+                (p.Description != null && p.Description.ToLower().Contains(lowerSearch)) ||
+                p.Seller!.Name.ToLower().Contains(lowerSearch));
+            }
+
+            if (category.HasValue)
+                query = query.Where(p => (int)p.Category == category.Value);
+
+            if (minPrice.HasValue)
+                query = query.Where(p => p.Price >= minPrice.Value);
+
+            if (maxPrice.HasValue)
+                query = query.Where(p => p.Price <= maxPrice.Value);
+
+            var total = await query.CountAsync(cancellationToken);
+
+            var products = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            var dtos = _mapper.Map<List<ProductResponseDto>>(products);
+
+            return Ok(new
+            {
+                data = dtos,
+                total,
+                page,
+                pageSize,
+                pages = (int)Math.Ceiling(total / (double)pageSize)
+            });
         }
 
         // GET: api/products/{id}
@@ -106,44 +112,53 @@ namespace MarketplaceArtesanato.API.Controllers
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProductResponseDto>> CreateProduct([FromForm] CreateProductDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            var sellerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(sellerIdClaim, out var sellerId))
-                return Unauthorized("Invalid token.");
-
-            var seller = await _context.Sellers.FindAsync(sellerId);
-            if (seller == null) return Unauthorized("Seller not found.");
-
-            if (dto.Images == null || !dto.Images.Any())
-                return BadRequest("At least one image is required.");
-
-            var imageUrls = new List<string>();
-            foreach (var file in dto.Images)
+            try
             {
-                if (file.Length > 0 && IsImage(file))
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                var sellerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!Guid.TryParse(sellerIdClaim, out var sellerId))
+                    return Unauthorized("Invalid token.");
+
+                var seller = await _context.Sellers.FindAsync(sellerId);
+                if (seller == null) return Unauthorized("Seller not found.");
+
+                if (dto.Images == null || !dto.Images.Any())
+                    return BadRequest("At least one image is required.");
+
+                var imageUrls = new List<string>();
+                foreach (var file in dto.Images)
                 {
-                    var url = await _storage.UploadFileAsync(file);
-                    imageUrls.Add(url);
+                    if (file.Length > 0 && IsImage(file))
+                    {
+                        var url = await _storage.UploadFileAsync(file);
+                        imageUrls.Add(url);
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid image file.");
+                    }
                 }
-                else
-                {
-                    return BadRequest("Invalid image file.");
-                }
+
+                var product = _mapper.Map<Product>(dto);
+                product.Id = Guid.NewGuid();
+                product.SellerId = sellerId;
+                product.Seller = seller;
+                product.Images = imageUrls;
+                product.CreatedAt = DateTime.UtcNow;
+
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+
+                var response = _mapper.Map<ProductResponseDto>(product);
+                return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, response);
             }
-
-            var product = _mapper.Map<Product>(dto);
-            product.Id = Guid.NewGuid();
-            product.SellerId = sellerId;
-            product.Seller = seller;
-            product.Images = imageUrls;
-            product.CreatedAt = DateTime.UtcNow;
-
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
-
-            var response = _mapper.Map<ProductResponseDto>(product);
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, response);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERRO CRÍTICO] Falha ao criar produto: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                return StatusCode(500, new { message = "Erro interno no servidor.", details = ex.Message });
+            }
         }
 
         // PUT: api/products/{id}

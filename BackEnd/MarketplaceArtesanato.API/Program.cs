@@ -3,7 +3,7 @@ using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
 using MarketplaceArtesanato.Infrastructure.Consumers;
 using MarketplaceArtesanato.Services;
-using MarketplaceArtesanato.Services.Mapping;
+using MarketplaceArtesanato.API.Mapping;
 using MarketplaceArtesanato.Services.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,6 +40,7 @@ builder.Services.AddScoped<IStorageService, BlobService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
 {

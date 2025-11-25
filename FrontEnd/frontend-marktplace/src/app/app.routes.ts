@@ -10,10 +10,12 @@ import { SellerProfileComponent } from '../pages/profile/sellerProfile/seller-pr
 import { OrdersComponent } from '../pages/order/order.component';
 import { AddProductComponent } from '../components/add-product/add-product.component';
 import { SellerDashboardComponent } from '../components/seller-dashboard/seller-dashboard.component';
+import { ProfileComponent } from '../pages/profile/profile/profile.component';
+import { ForgotPasswordComponent } from '../pages/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from '../pages/reset-password/reset-password.component';
 
 export const routes: Routes = [
-  // Públicas
-  { path: '', component: HomeComponent },
+   { path: '', component: HomeComponent },
   { path: 'products/:id', component: ProductDetailComponent },
   { path: 'sellers/:id', component: SellerProfileComponent },
 
@@ -21,16 +23,16 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterCustomerComponent },
   { path: 'register-seller', component: RegisterSellerComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
 
-  // Privadas (Cliente)
+  // Privadas
   { path: 'cart', component: CartComponent },
   { path: 'checkout', component: CheckoutComponent },
   { path: 'orders', component: OrdersComponent },
-
-  // Privadas (Vendedor)
+  { path: 'profile', component: ProfileComponent },
   { path: 'add-product', component: AddProductComponent },
   { path: 'seller-dashboard', component: SellerDashboardComponent },
 
-  // Fallback
   { path: '**', redirectTo: '' }
 ];

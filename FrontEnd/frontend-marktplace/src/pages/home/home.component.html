@@ -1,10 +1,12 @@
 <!-- 1. HERO SECTION: O Cartão de Visitas -->
 <div class="relative h-[85vh] min-h-[600px] w-full bg-stone-900 overflow-hidden flex items-center">
 
+  <!-- Imagem de Fundo com Parallax suave -->
   <div class="absolute inset-0 z-0">
     <img class="w-full h-full object-cover opacity-50 transform scale-105 animate-subtle-zoom"
          src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80"
          alt="Artesanato feito à mão">
+    <!-- Gradiente para garantir leitura do texto -->
     <div class="absolute inset-0 bg-gradient-to-r from-stone-900/95 via-stone-900/70 to-transparent"></div>
   </div>
 
@@ -31,7 +33,7 @@
         <a href="#produtos" class="inline-flex justify-center items-center px-8 py-4 border border-transparent text-base font-medium rounded-full text-white bg-primary hover:bg-primary-light transition-all duration-300 shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1">
           Explorar Coleção
         </a>
-        <a routerLink="/register-seller" class="inline-flex justify-center items-center px-8 py-4 border border-stone-600 text-base font-medium rounded-full text-stone-200 hover:bg-white/10 hover:border-white transition-all duration-300 backdrop-blur-sm">
+        <a routerLink="/register-seller" class="inline-flex justify-center items-center px-8 py-4 border border-stone-600 text-base font-medium rounded-full text-stone-200 hover:bg-white/10 hover:border-white transition-all duration-300 backdrop-blur-sm cursor-pointer">
           Seja um Vendedor
         </a>
       </div>
@@ -72,73 +74,96 @@
   </div>
 </section>
 
+<!-- 3. CATEGORIAS (Visual) -->
 <section class="py-20 bg-surface">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <h2 class="text-3xl font-bold text-gray-900 mb-10 text-center">Navegue por Categoria</h2>
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-      <a href="#" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all">
+      <!-- Card Categoria 1 -->
+      <a [routerLink]="['/']" [queryParams]="{category: '0'}" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all cursor-pointer">
         <img src="https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
-          <span class="text-white font-bold text-xl">Cerâmica</span>
+          <span class="text-white font-bold text-xl">Decoração</span>
         </div>
       </a>
-      <a href="#" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all">
+      <!-- Card Categoria 2 -->
+      <a [routerLink]="['/']" [queryParams]="{category: '2'}" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all cursor-pointer">
         <img src="https://images.unsplash.com/photo-1606293926075-69a00dbfde81?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
-          <span class="text-white font-bold text-xl">Têxteis</span>
+          <span class="text-white font-bold text-xl">Roupas</span>
         </div>
       </a>
-       <a href="#" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all">
+       <!-- Card Categoria 3 -->
+       <a [routerLink]="['/']" [queryParams]="{category: '3'}" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all cursor-pointer">
         <img src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
-          <span class="text-white font-bold text-xl">Madeira</span>
+          <span class="text-white font-bold text-xl">Arte</span>
         </div>
       </a>
-       <a href="#" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all">
+       <!-- Card Categoria 4 -->
+       <a [routerLink]="['/']" [queryParams]="{category: '6'}" class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all cursor-pointer">
         <img src="https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
-          <span class="text-white font-bold text-xl">Decoração</span>
+          <span class="text-white font-bold text-xl">Móveis</span>
         </div>
       </a>
     </div>
   </div>
 </section>
 
+<!-- 4. GRID DE PRODUTOS (Destaques e Resultados) -->
 <div id="produtos" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
   <div class="flex flex-col sm:flex-row justify-between items-end mb-12 gap-4">
     <div>
-      <span class="text-primary font-semibold tracking-wider text-sm uppercase">Novidades</span>
-      <h2 class="text-4xl font-bold text-gray-900 mt-2">Destaques da Semana</h2>
+      <span class="text-primary font-semibold tracking-wider text-sm uppercase">Loja</span>
+      <!-- Título Dinâmico (Destaques ou Busca) -->
+      <h2 class="text-4xl font-bold text-gray-900 mt-2">{{ pageTitle }}</h2>
     </div>
 
-    <a href="#" class="group flex items-center gap-2 text-stone-600 hover:text-primary font-medium transition-colors">
-      Ver coleção completa
-      <span class="group-hover:translate-x-1 transition-transform">→</span>
-    </a>
+    <!-- Botão de Limpar Filtros (Só aparece se estiver filtrando) -->
+    @if (pageTitle !== 'Destaques da Semana') {
+      <a routerLink="/" class="text-stone-500 hover:text-red-500 font-medium transition-colors cursor-pointer border border-stone-300 rounded-full px-4 py-2 hover:border-red-500">
+        Limpar Filtros &times;
+      </a>
+    } @else {
+      <a href="#" class="group flex items-center gap-2 text-stone-600 hover:text-primary font-medium transition-colors">
+        Ver coleção completa
+        <span class="group-hover:translate-x-1 transition-transform">→</span>
+      </a>
+    }
   </div>
 
+  <!-- Lógica de Loading e Lista -->
   <div class="min-h-[400px]">
     @if (isLoading) {
       <div class="flex justify-center items-center h-64">
         <app-loading-spinner></app-loading-spinner>
       </div>
     } @else {
+      <!-- Grid Responsivo: 1 coluna mobile, 2 tablet, 3 desktop médio, 4 desktop grande -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         @for (product of products; track product.id) {
           <app-product-card [product]="product"></app-product-card>
         }
       </div>
 
+      <!-- Estado Vazio (caso não tenha produtos) -->
       @if (products.length === 0) {
-        <div class="text-center py-20 bg-white rounded-2xl border border-stone-100">
-          <p class="text-stone-400 text-lg">Nenhum produto encontrado no momento.</p>
+        <div class="text-center py-20 bg-white rounded-2xl border border-stone-100 shadow-sm">
+          <div class="text-6xl mb-4">🔍</div>
+          <h3 class="text-xl font-medium text-gray-900">Nenhum produto encontrado.</h3>
+          <p class="text-gray-500 mt-2">Tente buscar por outro termo ou categoria.</p>
+          <div class="mt-6">
+            <a routerLink="/" class="text-primary hover:underline font-medium cursor-pointer">Voltar para a loja</a>
+          </div>
         </div>
       }
     }
   </div>
 </div>
 
+<!-- 5. NEWSLETTER SECTION -->
 <section class="bg-stone-900 py-24">
   <div class="max-w-7xl mx-auto px-4 text-center">
     <h2 class="text-3xl font-bold text-white mb-4">Junte-se à nossa comunidade</h2>
