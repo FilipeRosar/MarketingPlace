@@ -1,0 +1,8 @@
+{
+  "routes": {
+    "/MarketingPlace": {},
+    "/MarketingPlace/login": {},
+    "/MarketingPlace/register": {},
+    "/MarketingPlace/register-seller": {}
+  }
+}
