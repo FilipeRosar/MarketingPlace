@@ -1,0 +1,57 @@
+name: Deploy Frontend (Angular) to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 1. Configurar Node.js (necessário para NPM e Angular)
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm' # Habilita o cache do NPM
+          
+      # 2. Instalar dependências (dentro da pasta do frontend)
+      - name: Install Dependencies
+        run: npm install
+        working-directory: ./FrontEnd/frontend-marktplace/
+
+      # 3. Build do Angular (Compilar para Produção)
+      # Usamos a base-href e o output-path para funcionar no GitHub Pages
+      - name: Build Angular Application
+        run: npm run build -- --output-path=docs --base-href=/MarketingPlace/
+        working-directory: ./FrontEnd/frontend-marktplace/
+
+      # 4. Configurar GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        
+      # 5. Upload do Artefato (Apenas a pasta 'docs' gerada)
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # O caminho do build do Angular
+          path: 'FrontEnd/frontend-marktplace/docs' 
+          
+      # 6. Deploy
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
