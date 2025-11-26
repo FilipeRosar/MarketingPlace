@@ -19,6 +19,7 @@ export class SellerDashboardComponent implements OnInit {
   private productService = inject(ProductService);
   private authService = inject(AuthService);
   private destroyRef = inject(DestroyRef);
+  isDeleting = false;
 
   activeTab: 'overview' | 'products' | 'orders' = 'overview';
 
@@ -85,5 +86,28 @@ export class SellerDashboardComponent implements OnInit {
           this.isLoading = false;
         }
       });
+
+
+    }
+    onDelete(product: Product) {
+    const confirmation = window.confirm(`Tem certeza que deseja excluir "${product.name}"?`);
+
+    if (confirmation) {
+      this.isDeleting = true;
+      this.productService.deleteProduct(product.id).subscribe({
+        next: () => {
+          this.products = this.products.filter(p => p.id !== product.id);
+          alert('Produto excluído com sucesso!');
+          this.isDeleting = false;
+        },
+        error: (err) => {
+          console.error('Erro ao excluir:', err);
+          alert('Falha ao excluir produto.');
+          this.isDeleting = false;
+        }
+      });
+    }
   }
-}
+  }
+
+

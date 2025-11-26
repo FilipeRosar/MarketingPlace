@@ -16,19 +16,16 @@ export class ProductService {
     page: number = 1,
     pageSize: number = 10,
     search: string = '',
-    category: string = ''
+    category: string = '',
+    sellerId: string = ''
   ): Observable<any> {
-
     let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
 
-    if (search) {
-      params = params.set('search', search);
-    }
-    if (category) {
-      params = params.set('category', category);
-    }
+    if (search) params = params.set('search', search);
+    if (category) params = params.set('category', category);
+    if (sellerId) params = params.set('sellerId', sellerId);
 
     return this.http.get<any>(this.apiUrl, { params });
   }
@@ -39,5 +36,8 @@ export class ProductService {
 
   createProduct(productData: FormData): Observable<Product> {
     return this.http.post<Product>(this.apiUrl, productData);
+  }
+  deleteProduct(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

@@ -1,9 +1,10 @@
+using MarketplaceArtesanato.API.Mapping;
 using MarketplaceArtesanato.Application.Services;
 using MarketplaceArtesanato.Core.Interfaces;
+using MarketplaceArtesanato.Core.Settings;
 using MarketplaceArtesanato.Data.Data;
 using MarketplaceArtesanato.Infrastructure.Consumers;
 using MarketplaceArtesanato.Services;
-using MarketplaceArtesanato.API.Mapping;
 using MarketplaceArtesanato.Services.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -49,6 +50,7 @@ builder.Services.AddDbContext<ArtesianDbContext>(options =>
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddControllers();
+builder.Services.Configure<AzureBlobSettings>(builder.Configuration.GetSection("Storage:AzureBlob"));
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
