@@ -13,6 +13,8 @@ import { SellerDashboardComponent } from '../components/seller-dashboard/seller-
 import { ProfileComponent } from '../pages/profile/profile/profile.component';
 import { ForgotPasswordComponent } from '../pages/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from '../pages/reset-password/reset-password.component';
+import { AdminDashboardComponent } from '../pages/admin-dashboard/admin-dashboard.component';
+
 
 export const routes: Routes = [
    { path: '', component: HomeComponent },
@@ -25,6 +27,7 @@ export const routes: Routes = [
   { path: 'register-seller', component: RegisterSellerComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'admin', component: AdminDashboardComponent },
 
   // Privadas
   { path: 'cart', component: CartComponent },
@@ -33,6 +36,7 @@ export const routes: Routes = [
   { path: 'profile', component: ProfileComponent },
   { path: 'add-product', component: AddProductComponent },
   { path: 'seller-dashboard', component: SellerDashboardComponent },
+  { path: 'orders', component: OrdersComponent },
 
   { path: '**', redirectTo: '' }
 ];

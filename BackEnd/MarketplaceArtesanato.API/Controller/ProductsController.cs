@@ -37,7 +37,7 @@ namespace MarketplaceArtesanato.API.Controllers
             [FromQuery] Guid? sellerId = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
-            CancellationToken cancellationToken = default) 
+            CancellationToken cancellationToken = default)
         {
             var query = _context.Products
                 .Include(p => p.Seller!)
@@ -45,6 +45,8 @@ namespace MarketplaceArtesanato.API.Controllers
                 .Include(p => p.Ratings!)
                     .ThenInclude(r => r.Customer)
                 .AsQueryable();
+
+            query = query.Where(p => !p.IsDeleted);
 
             if (sellerId.HasValue)
             {
@@ -56,8 +58,8 @@ namespace MarketplaceArtesanato.API.Controllers
                 var lowerSearch = search.Trim().ToLower();
                 query = query.Where(p =>
                     p.Name.ToLower().Contains(lowerSearch) ||
-                (p.Description != null && p.Description.ToLower().Contains(lowerSearch)) ||
-                p.Seller!.Name.ToLower().Contains(lowerSearch));
+                    (p.Description != null && p.Description.ToLower().Contains(lowerSearch)) ||
+                    p.Seller!.Name.ToLower().Contains(lowerSearch));
             }
 
             if (category.HasValue)
@@ -108,7 +110,7 @@ namespace MarketplaceArtesanato.API.Controllers
 
         // POST: api/products
         [HttpPost]
-        [Authorize(Roles = "Seller")]
+        [Authorize(Roles = "Seller,Admin")] 
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProductResponseDto>> CreateProduct([FromForm] CreateProductDto dto)
         {
@@ -116,17 +118,21 @@ namespace MarketplaceArtesanato.API.Controllers
             {
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
-                var sellerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (!Guid.TryParse(sellerIdClaim, out var sellerId))
-                    return Unauthorized("Invalid token.");
+                var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                var seller = await _context.Sellers.FindAsync(sellerId);
-                if (seller == null) return Unauthorized("Seller not found.");
+                if (!Guid.TryParse(userIdString, out var userId))
+                    return Unauthorized("Token inválido ou ID do usuário não encontrado.");
+
+
+                var seller = await _context.Sellers.FindAsync(userId);
+                if (seller == null) return Unauthorized("Vendedor não encontrado. Se você é Admin, precisa ter um perfil de Vendedor também.");
 
                 if (dto.Images == null || !dto.Images.Any())
-                    return BadRequest("At least one image is required.");
+                    return BadRequest("Pelo menos uma imagem é obrigatória.");
 
                 var imageUrls = new List<string>();
+
                 foreach (var file in dto.Images)
                 {
                     if (file.Length > 0 && IsImage(file))
@@ -136,16 +142,17 @@ namespace MarketplaceArtesanato.API.Controllers
                     }
                     else
                     {
-                        return BadRequest("Invalid image file.");
+                        return BadRequest($"Arquivo inválido: {file.FileName}. Apenas imagens são permitidas.");
                     }
                 }
 
                 var product = _mapper.Map<Product>(dto);
                 product.Id = Guid.NewGuid();
-                product.SellerId = sellerId;
+                product.SellerId = userId;
                 product.Seller = seller;
                 product.Images = imageUrls;
                 product.CreatedAt = DateTime.UtcNow;
+                product.IsDeleted = false;
 
                 _context.Products.Add(product);
                 await _context.SaveChangesAsync();
@@ -156,14 +163,15 @@ namespace MarketplaceArtesanato.API.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERRO CRÍTICO] Falha ao criar produto: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
-                return StatusCode(500, new { message = "Erro interno no servidor.", details = ex.Message });
+                if (ex.InnerException != null) Console.WriteLine($"[INNER] {ex.InnerException.Message}");
+
+                return StatusCode(500, new { message = "Erro interno ao processar o produto.", details = ex.Message });
             }
         }
 
         // PUT: api/products/{id}
         [HttpPut("{id}")]
-        [Authorize(Roles = "Seller")]
+        [Authorize(Roles = "Seller,Admin")]
         public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] UpdateProductDto dto)
         {
             if (id != dto.Id) return BadRequest("ID mismatch.");
@@ -174,11 +182,14 @@ namespace MarketplaceArtesanato.API.Controllers
 
             if (product == null) return NotFound();
 
-            var sellerId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            if (product.SellerId != sellerId) return Forbid("You can only update your own products.");
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (product.SellerId != userId && role != "Admin")
+                return Forbid("Você não tem permissão para editar este produto.");
 
             _mapper.Map(dto, product);
-            product.CreatedAt = DateTime.UtcNow;
+            product.UpdatedAt = DateTime.UtcNow;
 
             try
             {
@@ -195,7 +206,7 @@ namespace MarketplaceArtesanato.API.Controllers
 
         // DELETE: api/products/{id}
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Seller")]
+        [Authorize(Roles = "Seller,Admin")] 
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
             var product = await _context.Products
@@ -204,16 +215,28 @@ namespace MarketplaceArtesanato.API.Controllers
 
             if (product == null) return NotFound();
 
-            var sellerId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            if (product.SellerId != sellerId) return Forbid("You can only delete your own products.");
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+
+            if (product.SellerId != userId && role != "Admin")
+                return Forbid("Você não tem permissão para excluir este produto.");
+
 
             foreach (var url in product.Images)
             {
-                var fileName = Path.GetFileName(new Uri(url).LocalPath);
-                await _storage.DeleteAsync(fileName);
+                try
+                {
+                    await _storage.DeleteAsync(url);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[AVISO] Falha ao deletar imagem do Azure: {ex.Message}");
+                }
             }
 
             _context.Products.Remove(product);
+
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -221,8 +244,15 @@ namespace MarketplaceArtesanato.API.Controllers
 
         private bool IsImage(IFormFile file)
         {
-            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            return new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" }.Contains(ext);
+            try
+            {
+                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                return new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp" }.Contains(ext);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private bool ProductExists(Guid id) => _context.Products.Any(e => e.Id == id);

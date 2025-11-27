@@ -42,6 +42,7 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IFavoritesService, FavoritesService>();
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
 {

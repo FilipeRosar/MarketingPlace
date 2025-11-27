@@ -44,25 +44,35 @@
         </div>
 
         <!-- Coluna Direita: Detalhes -->
-        <div class="product-info flex flex-col justify-center">
+        <div class="product-info flex flex-col justify-start">
 
           <!-- Info Vendedor -->
-          <div class="flex items-center mb-6">
+          <div class="flex items-center mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+               [routerLink]="['/sellers', product.sellerId]">
             <div class="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-primary font-bold mr-3">
-              {{ product.sellerName.charAt(0) }}
+              {{ product.sellerName.charAt(0).toUpperCase() }}
             </div>
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide">Vendido por</p>
-              <p class="text-sm font-semibold text-gray-900">{{ product.sellerName }}</p>
+              <p class="text-sm font-semibold text-gray-900 underline">{{ product.sellerName }}</p>
             </div>
           </div>
 
-          <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-4">
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-2">
             {{ product.name }}
           </h1>
 
+          <!-- Área de Avaliação (Estrelas e Contagem) -->
+          <div class="mb-6 flex items-center space-x-2">
+            <app-rating-stars
+              [rating]="product.averageRating"
+              [totalRatings]="product.totalRatings">
+            </app-rating-stars>
+            <span class="text-sm text-gray-500">({{ product.totalRatings }} avaliações)</span>
+          </div>
+
+          <!-- Preço -->
           <div class="mt-4 mb-8">
-            <h2 class="sr-only">Product information</h2>
             <p class="text-4xl font-bold text-primary tracking-tight">
               {{ product.price | currencyBr }}
             </p>
@@ -71,13 +81,8 @@
             </p>
           </div>
 
-          <!-- Descrição -->
-          <div class="prose prose-sm text-gray-500 mb-10 leading-relaxed">
-            <p>{{ product.description }}</p>
-          </div>
-
           <!-- Ações -->
-          <div class="flex flex-col sm:flex-row gap-4">
+          <div class="flex flex-col sm:flex-row gap-4 mb-10">
             <button (click)="addToCart()"
                     class="flex-1 bg-primary border border-transparent rounded-full py-4 px-8 flex items-center justify-center text-base font-bold text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-lg shadow-orange-500/30 transition-all transform hover:-translate-y-1">
               Adicionar ao Carrinho
@@ -87,43 +92,106 @@
               <span class="mr-2">♥</span> Salvar
             </button>
           </div>
-          <!-- Trecho dentro de product-detail.component.html -->
-<div class="flex items-center mb-6 cursor-pointer hover:opacity-80 transition-opacity"
-     [routerLink]="['/sellers', product.sellerId]"> <!-- Link Adicionado -->
-  <div class="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-primary font-bold mr-3">
-    {{ product.sellerName.charAt(0) }}
-  </div>
-  <div>
-    <p class="text-xs text-gray-500 uppercase tracking-wide">Vendido por</p>
-    <p class="text-sm font-semibold text-gray-900 underline">{{ product.sellerName }}</p>
-  </div>
-</div>
 
-Agora, ao clicar no nome do vendedor na página de um produto, o cliente será levado para a vitrine exclusiva dele! Lembre-se de reiniciar o Backend para pegar o novo Controller.
-          <!-- Garantias (Trust Signals) -->
-          <div class="mt-10 border-t border-gray-100 pt-8 grid grid-cols-2 gap-4">
-            <div class="flex items-center">
-              <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-sm text-gray-600">Devolução Grátis</span>
-            </div>
-            <div class="flex items-center">
-              <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              <span class="text-sm text-gray-600">Pagamento Seguro</span>
-            </div>
-            <div class="flex items-center">
-              <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <span class="text-sm text-gray-600">Envio para todo Brasil</span>
+          <!-- Descrição -->
+          <h3 class="text-lg font-bold text-gray-900 mb-3">Detalhes do Produto</h3>
+          <div class="prose prose-sm text-gray-500 leading-relaxed border-t border-stone-100 pt-4">
+            <p>{{ product.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO DE REVIEWS E COMENTÁRIOS -->
+      <section class="max-w-4xl mx-auto mt-16">
+        <h2 class="text-2xl font-bold text-gray-900 mb-8 border-b border-stone-200 pb-2">
+          Avaliações dos Clientes
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+
+          <!-- Coluna 1: Média e Resumo -->
+          <div class="md:col-span-1">
+            <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 text-center">
+              <p class="text-sm text-gray-500 mb-2">Nota Média</p>
+              <p class="text-6xl font-extrabold text-primary mb-4">
+                {{ product.averageRating | number:'1.1-1' }}
+              </p>
+              <app-rating-stars
+                [rating]="product.averageRating"
+                [totalRatings]="product.totalRatings">
+              </app-rating-stars>
+              <p class="text-sm text-gray-500 mt-2">Baseado em {{ product.totalRatings }} avaliações.</p>
             </div>
           </div>
 
+          <!-- Coluna 2 e 3: Formulário e Listagem -->
+          <div class="md:col-span-2 space-y-8">
+
+            <!-- Formulário de Nova Avaliação -->
+            @if (currentUser$ | async) {
+              <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Deixe sua Avaliação</h3>
+                <form [formGroup]="reviewForm" (ngSubmit)="submitReview()" class="space-y-4">
+
+                  <!-- Seleção de Estrelas -->
+                  <div class="flex items-center space-x-2">
+                    <p class="text-sm font-medium text-gray-700 mr-2">Sua Nota:</p>
+                    @for (star of [1, 2, 3, 4, 5]; track star) {
+                      <svg (click)="setRating(star)"
+                           class="w-6 h-6 transition-colors cursor-pointer"
+                           [ngClass]="star <= reviewForm.get('rating')?.value ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'"
+                           fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9.049 2.927c.3-.921 1.631-.921 1.932 0l1.243 3.824a1 1 0 00.95.691h4.026c.969 0 1.371 1.24.588 1.81l-3.266 2.372a1 1 0 00-.364 1.118l1.243 3.824c.3.921-.755 1.688-1.54 1.118l-3.266-2.372a1 1 0 00-1.176 0l-3.266 2.372c-.784.57-1.84-.197-1.54-1.118l1.243-3.824a1 1 0 00-.364-1.118L2.096 9.252c-.783-.57-.381-1.81.588-1.81h4.026a1 1 0 00.95-.691l1.243-3.824z" />
+                      </svg>
+                    }
+                    <span *ngIf="reviewForm.get('rating')?.invalid && reviewForm.get('rating')?.touched" class="text-red-500 text-xs ml-4">Mínimo 1 estrela.</span>
+                  </div>
+
+                  <!-- Comentário -->
+                  <div>
+                    <textarea formControlName="comment" rows="3" placeholder="O que você achou do produto?"
+                              class="w-full border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary p-3"></textarea>
+                    <div *ngIf="reviewForm.get('comment')?.invalid && reviewForm.get('comment')?.touched" class="text-red-500 text-xs mt-1">
+                      Comentário obrigatório (10-500 caracteres).
+                    </div>
+                  </div>
+
+                  <button type="submit" [disabled]="reviewForm.invalid || isSubmittingReview"
+                          class="px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-all disabled:opacity-50">
+                    Enviar Avaliação
+                  </button>
+                </form>
+              </div>
+            } @else {
+              <!-- Mensagem para deslogado -->
+              <div class="bg-stone-50 border border-stone-200 p-4 rounded-lg text-center">
+                <p class="text-sm text-gray-700">Faça <a routerLink="/login" class="text-primary font-medium hover:underline">login</a> para deixar sua avaliação sobre esta peça.</p>
+              </div>
+            }
+
+            <!-- Lista de Comentários -->
+            <div class="space-y-6">
+              @for (review of mockReviews; track $index) {
+                <div class="p-4 bg-white rounded-lg border border-stone-100 shadow-sm">
+                  <div class="flex justify-between items-start">
+                    <h4 class="font-bold text-gray-900">{{ review.name }}</h4>
+                    <p class="text-xs text-gray-500">{{ review.date }}</p>
+                  </div>
+                  <div class="mt-1 mb-3">
+                    <app-rating-stars
+                      [rating]="review.stars">
+                    </app-rating-stars>
+                  </div>
+                  <p class="text-sm text-gray-700">{{ review.comment }}</p>
+                </div>
+              }
+            </div>
+
+          </div>
         </div>
-      </div>
+
+      </section>
+
     </div>
   }
 </div>

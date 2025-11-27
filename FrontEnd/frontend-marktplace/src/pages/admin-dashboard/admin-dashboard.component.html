@@ -1,0 +1,81 @@
+<div class="min-h-screen bg-gray-100">
+  <!-- Header Admin -->
+  <div class="bg-stone-800 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-xl font-bold">Admin</span>
+        <span class="bg-red-600 text-xs px-2 py-1 rounded text-white uppercase font-bold">Acesso Restrito</span>
+      </div>
+      <div class="flex space-x-4">
+        <button (click)="setTab('stats')" [class.text-primary]="activeTab === 'stats'" class="hover:text-primary transition">Visão Geral</button>
+        <button (click)="setTab('sellers')" [class.text-primary]="activeTab === 'sellers'" class="hover:text-primary transition">Aprovações</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- TAB: ESTATÍSTICAS -->
+    @if (activeTab === 'stats' && stats) {
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-fade-in">
+        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-primary">
+          <p class="text-gray-500 text-sm">Vendas Totais</p>
+          <p class="text-2xl font-bold text-gray-800">{{ stats.totalSales | currencyBr }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+          <p class="text-gray-500 text-sm">Pedidos</p>
+          <p class="text-2xl font-bold text-gray-800">{{ stats.totalOrders }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+          <p class="text-gray-500 text-sm">Clientes</p>
+          <p class="text-2xl font-bold text-gray-800">{{ stats.totalUsers }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-orange-500">
+          <p class="text-gray-500 text-sm">Vendedores</p>
+          <p class="text-2xl font-bold text-gray-800">{{ stats.totalSellers }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- TAB: APROVAÇÕES -->
+    @if (activeTab === 'sellers') {
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden animate-fade-in">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 class="text-lg font-medium text-gray-900">Solicitações de Vendedores</h2>
+          <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">{{ pendingSellers.length }} pendentes</span>
+        </div>
+
+        @if (isLoading) {
+          <div class="p-8 text-center text-gray-500">Carregando...</div>
+        } @else if (pendingSellers.length === 0) {
+          <div class="p-12 text-center text-gray-400">
+            <p>Nenhuma solicitação pendente no momento.</p>
+          </div>
+        } @else {
+          <ul class="divide-y divide-gray-200">
+            @for (seller of pendingSellers; track seller.id) {
+              <li class="p-6 flex items-center justify-between hover:bg-gray-50">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-lg font-bold text-gray-900">{{ seller.name }}</h3>
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ seller.address }}</span>
+                  </div>
+                  <p class="text-sm text-gray-600">{{ seller.email }} • CPF/CNPJ: {{ seller.cnpj || seller.cpf }}</p>
+                  <p class="text-xs text-gray-400 mt-1">Solicitado em: {{ seller.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                </div>
+                <div class="flex gap-3">
+                  <button (click)="onReject(seller)" class="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors">
+                    Recusar
+                  </button>
+                  <button (click)="onApprove(seller)" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors shadow-sm">
+                    Aprovar Acesso
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -8,6 +8,7 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
 {
     public class CartDto
     {
+        public Guid Id { get; set; }
         public Guid CustomerId { get; set; }
         public List<CartItemDto> Items { get; set; } = new();
         public int TotalItems => Items.Sum(i => i.Quantity);

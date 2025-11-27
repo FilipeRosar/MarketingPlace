@@ -4,22 +4,15 @@ using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using System.Text.Json;
 using StackExchange.Redis;
-using RedisDatabase = StackExchange.Redis.IDatabase;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace MarketplaceArtesanato.Services.Services
 {
     public class CartService : ICartService
     {
         private readonly ArtesianDbContext _context;
-        private readonly RedisDatabase _redis;
+        private readonly IDatabase _redis;
         private readonly IMapper _mapper;
         private const string CartKeyPrefix = "cart:";
 
@@ -40,12 +33,17 @@ namespace MarketplaceArtesanato.Services.Services
             var redisValue = await _redis.StringGetAsync(key);
             if (redisValue.HasValue)
             {
-                var cached = JsonSerializer.Deserialize<CartDto>(redisValue!);
-                if (cached != null) return await EnrichWithProductData(cached);
+                var cachedCart = JsonSerializer.Deserialize<CartDto>(redisValue!);
+                if (cachedCart != null)
+                {
+                    return await EnrichWithProductData(cachedCart);
+                }
             }
 
             var dbCart = await GetCartFromDbAsync(customerId);
+
             await SyncRedisAsync(customerId, dbCart);
+
             return dbCart;
         }
 
@@ -71,14 +69,13 @@ namespace MarketplaceArtesanato.Services.Services
                     ProductImage = product.Images.FirstOrDefault(),
                     Price = product.Price,
                     Quantity = quantity,
-                    SellerId = product.SellerId
                 });
             }
             else
             {
                 item.Quantity += quantity;
                 if (item.Quantity > product.StockQuantity)
-                    throw new InvalidOperationException("Quantidade excede estoque disponível");
+                    throw new InvalidOperationException("Quantidade total excede estoque disponível");
             }
 
             await SaveCartAsync(customerId, cart);
@@ -92,8 +89,9 @@ namespace MarketplaceArtesanato.Services.Services
             var item = cart.Items.FirstOrDefault(i => i.ProductId == productId)
                 ?? throw new KeyNotFoundException("Item não está no carrinho");
 
+            // Valida estoque novamente
             var product = await _context.Products.FindAsync(productId);
-            if (product == null || product.StockQuantity < quantity)
+            if (product != null && product.StockQuantity < quantity)
                 throw new InvalidOperationException("Estoque insuficiente");
 
             item.Quantity = quantity;
@@ -104,14 +102,20 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var cart = await GetCartAsync(customerId);
             var removed = cart.Items.RemoveAll(i => i.ProductId == productId) > 0;
-            if (removed) await SaveCartAsync(customerId, cart);
+
+            if (removed)
+            {
+                await SaveCartAsync(customerId, cart);
+            }
         }
 
         public async Task ClearCartAsync(Guid customerId)
         {
+            // Limpa Redis
             var key = $"{CartKeyPrefix}{customerId}";
             await _redis.KeyDeleteAsync(key);
 
+            // Limpa Banco
             var dbCart = await _context.Carts
                 .Include(c => c.Items)
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
@@ -124,29 +128,31 @@ namespace MarketplaceArtesanato.Services.Services
             }
         }
 
-        // --- Métodos Privados ---
+        // --- Métodos Auxiliares ---
 
         private async Task<CartDto> GetCartFromDbAsync(Guid customerId)
         {
             var dbCart = await _context.Carts
                 .Include(c => c.Items)
-                .ThenInclude(i => i.Product)
-                .ThenInclude(p => p.Seller)
+                .ThenInclude(i => i.Product) 
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
 
-            if (dbCart == null) return new CartDto { CustomerId = customerId, Items = new() };
+            if (dbCart == null)
+            {
+                return new CartDto { CustomerId = customerId, Items = new() };
+            }
 
             var dto = new CartDto
             {
-                CustomerId = customerId,
+                Id = dbCart.Id,
+                CustomerId = dbCart.CustomerId,
                 Items = dbCart.Items.Select(i => new CartItemDto
                 {
                     ProductId = i.ProductId,
                     ProductName = i.Product.Name,
                     ProductImage = i.Product.Images.FirstOrDefault(),
                     Price = i.Product.Price,
-                    Quantity = i.Quantity,
-                    SellerId = i.Product.SellerId
+                    Quantity = i.Quantity
                 }).ToList()
             };
 
@@ -155,12 +161,8 @@ namespace MarketplaceArtesanato.Services.Services
 
         private async Task SaveCartAsync(Guid customerId, CartDto cart)
         {
-            // Salva no Redis
-            var key = $"{CartKeyPrefix}{customerId}";
-            var json = JsonSerializer.Serialize(cart);
-            await _redis.StringSetAsync(key, json, TimeSpan.FromHours(24));
+            await SyncRedisAsync(customerId, cart);
 
-            // Salva no banco (fallback)
             var dbCart = await _context.Carts
                 .Include(c => c.Items)
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
@@ -172,6 +174,7 @@ namespace MarketplaceArtesanato.Services.Services
             }
             else
             {
+
                 _context.CartItems.RemoveRange(dbCart.Items);
             }
 
@@ -188,23 +191,19 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var key = $"{CartKeyPrefix}{customerId}";
             var json = JsonSerializer.Serialize(cart);
-            await _redis.StringSetAsync(key, json, TimeSpan.FromHours(24));
+            await _redis.StringSetAsync(key, json, TimeSpan.FromHours(24)); // Expira em 24h
         }
 
         private async Task<CartDto> EnrichWithProductData(CartDto cart)
         {
             foreach (var item in cart.Items)
             {
-                var product = await _context.Products
-                    .Include(p => p.Seller)
-                    .FirstOrDefaultAsync(p => p.Id == item.ProductId);
-
+                var product = await _context.Products.FindAsync(item.ProductId);
                 if (product != null)
                 {
                     item.ProductName = product.Name;
-                    item.ProductImage = product.Images.FirstOrDefault();
                     item.Price = product.Price;
-                    item.SellerId = product.SellerId;
+                    item.ProductImage = product.Images.FirstOrDefault();
                 }
             }
             return cart;

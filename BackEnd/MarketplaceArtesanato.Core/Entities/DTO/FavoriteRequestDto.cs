@@ -7,16 +7,9 @@ using System.Threading.Tasks;
 
 namespace MarketplaceArtesanato.Core.Entities.DTO
 {
-    public class CreateRatingDto
+    public class FavoriteRequestDto
     {
         [Required]
         public Guid ProductId { get; set; }
-
-        [Required]
-        [Range(1, 5)]
-        public int Stars { get; set; }
-
-        [MaxLength(500)]
-        public string? Review { get; set; }
     }
 }

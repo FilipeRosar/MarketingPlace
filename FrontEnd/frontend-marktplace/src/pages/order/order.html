@@ -1,1 +1,75 @@
-<p>order works!</p>
+<div class="min-h-screen bg-surface py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Meus Pedidos</h1>
+
+    @if (isLoading) {
+      <app-loading-spinner></app-loading-spinner>
+    } @else if (errorMessage) {
+      <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-center">
+        {{ errorMessage }}
+      </div>
+    } @else if (orders.length === 0) {
+      <div class="text-center py-20 bg-white rounded-2xl shadow-soft border border-stone-100">
+        <div class="text-6xl mb-4">📦</div>
+        <h2 class="text-xl font-medium text-gray-900 mb-2">Você ainda não fez nenhum pedido.</h2>
+        <p class="text-gray-500 mb-8">Que tal explorar nossa coleção de artesanatos únicos?</p>
+        <a routerLink="/" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-primary hover:bg-primary-dark transition-colors">
+          Começar a Comprar
+        </a>
+      </div>
+    } @else {
+      <div class="space-y-6">
+        @for (order of orders; track order.id) {
+          <div class="bg-white shadow-sm rounded-lg border border-stone-200 overflow-hidden">
+            <!-- Cabeçalho do Pedido -->
+            <div class="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p class="text-sm text-gray-500">Data do Pedido</p>
+                <p class="font-medium text-gray-900">{{ order.createdAt | date:'dd/MM/yyyy' }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">Total</p>
+                <p class="font-medium text-gray-900">{{ order.totalAmount | currencyBr }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">Status</p>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="getStatusInfo(order.status).classes">
+                  {{ getStatusInfo(order.status).label }}
+                </span>
+              </div>
+              <div class="sm:text-right">
+                <p class="text-xs text-gray-400">#{{ order.id.slice(0, 8) }}</p>
+              </div>
+            </div>
+
+            <!-- Lista de Itens -->
+            <div class="px-6 py-4">
+              <ul class="divide-y divide-stone-100">
+                @for (item of order.items; track item.id) {
+                  <li class="py-4 flex items-center">
+                    <!-- Se tiver imagem, mostra. Senão, placeholder -->
+                    <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-stone-200 bg-stone-100">
+                      @if (item.productImage) {
+                        <img [src]="item.productImage" [alt]="item.productName" class="h-full w-full object-cover object-center">
+                      } @else {
+                         <div class="h-full w-full flex items-center justify-center text-stone-400 text-xs">Sem foto</div>
+                      }
+                    </div>
+                    <div class="ml-4 flex-1">
+                      <div class="flex justify-between text-base font-medium text-gray-900">
+                        <h3>{{ item.productName }}</h3>
+                        <p class="ml-4">{{ item.unitPrice | currencyBr }}</p>
+                      </div>
+                      <p class="mt-1 text-sm text-gray-500">Qtd: {{ item.quantity }}</p>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

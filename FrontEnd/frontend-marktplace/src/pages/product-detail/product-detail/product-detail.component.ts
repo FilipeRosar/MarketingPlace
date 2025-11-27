@@ -1,16 +1,20 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { Component, OnInit, inject, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, Location, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProductService } from '../../../services/product/product.service';
 import { CartService } from '../../../services/cart/cart.service';
+import { AuthService } from '../../../services/auth/auth.service';
 import { Product } from '../../../models/product/product.model';
 import { CurrencyBrPipe } from '../../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../../components/loading-spinner.component/loading-spinner.component';
+import { RatingStarsComponent } from '../../../components/rating-stars/rating-stars.component';
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, CurrencyBrPipe, LoadingSpinnerComponent],
+  imports: [CommonModule, RouterLink, CurrencyBrPipe, LoadingSpinnerComponent, RatingStarsComponent, ReactiveFormsModule],
+  providers: [DecimalPipe],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.css'
 })
@@ -18,10 +22,29 @@ export class ProductDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private productService = inject(ProductService);
   private cartService = inject(CartService);
+  private authService = inject(AuthService);
   private location = inject(Location);
+  private fb = inject(FormBuilder);
+
   product: Product | null = null;
   isLoading = true;
   error: string | null = null;
+  currentUser$ = this.authService.currentUser$;
+
+  reviewForm: FormGroup;
+  isSubmittingReview = false;
+
+  mockReviews = [
+    { name: 'Maria Souza', date: '22/11/2025', stars: 5, comment: 'Peça linda, superou minhas expectativas! Chegou bem embalado.' },
+    { name: 'João Carlos', date: '15/11/2025', stars: 4.5, comment: 'Ótimo trabalho, mas o prazo de entrega foi um pouco longo.' },
+  ];
+
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    this.reviewForm = this.fb.group({
+      rating: [0, [Validators.required, Validators.min(1), Validators.max(5)]],
+      comment: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]]
+    });
+  }
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -38,7 +61,10 @@ export class ProductDetailComponent implements OnInit {
       next: (data) => {
         this.product = data;
         this.isLoading = false;
-        window.scrollTo(0, 0);
+
+        if (isPlatformBrowser(this.platformId)) {
+            window.scrollTo(0, 0);
+        }
       },
       error: (err) => {
         console.error('Erro ao carregar produto:', err);
@@ -51,7 +77,28 @@ export class ProductDetailComponent implements OnInit {
   addToCart() {
     if (this.product) {
       this.cartService.addToCart(this.product);
-      alert('Produto adicionado ao carrinho! (Implementar Toast aqui)');
+      alert('Produto adicionado ao carrinho!');
+    }
+  }
+
+  submitReview() {
+    if (this.reviewForm.invalid) {
+      this.reviewForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmittingReview = true;
+
+    setTimeout(() => {
+      this.isSubmittingReview = false;
+      alert('Sua avaliação foi enviada com sucesso! Obrigado pelo feedback.');
+      this.reviewForm.reset({ rating: 0, comment: '' });
+    }, 1500);
+  }
+
+  setRating(star: number) {
+    if (!this.reviewForm.disabled) {
+      this.reviewForm.get('rating')?.setValue(star);
     }
   }
 

@@ -21,6 +21,7 @@ public class ArtesianDbContext : DbContext
     public DbSet<Address> Addresses => Set<Address>();
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<UserFavorite> UserFavorites => Set<UserFavorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

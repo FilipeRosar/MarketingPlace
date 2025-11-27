@@ -12,14 +12,11 @@
       <!-- 2. Barra de Busca (Desktop) -->
       <div class="hidden md:flex flex-1 max-w-lg mx-8">
         <div class="relative w-full">
-          <!-- Botão da Lupa (Clicável) -->
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-primary transition-colors" (click)="onSearch()">
             <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
           </div>
-
-          <!-- Input de Busca -->
           <input type="text"
                  [(ngModel)]="searchTerm"
                  (keyup.enter)="onSearch()"
@@ -40,7 +37,6 @@
             </svg>
           </button>
 
-          <!-- Menu Flutuante -->
           <div class="absolute left-0 mt-0 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
             <div class="rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden bg-white mt-2">
               <div class="py-1 grid grid-cols-1">
@@ -58,7 +54,7 @@
 
         <!-- Botão Vender (Desktop) -->
         @if (currentUser$ | async; as user) {
-          @if (user.role === 'Seller') {
+          @if (user.role === 'Seller' || user.role === 'Admin') {
             <a routerLink="/add-product" class="text-gray-600 hover:text-primary font-medium transition-colors cursor-pointer">Vender</a>
           } @else {
             <a routerLink="/register-seller" class="text-gray-600 hover:text-primary font-medium transition-colors cursor-pointer">Vender</a>
@@ -67,6 +63,7 @@
           <a routerLink="/register-seller" class="text-gray-600 hover:text-primary font-medium transition-colors cursor-pointer">Vender</a>
         }
 
+        <!-- Carrinho (Desktop) -->
         @if (currentUser$ | async) {
           <a routerLink="/cart"
              class="relative p-2 text-gray-500 hover:text-primary transition-colors group cursor-pointer"
@@ -88,9 +85,15 @@
           </a>
         }
 
+        <!-- LÓGICA DE LOGIN / PERFIL (Desktop) -->
         @if (currentUser$ | async; as user) {
           <div class="relative group">
-            <button class="h-9 w-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm hover:ring-2 hover:ring-offset-2 hover:ring-primary transition-all shadow-sm cursor-pointer overflow-hidden">
+            <button class="h-9 w-9 rounded-full flex items-center justify-center font-bold text-sm hover:ring-2 hover:ring-offset-2 transition-all shadow-sm cursor-pointer overflow-hidden"
+                    [class.bg-red-600]="user.role === 'Admin'"
+                    [class.bg-primary]="user.role !== 'Admin'"
+                    [class.text-white]="true"
+                    [class.hover:ring-red-600]="user.role === 'Admin'"
+                    [class.hover:ring-primary]="user.role !== 'Admin'">
               @if (user.profileImageUrl) {
                 <img [src]="user.profileImageUrl" alt="Profile" class="w-full h-full object-cover">
               } @else {
@@ -98,18 +101,29 @@
               }
             </button>
 
+            <!-- Dropdown -->
             <div class="absolute right-0 mt-0 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
               <div class="rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden bg-white mt-2 py-1">
                 <div class="px-4 py-2 border-b border-stone-100">
                   <p class="text-xs text-gray-500">Olá,</p>
                   <p class="text-sm font-bold text-gray-900 truncate">{{ user.name }}</p>
+                  @if (user.role === 'Admin') {
+                    <span class="text-xs font-bold text-red-600 uppercase">Administrador</span>
+                  }
                 </div>
 
-                @if (user.role === 'Seller') {
+                <!-- Link Perfil Inteligente -->
+                @if (user.role === 'Admin') {
+                  <a routerLink="/admin" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer font-bold">Painel Admin</a>
+                  <a routerLink="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Meu Perfil</a>
+                } @else if (user.role === 'Seller') {
                   <a [routerLink]="['/sellers', user.id]" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Minha Loja (Perfil)</a>
                 } @else {
                   <a routerLink="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Meu Perfil</a>
                 }
+
+                <!-- LINK MEUS PEDIDOS (Adicionado aqui) -->
+                <a routerLink="/orders" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Meus Pedidos</a>
 
                 <button (click)="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
                   Sair
@@ -125,6 +139,7 @@
         }
       </div>
 
+      <!-- 4. Botão Menu Mobile -->
       <div class="flex md:hidden items-center space-x-4">
         @if (currentUser$ | async) {
           <a routerLink="/cart" class="relative p-2 text-gray-500 hover:text-primary transition-colors cursor-pointer">
@@ -151,13 +166,16 @@
     </div>
   </div>
 
+  <!-- 5. Menu Mobile (Sanfona) -->
   @if (isMobileMenuOpen) {
     <div class="md:hidden bg-white border-t border-stone-100 max-h-[calc(100vh-4rem)] overflow-y-auto shadow-xl animate-fade-in-up">
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
 
         @if (currentUser$ | async; as user) {
           <div class="px-3 py-4 mb-2 bg-orange-50/50 rounded-lg flex items-center space-x-3">
-            <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold overflow-hidden">
+            <div class="h-10 w-10 rounded-full text-white flex items-center justify-center font-bold overflow-hidden"
+                 [class.bg-red-600]="user.role === 'Admin'"
+                 [class.bg-primary]="user.role !== 'Admin'">
               @if (user.profileImageUrl) {
                 <img [src]="user.profileImageUrl" alt="Profile" class="w-full h-full object-cover">
               } @else {
@@ -167,6 +185,9 @@
             <div>
               <p class="text-sm font-medium text-gray-900">Olá, {{ user.name }}</p>
               <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
+              @if (user.role === 'Admin') {
+                 <p class="text-xs text-red-600 font-bold">ADMIN</p>
+              }
             </div>
           </div>
         }
@@ -201,7 +222,7 @@
         </div>
 
         @if (currentUser$ | async; as user) {
-          @if (user.role === 'Seller') {
+          @if (user.role === 'Seller' || user.role === 'Admin') {
             <a routerLink="/add-product" (click)="closeMenus()" class="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50 cursor-pointer">Vender (Adicionar Produto)</a>
           } @else {
             <a routerLink="/register-seller" (click)="closeMenus()" class="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50 cursor-pointer">Seja um Vendedor</a>
@@ -212,11 +233,17 @@
 
         <div class="border-t border-stone-100 mt-4 pt-4">
           @if (currentUser$ | async; as user) {
-            @if (user.role === 'Seller') {
+            @if (user.role === 'Admin') {
+                <a routerLink="/admin" (click)="closeMenus()" class="block px-3 py-3 text-base font-bold text-red-600 hover:bg-red-50 cursor-pointer">Painel Admin</a>
+                <a routerLink="/profile" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Meu Perfil</a>
+            } @else if (user.role === 'Seller') {
               <a [routerLink]="['/sellers', user.id]" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Minha Loja (Perfil)</a>
             } @else {
               <a routerLink="/profile" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Meu Perfil</a>
             }
+
+            <a routerLink="/orders" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Meus Pedidos</a>
+
             <button (click)="logout()" class="block w-full text-left px-3 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-md cursor-pointer">Sair da conta</button>
           } @else {
             <a routerLink="/login" (click)="closeMenus()" class="block px-3 py-3 text-base font-medium text-primary hover:bg-orange-50 rounded-md cursor-pointer">Entrar na conta</a>
