@@ -22,11 +22,7 @@ namespace MarketplaceArtesanato.API.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null) return Unauthorized();
 
-            // Simulação: Chamada ao serviço para buscar lista de IDs de produtos favoritos
-            // var favoriteIds = await _favoritesService.GetFavoriteProductIdsAsync(Guid.Parse(userId));
-
-            // Retorna a lista de IDs de produtos que o usuário favoritou
-            return Ok(new List<Guid>()); // Retorna lista vazia por enquanto
+            return Ok(new List<Guid>()); 
         }
 
         [HttpPost("add")]
@@ -34,9 +30,6 @@ namespace MarketplaceArtesanato.API.Controllers
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null) return Unauthorized();
-
-            // Lógica de serviço: Verifica se já existe, salva no banco.
-            // await _favoritesService.AddToFavoritesAsync(Guid.Parse(userId), dto.ProductId);
 
             return Ok(new { message = "Produto adicionado aos favoritos." });
         }
@@ -47,10 +40,8 @@ namespace MarketplaceArtesanato.API.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null) return Unauthorized();
 
-            // Lógica de serviço: Remove a entrada no banco
-            // await _favoritesService.RemoveFromFavoritesAsync(Guid.Parse(userId), productId);
 
-            return NoContent(); // 204 Sucesso sem conteúdo
+            return NoContent(); 
         }
     }
 }

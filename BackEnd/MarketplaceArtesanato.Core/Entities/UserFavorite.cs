@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 namespace MarketplaceArtesanato.Core.Entities
 {
     [Table("UserFavorites")]
-    [PrimaryKey(nameof(UserId), nameof(ProductId))] // Chave composta
+    [PrimaryKey(nameof(UserId), nameof(ProductId))] 
     public class UserFavorite : BaseEntity
     {
         public Guid UserId { get; set; }
-        public Customer? User { get; set; } // Navegação opcional para Customer ou Seller
+        public Customer? User { get; set; } 
 
         public Guid ProductId { get; set; }
         public Product Product { get; set; } = null!;
