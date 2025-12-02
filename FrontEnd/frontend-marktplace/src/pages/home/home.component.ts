@@ -5,6 +5,8 @@ import { ProductService } from '../../services/product/product.service';
 import { Product } from '../../models/product/product.model';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
+import { SeoService } from '../../services/SEO/seo.service';
+
 
 @Component({
   selector: 'app-home',
@@ -16,6 +18,7 @@ import { LoadingSpinnerComponent } from '../../components/loading-spinner.compon
 export class HomeComponent implements OnInit {
   private productService = inject(ProductService);
   private route = inject(ActivatedRoute);
+  private seoService = inject(SeoService);
 
   products: Product[] = [];
   isLoading = true;
@@ -31,6 +34,11 @@ export class HomeComponent implements OnInit {
   currentCategory = '';
 
   ngOnInit() {
+    this.seoService.updateSeoData({
+      title: 'Artesanato Feito à Mão',
+      description: 'Descubra peças únicas de artesanato brasileiro no Trama. Explore nossa seleção de produtos feitos à mão por talentosos artesãos de todo o Brasil.',
+      slug: '/'
+    });
     this.route.queryParams.subscribe(params => {
       this.currentSearch = params['search'] || '';
       this.currentCategory = params['category'] || '';

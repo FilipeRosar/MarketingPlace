@@ -1,7 +1,7 @@
 ﻿using Azure.Storage.Blobs;
 using MarketplaceArtesanato.Core.Interfaces;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options; 
+using Microsoft.Extensions.Options;
 using MarketplaceArtesanato.Core.Settings; 
 using System;
 using System.IO;
@@ -15,13 +15,23 @@ namespace MarketplaceArtesanato.Services.Services
 
         public BlobService(IOptions<AzureBlobSettings> settings)
         {
+
             var blobSettings = settings.Value;
 
             var connectionString = blobSettings.ConnectionString;
             var containerName = blobSettings.ContainerName;
 
             if (string.IsNullOrEmpty(connectionString))
-                throw new ArgumentNullException(nameof(connectionString), "A ConnectionString não foi encontrada em 'Storage:AzureBlob:ConnectionString'.");
+            {
+                throw new ArgumentNullException(nameof(connectionString),
+                    "A ConnectionString do Azure Blob está vazia. Verifique se o valor está preenchido no appsettings.Development.json.");
+            }
+
+            if (string.IsNullOrEmpty(containerName))
+            {
+                throw new ArgumentNullException(nameof(containerName),
+                   "O ContainerName do Azure Blob está vazio.");
+            }
 
             _blobContainer = new BlobContainerClient(connectionString, containerName);
 
@@ -31,8 +41,7 @@ namespace MarketplaceArtesanato.Services.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AVISO AZURE] Falha ao criar container publicamente. Verifique permissões: {ex.Message}");
-                _blobContainer.CreateIfNotExists(Azure.Storage.Blobs.Models.PublicAccessType.None);
+                Console.WriteLine($"[AVISO AZURE] Falha ao criar container (pode ser permissão ou emulação): {ex.Message}");
             }
         }
 

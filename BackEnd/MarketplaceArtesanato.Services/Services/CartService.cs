@@ -89,7 +89,6 @@ namespace MarketplaceArtesanato.Services.Services
             var item = cart.Items.FirstOrDefault(i => i.ProductId == productId)
                 ?? throw new KeyNotFoundException("Item não está no carrinho");
 
-            // Valida estoque novamente
             var product = await _context.Products.FindAsync(productId);
             if (product != null && product.StockQuantity < quantity)
                 throw new InvalidOperationException("Estoque insuficiente");
@@ -111,11 +110,9 @@ namespace MarketplaceArtesanato.Services.Services
 
         public async Task ClearCartAsync(Guid customerId)
         {
-            // Limpa Redis
             var key = $"{CartKeyPrefix}{customerId}";
             await _redis.KeyDeleteAsync(key);
 
-            // Limpa Banco
             var dbCart = await _context.Carts
                 .Include(c => c.Items)
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
@@ -128,13 +125,12 @@ namespace MarketplaceArtesanato.Services.Services
             }
         }
 
-        // --- Métodos Auxiliares ---
 
         private async Task<CartDto> GetCartFromDbAsync(Guid customerId)
         {
             var dbCart = await _context.Carts
                 .Include(c => c.Items)
-                .ThenInclude(i => i.Product) 
+                .ThenInclude(i => i.Product)
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
 
             if (dbCart == null)
@@ -174,10 +170,12 @@ namespace MarketplaceArtesanato.Services.Services
             }
             else
             {
-
+                // Limpa itens antigos para substituir (simplificação)
+                // Em produção, faríamos um merge inteligente
                 _context.CartItems.RemoveRange(dbCart.Items);
             }
 
+            // Recria itens
             dbCart.Items = cart.Items.Select(i => new CartItem
             {
                 ProductId = i.ProductId,
@@ -196,6 +194,7 @@ namespace MarketplaceArtesanato.Services.Services
 
         private async Task<CartDto> EnrichWithProductData(CartDto cart)
         {
+            // Garante que preço e nome estejam atualizados (se mudaram no banco desde o cache)
             foreach (var item in cart.Items)
             {
                 var product = await _context.Products.FindAsync(item.ProductId);

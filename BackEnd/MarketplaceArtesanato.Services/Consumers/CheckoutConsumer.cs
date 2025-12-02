@@ -3,6 +3,7 @@ using MarketplaceArtesanato.Core.Interfaces;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
+using MarketplaceArtesanato.Core.Models.Requests;
 
 namespace MarketplaceArtesanato.Infrastructure.Consumers;
 
@@ -31,7 +32,7 @@ public class CheckoutConsumer : IConsumer<CheckoutInitiatedEvent>
 
         try
         {
-            _logger.LogInformation("Processando checkout para cliente {CustomerId}", evt.CustomerId);
+            _logger.LogInformation($"Processando checkout para cliente {evt.CustomerId}");
 
             var orderDto = await _orderService.CreateFromCartAsync(evt.CustomerId, new CheckoutRequestDto());
 

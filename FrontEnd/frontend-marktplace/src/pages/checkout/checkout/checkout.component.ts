@@ -1,3 +1,4 @@
+import { CheckoutService } from './../../../services/checkout/checkout.service';
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -19,7 +20,7 @@ export class CheckoutComponent implements OnInit {
   private orderService = inject(OrderService);
   private authService = inject(AuthService);
   private router = inject(Router);
-
+  private checkoutService = inject(CheckoutService);
   isLoading = false;
   cartItems = this.cartService.cartItems;
   total = this.cartService.total;
@@ -36,24 +37,36 @@ export class CheckoutComponent implements OnInit {
   }
 
   onCheckout() {
-    this.isLoading = true;
-
-    this.orderService.createCheckoutSession([]).subscribe({
-      next: (response: any) => {
-        if (response.url) {
-          window.location.href = response.url;
-        } else {
-          console.error('URL de pagamento não encontrada na resposta');
-          this.isLoading = false;
-          alert('Erro ao processar pagamento.');
-        }
-      },
-      error: (err) => {
-        console.error('Erro no checkout:', err);
-        this.isLoading = false;
-        const msg = err.error?.message || 'Erro ao iniciar pagamento. Tente novamente.';
-        alert(msg);
-      }
-    });
+  if (this.cartItems().length === 0) {
+    alert('Carrinho vazio!');
+    return;
   }
+
+  this.isLoading = true;
+
+  this.checkoutService.createCheckoutSession(this.cartItems()).subscribe({
+    next: (res) => {
+      window.location.href = res.url;
+    },
+    error: (err) => {
+      this.isLoading = false;
+      alert(err.error?.message || 'Erro ao iniciar pagamento');
+    }
+  });
+
+
+  this.isLoading = true;
+
+  this.checkoutService.createCheckoutSession(this.cartItems()).subscribe({
+    next: (res) => {
+      window.location.href = res.url; // Redireciona para o Stripe
+    },
+    error: (err) => {
+      this.isLoading = false;
+      const mensagem = err.error?.message || 'Erro ao iniciar pagamento. Tente novamente.';
+      alert(mensagem);
+    }
+  });
+
+}
 }

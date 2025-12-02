@@ -1,58 +1,78 @@
 ﻿using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
+using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data.Data;
-using MarketplaceArtesanato.Infrastructure.Services;
+using MarketplaceArtesanato.Services.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-[Route("api/orders")]
-[ApiController]
-public class OrdersController : ControllerBase
+namespace MarketplaceArtesanato.API.Controllers
 {
-    private readonly ArtesianDbContext _context;
-    private readonly StripePaymentService _stripeService;
-
-    public OrdersController(ArtesianDbContext context, StripePaymentService stripeService)
+    [Route("api/orders")]
+    [ApiController]
+    public class OrdersController : ControllerBase
     {
-        _context = context;
-        _stripeService = stripeService;
-    }
+        private readonly ArtesianDbContext _context;
+        private readonly StripePaymentService _stripeService; // Descomente se for usar
 
-    [HttpPost("checkout")]
-    [Authorize(Roles = "Customer")]
-    public async Task<ActionResult> Checkout([FromBody] CheckoutRequestDto dto)
-    {
-        var customerId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-
-        var order = new Order
+        public OrdersController(ArtesianDbContext context /*, StripePaymentService stripeService */)
         {
-            Id = Guid.NewGuid(),
-            BuyerId = customerId,
-            Status = OrderStatus.Pending,
-            Items = new List<OrderItem>()
-        };
-
-        foreach (var itemDto in dto.Items)
-        {
-            var product = await _context.Products.FindAsync(itemDto.ProductId)
-                ?? throw new KeyNotFoundException($"Produto {itemDto.ProductId} não encontrado");
-
-            if (product.StockQuantity < itemDto.Quantity)
-                throw new InvalidOperationException($"Estoque insuficiente para {product.Name}");
-
-            order.Items.Add(new OrderItem
-            {
-                ProductId = itemDto.ProductId,
-                Quantity = itemDto.Quantity,
-                UnitPrice = product.Price
-            });
+            _context = context;
+            // _stripeService = stripeService;
         }
 
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync();
+        [HttpPost("checkout")]
+        [Authorize(Roles = "Customer")]
+        public async Task<ActionResult> Checkout([FromBody] CheckoutRequestDto dto)
+        {
+            // Obtém o ID do usuário logado
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdString, out var customerId))
+                return Unauthorized("Usuário inválido.");
 
-        return Ok(new { order.Id, order.TotalAmount, order.Status });
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                BuyerId = customerId,
+                Status = OrderStatus.Pending,
+                CreatedAt = DateTime.UtcNow,
+                Items = new List<OrderItem>()
+            };
+
+            decimal totalAmount = 0;
+
+            foreach (var itemDto in dto.Items)
+            {
+                var product = await _context.Products.FindAsync(itemDto.ProductId);
+
+                if (product == null)
+                    return BadRequest(new { message = $"Produto {itemDto.ProductId} não encontrado" });
+
+                if (product.StockQuantity < itemDto.Quantity)
+                    return BadRequest(new { message = $"Estoque insuficiente para {product.Name}" });
+
+                // Atualiza total
+                totalAmount += product.Price * itemDto.Quantity;
+
+                order.Items.Add(new OrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = itemDto.ProductId,
+                    Quantity = itemDto.Quantity,
+                    UnitPrice = product.Price,
+                    OrderId = order.Id
+                });
+            }
+
+            order.TotalAmount = totalAmount; 
+
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            // Retorna os dados do pedido criado
+            return Ok(new { order.Id, order.TotalAmount, status = order.Status.ToString() });
+        }
     }
 }

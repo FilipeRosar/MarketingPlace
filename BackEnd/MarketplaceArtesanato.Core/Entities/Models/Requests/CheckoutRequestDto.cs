@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MarketplaceArtesanato.Core.Entities.Models.Requests
+namespace MarketplaceArtesanato.Core.Models.Requests
 {
     public class CheckoutRequestDto
     {

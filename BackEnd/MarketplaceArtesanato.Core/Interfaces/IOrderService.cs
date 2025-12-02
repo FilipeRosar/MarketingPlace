@@ -1,6 +1,7 @@
 ﻿using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
 using MarketplaceArtesanato.Core.Events;
+using MarketplaceArtesanato.Core.Models.Requests;
 using System;
 using System.Collections.Generic;
 using System.Linq;

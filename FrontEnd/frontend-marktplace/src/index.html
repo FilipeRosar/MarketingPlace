@@ -2,30 +2,39 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>Trama Artesanato</title>
+  <title>Mitrama - Marketplace Artesanal</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta name="description" content="Conecte-se com artesãos de todo o Brasil. Compre peças únicas, feitas à mão com alma e história.">
+  <meta name="keywords" content="artesanato, feito a mão, decoração, joias, marketplace, brasil, trama">
+  <meta name="author" content="Trama Marketplace">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://filiperosar.github.io/MarketingPlace/">
+  <meta property="og:title" content="Trama - Marketplace Artesanal">
+  <meta property="og:description" content="Descubra peças únicas feitas por mãos brasileiras.">
+  <meta property="og:image" content="https://filiperosar.github.io/MarketingPlace/assets/icons/icon-512x512.png">
+
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://filiperosar.github.io/MarketingPlace/">
+  <meta property="twitter:title" content="Trama - Marketplace Artesanal">
+  <meta property="twitter:description" content="Descubra peças únicas feitas por mãos brasileiras.">
+  <meta property="twitter:image" content="https://filiperosar.github.io/MarketingPlace/assets/icons/icon-512x512.png">
+
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><style>.t{font:bold 70px sans-serif;fill:#b45309;}</style><text class='t' x='50' y='75' text-anchor='middle'>T</text></svg>">
-
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
   <script src="https://cdn.tailwindcss.com"></script>
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
           colors: {
-            primary: {
-              DEFAULT: '#b45309',
-              light: '#d97706',
-              dark: '#78350f',
-            },
+            primary: { DEFAULT: '#b45309', light: '#d97706', dark: '#78350f' },
             surface: '#fafaf9',
           },
           animation: {
@@ -33,23 +42,15 @@
             'fade-in-up': 'fade-in-up 0.8s ease-out forwards',
           },
           keyframes: {
-            'subtle-zoom': {
-              '0%': { transform: 'scale(1.05)' },
-              '100%': { transform: 'scale(1.15)' },
-            },
-            'fade-in-up': {
-              '0%': { opacity: '0', transform: 'translateY(20px)' },
-              '100%': { opacity: '1', transform: 'translateY(0)' },
-            }
+            'subtle-zoom': { '0%': { transform: 'scale(1.05)' }, '100%': { transform: 'scale(1.15)' } },
+            'fade-in-up': { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
           }
         }
       }
     }
   </script>
-
   <style>
     body { background-color: #fafaf9; font-family: 'Inter', sans-serif; }
-    /* Scrollbar */
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: #f5f5f4; }
     ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 9999px; }

@@ -1,48 +1,60 @@
 ﻿using MarketplaceArtesanato.API.Extensions;
 using MarketplaceArtesanato.Core.Events;
-using MarketplaceArtesanato.Core.Interfaces;
+using MarketplaceArtesanato.Core.Models.Requests; // Namespace do DTO
+using MarketplaceArtesanato.Data.Data;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Stripe;
 using Stripe.Checkout;
 
 namespace MarketplaceArtesanato.API.Controllers
 {
-    [Authorize(Roles = "Customer")]
+
+    [Authorize]
     [Route("api/checkout")]
     [ApiController]
     public class CheckoutController : ControllerBase
     {
-        private readonly ICartService _cartService;
+        private readonly ArtesianDbContext _context;
         private readonly IPublishEndpoint _publishEndpoint;
         private readonly IConfiguration _config;
 
         public CheckoutController(
-            ICartService cartService,
+            ArtesianDbContext context,
             IPublishEndpoint publishEndpoint,
             IConfiguration config)
         {
-            _cartService = cartService;
+            _context = context;
             _publishEndpoint = publishEndpoint;
             _config = config;
         }
 
         [HttpPost("create-session")]
-        public async Task<IActionResult> CreateCheckoutSession()
+        public async Task<IActionResult> CreateCheckoutSession([FromBody] CheckoutRequestDto request)
         {
+            var items = request.Items;
+
+            if (items == null || !items.Any())
+                return BadRequest(new { message = "Carrinho vazio ou inválido." });
+
             var customerId = User.GetUserId();
-            var cart = await _cartService.GetCartAsync(customerId);
-
-            if (cart == null || !cart.Items.Any())
-                return BadRequest(new { message = "Carrinho vazio" });
-
             var domain = _config["AppUrl"] ?? "http://localhost:4200";
 
             var lineItems = new List<SessionLineItemOptions>();
+            decimal totalAmount = 0;
 
-            foreach (var i in cart.Items)
+            foreach (var itemDto in items)
             {
+                var product = await _context.Products.FindAsync(itemDto.ProductId);
+
+                if (product == null)
+                    return BadRequest(new { message = $"Produto não encontrado (ID: {itemDto.ProductId})" });
+
+                if (product.StockQuantity < itemDto.Quantity)
+                    return BadRequest(new { message = $"Estoque insuficiente para: {product.Name}" });
+
                 lineItems.Add(new SessionLineItemOptions
                 {
                     PriceData = new SessionLineItemPriceDataOptions
@@ -50,13 +62,14 @@ namespace MarketplaceArtesanato.API.Controllers
                         Currency = "brl",
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
-                            Name = i.ProductName,
-                            Images = !string.IsNullOrEmpty(i.ProductImage) ? new List<string> { i.ProductImage } : null 
+                            Name = product.Name,
                         },
-                        UnitAmount = (long)(i.Price * 100) // centavos
+                        UnitAmount = (long)(product.Price * 100)
                     },
-                    Quantity = i.Quantity
+                    Quantity = itemDto.Quantity
                 });
+
+                totalAmount += product.Price * itemDto.Quantity;
             }
 
             var options = new SessionCreateOptions
@@ -64,7 +77,7 @@ namespace MarketplaceArtesanato.API.Controllers
                 PaymentMethodTypes = new List<string> { "card" },
                 LineItems = lineItems,
                 Mode = "payment",
-                SuccessUrl = $"{domain}/#/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}", 
+                SuccessUrl = $"{domain}/#/orders",
                 CancelUrl = $"{domain}/#/cart",
                 Metadata = new Dictionary<string, string>
                 {
@@ -81,24 +94,13 @@ namespace MarketplaceArtesanato.API.Controllers
                 {
                     CustomerId = customerId,
                     StripeSessionId = session.Id,
-                    Items = cart.Items.Select(i => new CheckoutItemEvent
-                    {
-                        ProductId = i.ProductId,
-                        Quantity = i.Quantity,
-                        UnitPrice = i.Price
-                    }).ToList(),
-                    Total = cart.TotalPrice,
+                    Total = totalAmount,
                     InitiatedAt = DateTime.UtcNow
                 };
 
                 await _publishEndpoint.Publish(@event);
 
-                return Ok(new
-                {
-                    sessionId = session.Id,
-                    url = session.Url,
-                    message = "Sessão criada. Redirecione o cliente para o pagamento."
-                });
+                return Ok(new { sessionId = session.Id, url = session.Url });
             }
             catch (StripeException e)
             {

@@ -3,9 +3,13 @@ using MarketplaceArtesanato.Core.Events;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Stripe;
-using Stripe.Checkout;  
+using Stripe.Checkout;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace MarketplaceArtesanato.Infrastructure.Services
+namespace MarketplaceArtesanato.Services.Services
 {
     public class StripePaymentService
     {
@@ -21,9 +25,11 @@ namespace MarketplaceArtesanato.Infrastructure.Services
 
         public async Task<string> CreateCheckoutSessionAsync(Order order)
         {
+            var domain = _config["AppUrl"] ?? "http://localhost:4200"; 
+
             var options = new SessionCreateOptions
             {
-                PaymentMethodTypes = new List<string> { "card", "boleto", "pix" },
+                PaymentMethodTypes = new List<string> { "card" }, // Add "boleto", "pix" if configured in Stripe Dashboard
                 LineItems = order.Items.Select(item => new SessionLineItemOptions
                 {
                     PriceData = new SessionLineItemPriceDataOptions
@@ -32,15 +38,17 @@ namespace MarketplaceArtesanato.Infrastructure.Services
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
                             Name = item.Product.Name,
-                            Description = item.Product.Description
+                            Description = item.Product.Description != null && item.Product.Description.Length > 50
+                                ? item.Product.Description.Substring(0, 47) + "..."
+                                : item.Product.Description,
                         },
-                        UnitAmount = (long)(item.UnitPrice * 100)
+                        UnitAmount = (long)(item.UnitPrice * 100) 
                     },
                     Quantity = item.Quantity
                 }).ToList(),
                 Mode = "payment",
-                SuccessUrl = _config["Stripe:SuccessUrl"] + "?session_id={CHECKOUT_SESSION_ID}",
-                CancelUrl = _config["Stripe:CancelUrl"],
+                SuccessUrl = $"{domain}/#/orders?status=success&session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{domain}/#/cart?status=cancelled",
                 Metadata = new Dictionary<string, string>
                 {
                     { "orderId", order.Id.ToString() },
@@ -48,8 +56,8 @@ namespace MarketplaceArtesanato.Infrastructure.Services
                 }
             };
 
-            var service = new SessionService(); 
-            var session = await service.CreateAsync(options); 
+            var service = new SessionService();
+            var session = await service.CreateAsync(options);
 
             return session.Url;
         }
@@ -58,35 +66,45 @@ namespace MarketplaceArtesanato.Infrastructure.Services
         {
             try
             {
-                var stripeEvent = EventUtility.ConstructEvent(
-                    payload, signature, _config["Stripe:WebhookSecret"]);
+                var webhookSecret = _config["Stripe:WebhookSecret"];
+                var stripeEvent = EventUtility.ConstructEvent(payload, signature, webhookSecret);
 
                 if (stripeEvent.Type == "checkout.session.completed")
                 {
                     var session = stripeEvent.Data.Object as Session;
                     if (session == null) return false;
 
-                    var orderId = Guid.Parse(session.Metadata["orderId"]);
-
-                    var evt = new PaymentProcessedEvent
+                    if (session.Metadata.TryGetValue("orderId", out var orderIdStr) &&
+                        session.Metadata.TryGetValue("customerId", out var customerIdStr))
                     {
-                        OrderId = orderId,
-                        CustomerId = Guid.Parse(session.Metadata["customerId"]),
-                        Total = (decimal)(session.AmountTotal / 100m),
-                        StripeSessionId = session.Id,
-                        PaymentIntentId = session.PaymentIntentId
-                    };
+                        var evt = new PaymentProcessedEvent
+                        {
+                            OrderId = Guid.Parse(orderIdStr),
+                            CustomerId = Guid.Parse(customerIdStr),
+                            Total = (decimal)(session.AmountTotal ?? 0) / 100m,
+                            StripeSessionId = session.Id,
+                            PaymentIntentId = session.PaymentIntentId,
+                            ProcessedAt = DateTime.UtcNow
+                        };
 
-                    await _publishEndpoint.Publish(evt);
-                    return true;
+                        // Publish event to RabbitMQ so the Consumer can update the database
+                        await _publishEndpoint.Publish(evt);
+                        return true;
+                    }
                 }
+
+                return false; 
+            }
+            catch (StripeException e)
+            {
+                Console.WriteLine($"Stripe Webhook Error: {e.Message}");
+                throw; 
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Webhook error: {ex.Message}");
+                Console.WriteLine($"General Webhook Error: {ex.Message}");
+                return false;
             }
-
-            return false;
         }
     }
 }

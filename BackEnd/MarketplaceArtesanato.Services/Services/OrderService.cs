@@ -5,6 +5,7 @@ using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
 using MarketplaceArtesanato.Core.Events;
 using MarketplaceArtesanato.Core.Interfaces;
+using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data;
 using MarketplaceArtesanato.Data.Data;
 using MassTransit;

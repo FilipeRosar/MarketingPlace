@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, Inject, PLATFORM_ID } from '@angular/core';
+import { SeoService } from './../../../services/SEO/seo.service';
+import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, Location, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -25,6 +26,8 @@ export class ProductDetailComponent implements OnInit {
   private authService = inject(AuthService);
   private location = inject(Location);
   private fb = inject(FormBuilder);
+  private SeoService = inject(SeoService);
+  private platformId = inject(PLATFORM_ID);
 
   product: Product | null = null;
   isLoading = true;
@@ -39,7 +42,7 @@ export class ProductDetailComponent implements OnInit {
     { name: 'João Carlos', date: '15/11/2025', stars: 4.5, comment: 'Ótimo trabalho, mas o prazo de entrega foi um pouco longo.' },
   ];
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+  constructor() {
     this.reviewForm = this.fb.group({
       rating: [0, [Validators.required, Validators.min(1), Validators.max(5)]],
       comment: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]]
@@ -55,12 +58,19 @@ export class ProductDetailComponent implements OnInit {
     });
   }
 
-  loadProduct(id: string) {
+ loadProduct(id: string) {
     this.isLoading = true;
     this.productService.getProductById(id).subscribe({
       next: (data) => {
         this.product = data;
         this.isLoading = false;
+
+        this.SeoService.updateSeoData({
+          title: this.product.name,
+          description: `Compre ${this.product.name} por ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(this.product.price)}. ${this.product.description.substring(0, 100)}...`,
+          image: this.product.imageUrl,
+          slug: `/products/${this.product.id}`
+        });
 
         if (isPlatformBrowser(this.platformId)) {
             window.scrollTo(0, 0);
@@ -77,7 +87,10 @@ export class ProductDetailComponent implements OnInit {
   addToCart() {
     if (this.product) {
       this.cartService.addToCart(this.product);
-      alert('Produto adicionado ao carrinho!');
+      // Idealmente usar um Toast aqui
+      if (isPlatformBrowser(this.platformId)) {
+          alert('Produto adicionado ao carrinho!');
+      }
     }
   }
 
@@ -91,7 +104,9 @@ export class ProductDetailComponent implements OnInit {
 
     setTimeout(() => {
       this.isSubmittingReview = false;
-      alert('Sua avaliação foi enviada com sucesso! Obrigado pelo feedback.');
+      if (isPlatformBrowser(this.platformId)) {
+          alert('Sua avaliação foi enviada com sucesso! Obrigado pelo feedback.');
+      }
       this.reviewForm.reset({ rating: 0, comment: '' });
     }, 1500);
   }

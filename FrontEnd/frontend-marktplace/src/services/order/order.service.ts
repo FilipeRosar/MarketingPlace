@@ -9,15 +9,10 @@ import { Order } from '../../models/order/order.model';
 })
 export class OrderService {
   private http = inject(HttpClient);
+
   private apiUrl = `${environment.apiUrl}/orders`;
 
-  private checkoutUrl = `${environment.apiUrl}/checkout/create-session`;
-
   constructor() { }
-
-  createCheckoutSession(items: any[]): Observable<{ sessionId: string, url: string }> {
-    return this.http.post<{ sessionId: string, url: string }>(this.checkoutUrl, {});
-  }
 
   getMyOrders(): Observable<Order[]> {
     return this.http.get<Order[]>(this.apiUrl);

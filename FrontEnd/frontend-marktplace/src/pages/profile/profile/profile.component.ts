@@ -34,8 +34,6 @@ export class ProfileComponent implements OnInit {
       email: [{ value: '', disabled: true }],
       phone: ['', [Validators.required, Validators.minLength(10)]],
       cpf: [{ value: '', disabled: true }],
-
-      // Validadores de Endereço
       address: this.fb.group({
         zipCode: ['', [Validators.required, Validators.minLength(8)]],
         street: ['', Validators.required],
@@ -57,18 +55,16 @@ export class ProfileComponent implements OnInit {
       }
     });
 
-    // 4. Lógica de Autocompletar CEP
     this.setupCepAutofill();
   }
 
-  // Novo método para buscar o CEP
   setupCepAutofill() {
     const cepControl = this.profileForm.get('address.zipCode');
 
     cepControl?.valueChanges.pipe(
-      debounceTime(400), // Espera 400ms após a digitação
-      filter(cep => cep && cep.length === 8 && !this.isUploadingPhoto), // Filtra para ter 8 dígitos e não estar ocupado
-      switchMap(cep => this.http.get(`https://viacep.com.br/ws/${cep}/json/`)) // Chama ViaCEP
+      debounceTime(400),
+      filter(cep => cep && cep.length === 8 && !this.isUploadingPhoto),
+      switchMap(cep => this.http.get(`https://viacep.com.br/ws/${cep}/json/`))
     ).subscribe((data: any) => {
       if (data && !data.erro) {
         const addressGroup = this.profileForm.get('address') as FormGroup;
@@ -76,13 +72,6 @@ export class ProfileComponent implements OnInit {
           street: data.logradouro,
           city: data.localidade,
           state: data.uf
-        }, { emitEvent: false });
-      } else if (data?.erro) {
-        const addressGroup = this.profileForm.get('address') as FormGroup;
-        addressGroup.patchValue({
-          street: '',
-          city: '',
-          state: '',
         }, { emitEvent: false });
       }
     });
@@ -140,12 +129,54 @@ export class ProfileComponent implements OnInit {
 
     this.isLoading = true;
 
-    setTimeout(() => {
-      this.isLoading = false;
-      this.isEditing = false;
-      this.profileForm.disable();
-      alert('Perfil atualizado com sucesso! (Simulação Front)');
-    }, 1000);
+    const formValue = this.profileForm.getRawValue();
+
+    const updateData = {
+      name: formValue.name,
+      phone: formValue.phone,
+      address: {
+        zipCode: formValue.address.zipCode,
+        street: formValue.address.street,
+        number: formValue.address.number,
+        city: formValue.address.city,
+        state: formValue.address.state,
+        country: formValue.address.country
+      }
+    };
+
+    this.userService.updateProfile(updateData).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.isEditing = false;
+        this.profileForm.disable();
+
+        if (this.currentUser) {
+          const updatedUser = {
+            ...this.currentUser,
+            name: updateData.name,
+            phone: updateData.phone,
+            address: updateData.address
+          };
+          this.authService.updateCurrentUser(updatedUser);
+        }
+
+        alert('Perfil atualizado com sucesso!');
+      },
+      error: (err) => {
+        console.error('Erro ao atualizar perfil:', err);
+        this.isLoading = false;
+
+        if (err.status === 401) {
+          alert('Sua sessão expirou. Por favor, faça login novamente para salvar as alterações.');
+          this.authService.logout();
+          this.router.navigate(['/login']);
+        } else if (err.status === 400) {
+          alert('Dados inválidos. Verifique os campos e tente novamente.');
+        } else {
+          alert('Não foi possível atualizar seus dados. Tente novamente mais tarde.');
+        }
+      }
+    });
   }
 
   logout() {

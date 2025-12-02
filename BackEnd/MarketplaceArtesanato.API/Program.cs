@@ -43,6 +43,13 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFavoritesService, FavoritesService>();
+builder.Services.AddScoped<StripePaymentService>();
+builder.Services.AddScoped<Stripe.BillingPortal.SessionService>();
+builder.Services.AddScoped<Stripe.Checkout.SessionService>();
+
+
+var stripeKey = builder.Configuration["Stripe:SecretKey"];
+StripeConfiguration.ApiKey = stripeKey;
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
 {
