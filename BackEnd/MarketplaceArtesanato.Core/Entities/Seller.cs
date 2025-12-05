@@ -20,6 +20,8 @@ namespace MarketplaceArtesanato.Core.Entities
         public string Email { get; set; } = string.Empty;
         [Required, MinLength(8)]
         public string PasswordHash { get; set; } = string.Empty;
+        public string? Bio { get; set; } 
+        public string? BannerImageUrl { get; set; }
         public bool isAproved { get; set; } = false;
         public string? Phone { get; set; }
         [StringLength(14)]

@@ -10,6 +10,8 @@ namespace MarketplaceArtesanato.API.Models.Responses
         public string? Phone { get; set; }
         public string? CPF { get; set; }
         public string? CNPJ { get; set; }
+        public string? Bio { get; set; } 
+        public string? BannerImageUrl { get; set; }
         public AddressResponseDto Address { get; set; } = new();
 
     }

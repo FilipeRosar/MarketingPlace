@@ -22,6 +22,7 @@ namespace MarketplaceArtesanato.Core.Entities
         public decimal Price { get; set; }
         [Required]
         public int StockQuantity { get; set; } = 0;
+        public string Tags { get; set; } = string.Empty;
         public List<string> Images { get; set; } = new List<string>();
         public ProductCategory Category { get; set; } 
         public ProductStatus Status { get; set; }

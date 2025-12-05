@@ -15,7 +15,7 @@ export class AddProductComponent {
   private fb = inject(FormBuilder);
   private productService = inject(ProductService);
   private router = inject(Router);
-
+  tags: string[] = [];
   productForm: FormGroup;
   selectedFile: File | null = null;
   imagePreview: string | null = null;
@@ -57,6 +57,15 @@ export class AddProductComponent {
       reader.readAsDataURL(file);
     }
   }
+  addTag(value: string) {
+    const tag = value.trim();
+    if (tag && !this.tags.includes(tag)) {
+      this.tags.push(tag);
+    }
+  }
+  removeTag(index: number) {
+    this.tags.splice(index, 1);
+  }
 
   onSubmit() {
     if (this.productForm.invalid || !this.selectedFile) {
@@ -83,7 +92,9 @@ export class AddProductComponent {
     formData.forEach((value, key) => {
       console.log(`${key}:`, value);
     });
-
+    for (let i = 0; i < this.tags.length; i++) {
+        formData.append(`tags[${i}]`, this.tags[i]);
+    }
     this.productService.createProduct(formData).subscribe({
       next: () => {
         this.isLoading = false;

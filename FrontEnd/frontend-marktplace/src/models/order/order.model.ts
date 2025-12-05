@@ -20,6 +20,10 @@ export interface Order {
   createdAt: string;
   totalAmount: number;
   status: OrderStatus;
-  statusDescription?: string;
+
+  trackingCode?: string;
+  carrier?: string;
+  shippedAt?: string;
+
   items: OrderItem[];
 }

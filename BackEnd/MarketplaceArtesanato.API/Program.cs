@@ -1,3 +1,4 @@
+using MarketplaceArtesanato.API.Hubs;
 using MarketplaceArtesanato.API.Mapping;
 using MarketplaceArtesanato.Application.Services;
 using MarketplaceArtesanato.Core.Interfaces;
@@ -46,6 +47,7 @@ builder.Services.AddScoped<IFavoritesService, FavoritesService>();
 builder.Services.AddScoped<StripePaymentService>();
 builder.Services.AddScoped<Stripe.BillingPortal.SessionService>();
 builder.Services.AddScoped<Stripe.Checkout.SessionService>();
+builder.Services.AddHttpClient<IShippingService, ShippingService>();
 
 
 var stripeKey = builder.Configuration["Stripe:SecretKey"];
@@ -59,6 +61,7 @@ builder.Services.AddDbContext<ArtesianDbContext>(options =>
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddControllers();
 builder.Services.Configure<AzureBlobSettings>(builder.Configuration.GetSection("Storage:AzureBlob"));
+builder.Services.AddSignalR();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
@@ -123,7 +126,41 @@ builder.Services.AddSwaggerGen(c =>
         Format = "binary"
     });
 });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevCorsPolicy", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:4200",    
+                "http://localhost:3000"     
+               )
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); 
+    });
 
+    options.AddPolicy("ProdCorsPolicy", policy =>
+    {
+        policy.WithOrigins(
+                "https://seusite.com.br",
+                "https://www.seusite.com.br"
+               )
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:4200",           
+                "https://localhost:4200",          
+                "http://localhost:3000"           
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); 
+    });
+});
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
@@ -166,12 +203,13 @@ builder.Services.AddMassTransitHostedService();
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
+app.UseCors(app.Environment.IsDevelopment() ? "DevCorsPolicy" : "ProdCorsPolicy");
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+app.MapHub<ChatHub>("/chatHub");
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>

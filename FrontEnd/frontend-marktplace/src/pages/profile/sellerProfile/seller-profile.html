@@ -1,77 +1,125 @@
-<div class="min-h-screen bg-surface py-8">
+<div class="min-h-screen bg-surface pb-12">
 
   @if (isLoading) {
     <app-loading-spinner></app-loading-spinner>
-  } @else {
-    @if (seller) {
-      <!-- Cabeçalho do Vendedor -->
-      <div class="bg-white shadow-sm border-b border-stone-200 mb-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  } @else if (seller) {
 
-          <!-- Navegação Superior -->
-          <div class="flex justify-between items-start mb-6">
-            <button (click)="goBack()" class="text-sm text-stone-500 hover:text-primary flex items-center">
-              &larr; Voltar
-            </button>
+    <!-- HEADER DA LOJA (Banner + Info) -->
+    <div class="relative bg-white shadow-sm pb-8">
 
-            <!-- BOTÃO DE DASHBOARD (Só aparece para o dono) -->
-            @if (isOwner) {
-              <a routerLink="/seller-dashboard" class="inline-flex items-center px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-all transform hover:-translate-y-0.5 cursor-pointer">
-                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Gerenciar Dashboard
-              </a>
-            }
-          </div>
-
-          <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
-            <!-- Avatar -->
-            <div class="h-24 w-24 md:h-32 md:w-32 rounded-full bg-stone-800 text-white flex items-center justify-center text-4xl font-bold shadow-lg border-4 border-white">
-              {{ seller.name.charAt(0).toUpperCase() }}
-            </div>
-
-            <div class="text-center md:text-left flex-1">
-              <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ seller.name }}</h1>
-
-              <div class="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-gray-500 mb-4">
-                @if (seller.address) {
-                  <span class="flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    {{ seller.address.city }}, {{ seller.address.state }}
-                  </span>
-                }
-                <span class="flex items-center">
-                  <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                  {{ products.length }} Produtos
-                </span>
-              </div>
-
-              <p class="max-w-2xl text-gray-600">
-                Bem-vindo à minha loja na Trama! Aqui você encontra peças feitas com dedicação e carinho.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Lista de Produtos -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">Produtos de {{ seller.name }}</h2>
-
-        @if (products.length === 0) {
-          <div class="text-center py-20">
-            <p class="text-gray-500">Este vendedor ainda não publicou produtos.</p>
-          </div>
+      <!-- Banner (Capa) -->
+      <div class="h-48 md:h-64 w-full bg-stone-200 relative overflow-hidden group">
+        @if (seller.bannerImageUrl) {
+            <img [src]="seller.bannerImageUrl" class="w-full h-full object-cover">
         } @else {
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            @for (product of products; track product.id) {
-              <app-product-card [product]="product"></app-product-card>
-            }
-          </div>
+            <!-- Padrão Trama se não tiver banner -->
+            <div class="w-full h-full bg-gradient-to-r from-stone-800 to-stone-600 flex items-center justify-center">
+                <span class="text-stone-500 text-6xl opacity-20 font-serif font-bold">Trama.</span>
+            </div>
+        }
+
+        <!-- Botão Editar Banner (Só dono) -->
+        @if (isOwner) {
+            <label class="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full cursor-pointer backdrop-blur-sm text-sm font-medium transition-all opacity-0 group-hover:opacity-100">
+                📷 Alterar Capa
+                <input type="file" class="hidden" (change)="onBannerSelected($event)" accept="image/*">
+            </label>
         }
       </div>
-    }
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <!-- Avatar e Info Principal -->
+        <div class="flex flex-col md:flex-row items-center md:items-end -mt-12 md:-mt-16 gap-6">
+
+            <!-- Avatar -->
+            <div class="relative group">
+                <div class="h-32 w-32 md:h-40 md:w-40 rounded-full bg-white p-1 shadow-lg">
+                    <div class="w-full h-full rounded-full bg-stone-100 overflow-hidden relative">
+                         @if (seller.profileImageUrl) {
+                            <img [src]="seller.profileImageUrl" class="w-full h-full object-cover">
+                         } @else {
+                            <div class="w-full h-full flex items-center justify-center text-4xl font-bold text-primary bg-orange-50">
+                                {{ seller.name.charAt(0).toUpperCase() }}
+                            </div>
+                         }
+                    </div>
+                </div>
+                 <!-- Botão Editar Avatar (Só dono) -->
+                 @if (isOwner) {
+                    <label class="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-primary-dark transition-colors" title="Alterar Logo">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <input type="file" class="hidden" (change)="onAvatarSelected($event)" accept="image/*">
+                    </label>
+                }
+            </div>
+
+            <!-- Textos -->
+            <div class="flex-1 text-center md:text-left mb-2">
+                @if (isEditingBio) {
+                    <div class="flex flex-col gap-2 max-w-md">
+                        <input [(ngModel)]="editData.name" class="text-2xl font-bold border rounded p-1" placeholder="Nome da Loja">
+                        <textarea [(ngModel)]="editData.bio" class="text-sm border rounded p-2 w-full" rows="3" placeholder="Conte a história da sua loja..."></textarea>
+                        <div class="flex gap-2">
+                            <button (click)="saveBio()" class="bg-primary text-white px-3 py-1 rounded text-xs">Salvar</button>
+                            <button (click)="isEditingBio = false" class="bg-gray-200 px-3 py-1 rounded text-xs">Cancelar</button>
+                        </div>
+                    </div>
+                } @else {
+                    <h1 class="text-3xl font-bold text-gray-900 flex items-center justify-center md:justify-start gap-2">
+                        {{ seller.name }}
+                        @if (isOwner) {
+                            <button (click)="startEditBio()" class="text-stone-400 hover:text-primary"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                        }
+                    </h1>
+
+                    <div class="flex items-center justify-center md:justify-start gap-4 text-sm text-stone-500 mt-1">
+                        <span><i class="mr-1">📍</i> {{ seller.address?.city }}, {{ seller.address?.state }}</span>
+                        <span><i class="mr-1">📦</i> {{ products.length }} Produtos</span>
+                    </div>
+
+                    <p class="text-gray-600 mt-3 max-w-2xl mx-auto md:mx-0">
+                        {{ seller.bio || 'Bem-vindo à nossa loja! Aqui você encontra produtos feitos com alma.' }}
+                    </p>
+                }
+            </div>
+
+            <!-- Ações -->
+            <div class="flex flex-col gap-2 mb-2">
+                @if (isOwner) {
+                    <a routerLink="/seller-dashboard" class="bg-stone-900 text-white px-6 py-3 rounded-full font-medium hover:bg-stone-700 transition shadow-sm flex items-center justify-center">
+                        ⚙️ Gerenciar Loja
+                    </a>
+                } @else {
+                    <button class="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition shadow-sm flex items-center justify-center shadow-orange-200">
+                        💬 Falar com Vendedor
+                    </button>
+                }
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO (PRODUTOS) -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+        <!-- Filtros / Abas internas da loja -->
+        <div class="flex border-b border-stone-200 mb-8">
+            <button class="px-6 py-3 border-b-2 border-primary text-primary font-bold">Todos os Produtos</button>
+            <button class="px-6 py-3 border-b-2 border-transparent text-stone-500 hover:text-stone-700">Sobre</button>
+            <button class="px-6 py-3 border-b-2 border-transparent text-stone-500 hover:text-stone-700">Avaliações</button>
+        </div>
+
+        @if (products.length === 0) {
+            <div class="text-center py-20 text-gray-400">
+                Nenhum produto disponível no momento.
+            </div>
+        } @else {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                @for (product of products; track product.id) {
+                  <app-product-card [product]="product"></app-product-card>
+                }
+            </div>
+        }
+    </div>
+
   }
 </div>

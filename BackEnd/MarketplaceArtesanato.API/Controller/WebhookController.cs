@@ -1,9 +1,9 @@
 ﻿using MarketplaceArtesanato.Core.Events;
 using MarketplaceArtesanato.Data.Data;
-using MarketplaceArtesanato.Services.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Stripe; 
+using Stripe;
+using Stripe.Checkout;
 
 namespace MarketplaceArtesanato.API.Controllers
 {
@@ -12,16 +12,13 @@ namespace MarketplaceArtesanato.API.Controllers
     public class WebhookController : ControllerBase
     {
         private readonly IConfiguration _config;
-        private readonly StripePaymentService _stripeService;
         private readonly ArtesianDbContext _context;
 
         public WebhookController(
             IConfiguration config,
-            StripePaymentService stripeService,
             ArtesianDbContext context)
         {
             _config = config;
-            _stripeService = stripeService;
             _context = context;
         }
 
@@ -29,39 +26,30 @@ namespace MarketplaceArtesanato.API.Controllers
         public async Task<IActionResult> StripeWebhook()
         {
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-
             var signature = Request.Headers["Stripe-Signature"];
 
             try
             {
+                // Valida a assinatura do Stripe para garantir que o evento é legítimo
                 var webhookSecret = _config["Stripe:WebhookSecret"];
                 var stripeEvent = EventUtility.ConstructEvent(json, signature, webhookSecret);
 
+                // Verifica se o evento é de sessão completada
                 if (stripeEvent.Type == "checkout.session.completed")
                 {
-                    var session = stripeEvent.Data.Object as Stripe.Checkout.Session;
-
-                    if (session != null && session.Metadata.TryGetValue("OrderId", out var orderIdStr)) // Era OrderId no metadata
+                    if (stripeEvent.Data.Object is Session session)
                     {
-                        if (Guid.TryParse(orderIdStr, out var orderId))
+                        // Busca o ID do pedido nos metadados que enviamos no checkout
+                        if (session.Metadata != null && session.Metadata.TryGetValue("OrderId", out var orderIdStr))
                         {
-                            var order = await _context.Orders.FindAsync(orderId);
-                            if (order != null)
+                            if (Guid.TryParse(orderIdStr, out var orderId))
                             {
-                                // ATUALIZA O STATUS DO PEDIDO
-                                order.Status = Core.Entities.Enums.OrderStatus.Paid;
-                                order.StripePaymentIntentId = session.PaymentIntentId;
-                                order.UpdatedAt = DateTime.UtcNow;
-
-                                await _context.SaveChangesAsync();
-
-                                Console.WriteLine($"[WEBHOOK] Pedido {orderId} pago com sucesso!");
+                                await ProcessOrderPayment(orderId, session);
                             }
                         }
                     }
                 }
 
-                // Retorna 200 OK para o Stripe saber que recebemos
                 return Ok();
             }
             catch (StripeException e)
@@ -74,6 +62,27 @@ namespace MarketplaceArtesanato.API.Controllers
                 Console.WriteLine($"[ERRO INTERNO] {ex.Message}");
                 return StatusCode(500);
             }
+        }
+
+        private async Task ProcessOrderPayment(Guid orderId, Session session)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+
+            if (order == null || order.Status == Core.Entities.Enums.OrderStatus.Paid) return;
+
+            order.Status = Core.Entities.Enums.OrderStatus.Paid;
+            order.StripePaymentIntentId = session.PaymentIntentId;
+            order.UpdatedAt = DateTime.UtcNow;
+
+
+            if (session.AmountTotal.HasValue)
+            {
+                order.TotalAmount = session.AmountTotal.Value / 100m; 
+                // Opcional: atualizar o total se houver discrepância ou taxas dinâmicas
+            }
+
+            await _context.SaveChangesAsync();
+            Console.WriteLine($"[WEBHOOK] Pedido {orderId} confirmado e pago!");
         }
     }
 }

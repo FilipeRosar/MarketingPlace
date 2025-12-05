@@ -17,6 +17,15 @@ export class OrderService {
   getMyOrders(): Observable<Order[]> {
     return this.http.get<Order[]>(this.apiUrl);
   }
+  updateTracking(orderId: string, trackingCode: string, carrier: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${orderId}/tracking`, { trackingCode, carrier });
+  }
+  getTrackingUrl(code: string, carrier: string): string {
+    if (carrier.toLowerCase().includes('correios')) {
+        return `https://rastreamento.correios.com.br/app/index.php?objeto=${code}`;
+    }
+    return `https://www.melhorrastreio.com.br/rastreio/${code}`;
+  }
 
   getOrderById(id: string): Observable<Order> {
     return this.http.get<Order>(`${this.apiUrl}/${id}`);

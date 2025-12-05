@@ -1,4 +1,5 @@
-﻿using MarketplaceArtesanato.Core.Entities;
+﻿using MarketplaceArtesanato.API.Extensions;
+using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
 using MarketplaceArtesanato.Core.Models.Requests;
@@ -6,6 +7,7 @@ using MarketplaceArtesanato.Data.Data;
 using MarketplaceArtesanato.Services.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace MarketplaceArtesanato.API.Controllers
@@ -17,10 +19,10 @@ namespace MarketplaceArtesanato.API.Controllers
         private readonly ArtesianDbContext _context;
         private readonly StripePaymentService _stripeService; // Descomente se for usar
 
-        public OrdersController(ArtesianDbContext context /*, StripePaymentService stripeService */)
+        public OrdersController(ArtesianDbContext context , StripePaymentService stripeService )
         {
             _context = context;
-            // _stripeService = stripeService;
+            _stripeService = stripeService;
         }
 
         [HttpPost("checkout")]
@@ -71,8 +73,42 @@ namespace MarketplaceArtesanato.API.Controllers
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            // Retorna os dados do pedido criado
             return Ok(new { order.Id, order.TotalAmount, status = order.Status.ToString() });
+        }
+        [HttpPut("{id}/tracking")]
+        [Authorize(Roles = "Seller,Admin")] 
+        public async Task<IActionResult> UpdateTracking(Guid id, [FromBody] UpdateTrackingDto dto)
+        {
+            var userId = User.GetUserId();
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                .ThenInclude(i => i.Product)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null) return NotFound();
+
+            
+            if (role == "Seller")
+            {
+                bool isMyOrder = order.Items.Any(i => i.Product.SellerId == userId);
+                if (!isMyOrder) return Forbid("Este pedido não contém seus produtos.");
+            }
+
+            order.TrackingCode = dto.TrackingCode;
+            order.Carrier = dto.Carrier;
+            order.ShippedAt = DateTime.UtcNow;
+
+            if (order.Status == OrderStatus.Paid)
+            {
+                order.Status = OrderStatus.Sent;
+            }
+
+            await _context.SaveChangesAsync();
+
+
+            return Ok(new { message = "Rastreio atualizado com sucesso." });
         }
     }
 }

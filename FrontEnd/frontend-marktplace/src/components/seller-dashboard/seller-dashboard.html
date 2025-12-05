@@ -37,8 +37,9 @@
 
     <!-- Mensagem de Erro -->
     @if (errorMessage) {
-      <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
-        <p class="font-medium">{{ errorMessage }}</p>
+      <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6 flex items-center" role="alert">
+        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+        <span class="block sm:inline font-medium">{{ errorMessage }}</span>
       </div>
     }
 
@@ -49,7 +50,6 @@
       <!-- TAB: VISÃO GERAL (DASHBOARD) -->
       @if (activeTab === 'overview') {
         <div class="space-y-8 animate-fade-in-up">
-
           <!-- Cards de Estatísticas -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
@@ -60,7 +60,6 @@
               <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.totalRevenue | currencyBr }}</p>
               <p class="text-xs text-gray-400 mt-1">nos últimos 30 dias</p>
             </div>
-
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Vendas Realizadas</h3>
@@ -69,7 +68,6 @@
               <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.totalSales }}</p>
               <p class="text-xs text-gray-400 mt-1">pedidos processados</p>
             </div>
-
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Produtos Ativos</h3>
@@ -79,51 +77,47 @@
               <p class="text-xs text-gray-400 mt-1">itens no catálogo</p>
             </div>
           </div>
-
-          <!-- Gráfico de Vendas (CSS Puro) -->
-          <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+          <!-- Gráfico de Vendas -->
+          <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 overflow-hidden">
             <h3 class="text-lg font-bold text-gray-900 mb-6">Desempenho de Vendas</h3>
-            <div class="flex items-end space-x-2 sm:space-x-6 h-64 pb-2 border-b border-stone-200">
-              <!-- Barras do Gráfico (Simulação) -->
-              <div class="flex-1 flex flex-col items-center group">
-                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 40%">
-                  <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">R$ 400</span>
-                </div>
-                <span class="text-xs text-gray-500 mt-2">Seg</span>
-              </div>
-              <div class="flex-1 flex flex-col items-center group">
-                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 70%"></div>
-                <span class="text-xs text-gray-500 mt-2">Ter</span>
-              </div>
-              <div class="flex-1 flex flex-col items-center group">
-                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 55%"></div>
-                <span class="text-xs text-gray-500 mt-2">Qua</span>
-              </div>
-              <div class="flex-1 flex flex-col items-center group">
-                <div class="w-full bg-primary/80 hover:bg-primary transition-all rounded-t-md relative" style="height: 90%">
-                  <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">R$ 900 (Hoje)</span>
-                </div>
-                <span class="text-xs text-gray-500 mt-2 font-bold text-primary">Qui</span>
-              </div>
-              <div class="flex-1 flex flex-col items-center group">
-                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 30%"></div>
-                <span class="text-xs text-gray-500 mt-2">Sex</span>
-              </div>
-              <div class="flex-1 flex flex-col items-center group">
-                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 60%"></div>
-                <span class="text-xs text-gray-500 mt-2">Sab</span>
-              </div>
-              <div class="flex-1 flex flex-col items-center group">
-                <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 45%"></div>
-                <span class="text-xs text-gray-500 mt-2">Dom</span>
+            <div class="overflow-x-auto pb-4">
+              <div class="flex items-end space-x-4 sm:space-x-6 h-64 pb-2 border-b border-stone-200 min-w-[600px]">
+                  <!-- (Barras do gráfico mantidas igual) -->
+                  <div class="flex-1 flex flex-col items-center group">
+                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 40%"></div>
+                    <span class="text-xs text-gray-500 mt-2">Seg</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center group">
+                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 70%"></div>
+                    <span class="text-xs text-gray-500 mt-2">Ter</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center group">
+                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 55%"></div>
+                    <span class="text-xs text-gray-500 mt-2">Qua</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center group">
+                    <div class="w-full bg-primary/80 hover:bg-primary transition-all rounded-t-md relative" style="height: 90%"></div>
+                    <span class="text-xs text-gray-500 mt-2 font-bold text-primary">Qui</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center group">
+                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 30%"></div>
+                    <span class="text-xs text-gray-500 mt-2">Sex</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center group">
+                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 60%"></div>
+                    <span class="text-xs text-gray-500 mt-2">Sab</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center group">
+                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 45%"></div>
+                    <span class="text-xs text-gray-500 mt-2">Dom</span>
+                  </div>
               </div>
             </div>
           </div>
-
         </div>
       }
 
-      <!-- TAB: PRODUTOS (Lista Existente) -->
+      <!-- TAB: PRODUTOS -->
       @if (activeTab === 'products') {
         <div class="animate-fade-in-up">
           <div class="flex justify-between items-center mb-6">
@@ -134,11 +128,11 @@
           </div>
 
           @if (products.length === 0) {
-            <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-stone-300">
+             <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-stone-300">
               <p class="text-gray-500">Você ainda não cadastrou produtos.</p>
             </div>
           } @else {
-            <div class="bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
+             <div class="bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
               <ul role="list" class="divide-y divide-gray-100">
                 @for (product of products; track product.id) {
                   <li class="p-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
@@ -149,22 +143,20 @@
                         <p class="text-sm text-gray-500">Estoque: {{ product.stockQuantity }}</p>
                       </div>
                     </div>
-                    <div class="text-right">
-                      <p class="text-sm font-bold text-primary">{{ product.price | currencyBr }}</p>
-                      <!-- Botões de Ação -->
-                      <div class="mt-1 flex gap-3">
-                        <button class="text-gray-400 hover:text-primary transition-colors" title="Editar">
-                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        </button>
-                         <!-- BOTÃO EXCLUIR -->
-                        <button (click)="onDelete(product)" [disabled]="isDeleting" class="text-gray-400 hover:text-red-500 transition-colors p-1 disabled:opacity-50" title="Excluir">
-                            @if (isDeleting) {
-                                <svg class="animate-spin h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            } @else {
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            }
-                        </button>
-                      </div>
+                    <div class="text-right flex gap-2 items-center">
+                      <p class="text-sm font-bold text-primary mr-4">{{ product.price | currencyBr }}</p>
+                      <!-- Botão Editar -->
+                      <button class="text-gray-400 hover:text-primary transition-colors p-1" title="Editar">
+                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                      </button>
+                      <!-- Botão Excluir -->
+                      <button (click)="onDelete(product)" [disabled]="isDeleting" class="text-gray-400 hover:text-red-500 transition-colors p-1 disabled:opacity-50" title="Excluir">
+                          @if (isDeleting) {
+                              <svg class="animate-spin h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                          } @else {
+                              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          }
+                      </button>
                     </div>
                   </li>
                 }
@@ -174,35 +166,81 @@
         </div>
       }
 
-      <!-- TAB: VENDAS (Histórico) -->
+      <!-- TAB: VENDAS (ATUALIZADA COM GESTÃO DE ENVIO) -->
       @if (activeTab === 'orders') {
         <div class="animate-fade-in-up bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
-          <div class="px-6 py-4 border-b border-stone-100">
-            <h3 class="text-lg font-bold text-gray-900">Últimas Vendas</h3>
+          <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900">Gerenciamento de Pedidos</h3>
+            <!-- Contador (opcional) -->
+            <!-- <span class="text-xs bg-stone-100 text-stone-600 py-1 px-2 rounded-full">{{ orders.length }} Pedidos</span> -->
           </div>
+
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-stone-50">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pedido</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Cliente</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Data</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Rastreio / Envio</th> <!-- COLUNA NOVA -->
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ações</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
+                <!-- Se você usar 'orders' real, troque 'recentOrders' por 'orders' aqui -->
                 @for (order of recentOrders; track order.id) {
                   <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{{ order.id }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.customer }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.date }}</td>
+
+                    <!-- Status Badge -->
                     <td class="px-6 py-4 whitespace-nowrap">
-                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                            [ngClass]="{
+                              'bg-yellow-100 text-yellow-800': order.status === 'Pendente',
+                              'bg-green-100 text-green-800': order.status === 'Pago' || order.status === 'Entregue',
+                              'bg-blue-100 text-blue-800': order.status === 'Enviado'
+                            }">
                         {{ order.status }}
                       </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ order.total | currencyBr }}</td>
+
+                    <!-- Coluna de Rastreio (Mostra código ou aviso) -->
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      @if (order.trackingCode) {
+                        <div class="flex flex-col">
+                           <a [href]="'https://www.melhorrastreio.com.br/rastreio/' + order.trackingCode" target="_blank" class="font-medium text-primary hover:underline">
+                             {{ order.trackingCode }}
+                           </a>
+                           <span class="text-xs text-gray-400">{{ order.carrier || 'Transportadora' }}</span>
+                        </div>
+                      } @else if (order.status === 'Pago') {
+                        <span class="text-orange-500 text-xs font-medium">Aguardando envio</span>
+                      } @else {
+                        <span class="text-stone-300 text-xs">—</span>
+                      }
+                    </td>
+
+                    <!-- Ações de Envio -->
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      @if (order.status === 'Pago' && !order.trackingCode) {
+                          <!-- Opção 1: Gerar Etiqueta Automática -->
+                          <button (click)="generateLabel(order)" class="text-white bg-primary hover:bg-primary-dark px-3 py-1 rounded text-xs shadow-sm mr-2 transition-colors" title="Gerar com Melhor Envio">
+                            Gerar Etiqueta
+                          </button>
+                          <!-- Opção 2: Inserir Manual -->
+                          <button (click)="addTrackingManual(order)" class="text-stone-500 hover:text-stone-700 text-xs underline" title="Inserir código dos Correios">
+                            Manual
+                          </button>
+                      } @else if (order.trackingCode) {
+                          <span class="text-green-600 text-xs flex items-center justify-end">
+                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                            Postado
+                          </span>
+                      }
+                    </td>
                   </tr>
                 }
               </tbody>

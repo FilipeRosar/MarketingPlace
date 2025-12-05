@@ -3,45 +3,79 @@ using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace MarketplaceArtesanato.API.Controllers
 {
     [Route("api/favorites")]
     [ApiController]
-    [Authorize] // Apenas usuários logados podem favoritar
+    [Authorize]
     public class FavoritesController : ControllerBase
     {
-        // TODO: Injetar IFavoritesService
+        private readonly IFavoritesService _favoritesService;
+
+        public FavoritesController(IFavoritesService favoritesService)
+        {
+            _favoritesService = favoritesService;
+        }
 
         [HttpGet]
         public async Task<ActionResult<List<Guid>>> GetFavorites()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null) return Unauthorized();
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
 
-            return Ok(new List<Guid>()); 
+            try
+            {
+                var favoriteIds = await _favoritesService.GetFavoriteProductIdsAsync(userId);
+                return Ok(favoriteIds);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERRO FAVORITOS GET] {ex.Message}");
+                // Se a tabela não existir, o erro vai aparecer aqui
+                return StatusCode(500, new { message = "Erro ao buscar favoritos." });
+            }
         }
 
         [HttpPost("add")]
         public async Task<IActionResult> AddToFavorites([FromBody] FavoriteRequestDto dto)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null) return Unauthorized();
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            return Ok(new { message = "Produto adicionado aos favoritos." });
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
+
+            try
+            {
+                await _favoritesService.AddToFavoritesAsync(userId, dto.ProductId);
+                return Ok(new { message = "Produto adicionado aos favoritos." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERRO FAVORITOS ADD] {ex.Message}");
+                if (ex.InnerException != null) Console.WriteLine($"[INNER] {ex.InnerException.Message}");
+
+                return StatusCode(500, new { message = "Erro ao salvar favorito. Verifique se a tabela UserFavorites existe." });
+            }
         }
 
         [HttpDelete("{productId}")]
         public async Task<IActionResult> RemoveFromFavorites(Guid productId)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null) return Unauthorized();
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
 
-
-            return NoContent(); 
+            try
+            {
+                await _favoritesService.RemoveFromFavoritesAsync(userId, productId);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERRO FAVORITOS REMOVE] {ex.Message}");
+                return StatusCode(500, new { message = "Erro ao remover favorito." });
+            }
         }
     }
 }

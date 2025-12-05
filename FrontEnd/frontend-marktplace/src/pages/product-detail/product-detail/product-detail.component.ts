@@ -1,5 +1,4 @@
-import { SeoService } from './../../../services/SEO/seo.service';
-import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, inject, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, Location, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -10,6 +9,7 @@ import { Product } from '../../../models/product/product.model';
 import { CurrencyBrPipe } from '../../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../../components/loading-spinner.component/loading-spinner.component';
 import { RatingStarsComponent } from '../../../components/rating-stars/rating-stars.component';
+import { SeoService } from '../../../services/SEO/seo.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -26,8 +26,9 @@ export class ProductDetailComponent implements OnInit {
   private authService = inject(AuthService);
   private location = inject(Location);
   private fb = inject(FormBuilder);
-  private SeoService = inject(SeoService);
-  private platformId = inject(PLATFORM_ID);
+  private seoService = inject(SeoService);
+
+  private platformId: Object;
 
   product: Product | null = null;
   isLoading = true;
@@ -42,7 +43,9 @@ export class ProductDetailComponent implements OnInit {
     { name: 'João Carlos', date: '15/11/2025', stars: 4.5, comment: 'Ótimo trabalho, mas o prazo de entrega foi um pouco longo.' },
   ];
 
-  constructor() {
+  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    this.platformId = platformId;
+
     this.reviewForm = this.fb.group({
       rating: [0, [Validators.required, Validators.min(1), Validators.max(5)]],
       comment: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]]
@@ -52,22 +55,30 @@ export class ProductDetailComponent implements OnInit {
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
+      console.log('ProductDetail: ID detectado na rota:', id);
+
       if (id) {
+        this.product = null;
+        this.isLoading = true;
+        this.error = null;
         this.loadProduct(id);
       }
     });
   }
 
- loadProduct(id: string) {
+  loadProduct(id: string) {
     this.isLoading = true;
+    console.log('ProductDetail: Buscando produto...', id);
+
     this.productService.getProductById(id).subscribe({
       next: (data) => {
+        console.log('ProductDetail: Dados recebidos', data);
         this.product = data;
         this.isLoading = false;
 
-        this.SeoService.updateSeoData({
+        this.seoService.updateSeoData({
           title: this.product.name,
-          description: `Compre ${this.product.name} por ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(this.product.price)}. ${this.product.description.substring(0, 100)}...`,
+          description: this.product.description.substring(0, 150),
           image: this.product.imageUrl,
           slug: `/products/${this.product.id}`
         });
@@ -77,7 +88,7 @@ export class ProductDetailComponent implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Erro ao carregar produto:', err);
+        console.error('ProductDetail: Erro ao carregar:', err);
         this.error = 'Produto não encontrado ou indisponível.';
         this.isLoading = false;
       }
@@ -87,7 +98,6 @@ export class ProductDetailComponent implements OnInit {
   addToCart() {
     if (this.product) {
       this.cartService.addToCart(this.product);
-      // Idealmente usar um Toast aqui
       if (isPlatformBrowser(this.platformId)) {
           alert('Produto adicionado ao carrinho!');
       }
@@ -105,7 +115,7 @@ export class ProductDetailComponent implements OnInit {
     setTimeout(() => {
       this.isSubmittingReview = false;
       if (isPlatformBrowser(this.platformId)) {
-          alert('Sua avaliação foi enviada com sucesso! Obrigado pelo feedback.');
+          alert('Sua avaliação foi enviada com sucesso! (Simulação)');
       }
       this.reviewForm.reset({ rating: 0, comment: '' });
     }, 1500);

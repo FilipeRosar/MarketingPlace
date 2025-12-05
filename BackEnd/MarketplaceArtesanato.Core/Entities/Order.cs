@@ -15,7 +15,9 @@ public class Order : BaseEntity
     public List<OrderItem> Items { get; set; } = new();
 
     public decimal TotalAmount { get; set; }
-
+    public string? TrackingCode { get; set; } 
+    public string? Carrier { get; set; }     
+    public DateTime? ShippedAt { get; set; }
     public string? StripeSessionId { get; set; }
     public string? StripePaymentIntentId { get; set; }
 

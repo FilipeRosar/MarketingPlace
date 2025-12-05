@@ -19,6 +19,8 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
 
         [Required]
         public int StockQuantity { get; set; }
+        [Required]
+        public List<string> Tags { get; set; } = new();
 
         [Required]
         public ProductCategory Category { get; set; }

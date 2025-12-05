@@ -30,18 +30,28 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var key = $"{CartKeyPrefix}{customerId}";
 
-            var redisValue = await _redis.StringGetAsync(key);
-            if (redisValue.HasValue)
+            // Tenta buscar do Redis (com proteção contra falhas)
+            try
             {
-                var cachedCart = JsonSerializer.Deserialize<CartDto>(redisValue!);
-                if (cachedCart != null)
+                var redisValue = await _redis.StringGetAsync(key);
+                if (redisValue.HasValue)
                 {
-                    return await EnrichWithProductData(cachedCart);
+                    var cachedCart = JsonSerializer.Deserialize<CartDto>(redisValue!);
+                    if (cachedCart != null)
+                    {
+                        return await EnrichWithProductData(cachedCart);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[REDIS ERRO - GET] Ignorando cache: {ex.Message}");
+            }
 
+            // Fallback para o Banco de Dados
             var dbCart = await GetCartFromDbAsync(customerId);
 
+            // Tenta atualizar o cache (sem quebrar se falhar)
             await SyncRedisAsync(customerId, dbCart);
 
             return dbCart;
@@ -55,63 +65,105 @@ namespace MarketplaceArtesanato.Services.Services
                 ?? throw new KeyNotFoundException("Produto não encontrado");
 
             if (product.StockQuantity < quantity)
-                throw new InvalidOperationException($"Estoque insuficiente: {product.StockQuantity} disponível(s)");
+                throw new InvalidOperationException($"Estoque insuficiente.");
 
-            var cart = await GetCartAsync(customerId);
+            var cart = await _context.Carts
+                .Include(c => c.Items)
+                .FirstOrDefaultAsync(c => c.CustomerId == customerId);
+
+            if (cart == null)
+            {
+                cart = new Cart 
+                { 
+                    Id = Guid.NewGuid(),
+                    CustomerId = customerId,
+                    Items = new List<CartItem>()
+                };
+                _context.Carts.Add(cart);
+            }
+
             var item = cart.Items.FirstOrDefault(i => i.ProductId == productId);
 
             if (item == null)
             {
-                cart.Items.Add(new CartItemDto
+                cart.Items.Add(new CartItem
                 {
+                    Id = Guid.NewGuid(),
+                    CartId = cart.Id,
                     ProductId = productId,
-                    ProductName = product.Name,
-                    ProductImage = product.Images.FirstOrDefault(),
-                    Price = product.Price,
-                    Quantity = quantity,
+                    Quantity = quantity
                 });
             }
             else
             {
                 item.Quantity += quantity;
-                if (item.Quantity > product.StockQuantity)
-                    throw new InvalidOperationException("Quantidade total excede estoque disponível");
             }
 
-            await SaveCartAsync(customerId, cart);
+            await _context.SaveChangesAsync();
+            
+            // Atualiza cache sem bloquear erro
+            var cartDto = await GetCartFromDbAsync(customerId);
+            await SyncRedisAsync(customerId, cartDto);
         }
 
         public async Task UpdateItemQuantityAsync(Guid customerId, Guid productId, int quantity)
         {
-            if (quantity <= 0) throw new ArgumentException("Quantidade deve ser > 0");
+            var cart = await _context.Carts
+                .Include(c => c.Items)
+                .FirstOrDefaultAsync(c => c.CustomerId == customerId);
 
-            var cart = await GetCartAsync(customerId);
-            var item = cart.Items.FirstOrDefault(i => i.ProductId == productId)
-                ?? throw new KeyNotFoundException("Item não está no carrinho");
+            if (cart == null) throw new KeyNotFoundException("Carrinho não encontrado");
 
-            var product = await _context.Products.FindAsync(productId);
-            if (product != null && product.StockQuantity < quantity)
-                throw new InvalidOperationException("Estoque insuficiente");
+            var item = cart.Items.FirstOrDefault(i => i.ProductId == productId);
+            if (item == null) throw new KeyNotFoundException("Item não encontrado no carrinho");
 
-            item.Quantity = quantity;
-            await SaveCartAsync(customerId, cart);
+            if (quantity <= 0)
+            {
+                _context.CartItems.Remove(item);
+            }
+            else
+            {
+                item.Quantity = quantity;
+            }
+
+            await _context.SaveChangesAsync();
+            
+            var cartDto = await GetCartFromDbAsync(customerId);
+            await SyncRedisAsync(customerId, cartDto);
         }
 
         public async Task RemoveItemAsync(Guid customerId, Guid productId)
         {
-            var cart = await GetCartAsync(customerId);
-            var removed = cart.Items.RemoveAll(i => i.ProductId == productId) > 0;
+            var cart = await _context.Carts
+                .Include(c => c.Items)
+                .FirstOrDefaultAsync(c => c.CustomerId == customerId);
 
-            if (removed)
+            if (cart != null)
             {
-                await SaveCartAsync(customerId, cart);
+                var item = cart.Items.FirstOrDefault(i => i.ProductId == productId);
+                if (item != null)
+                {
+                    _context.CartItems.Remove(item);
+                    await _context.SaveChangesAsync();
+                }
+                
+                var cartDto = await GetCartFromDbAsync(customerId);
+                await SyncRedisAsync(customerId, cartDto);
             }
         }
 
         public async Task ClearCartAsync(Guid customerId)
         {
-            var key = $"{CartKeyPrefix}{customerId}";
-            await _redis.KeyDeleteAsync(key);
+            // Limpa Redis (Safe)
+            try
+            {
+                var key = $"{CartKeyPrefix}{customerId}";
+                await _redis.KeyDeleteAsync(key);
+            }
+            catch (Exception ex) 
+            {
+                Console.WriteLine($"[REDIS ERRO - DELETE] {ex.Message}");
+            }
 
             var dbCart = await _context.Carts
                 .Include(c => c.Items)
@@ -125,18 +177,15 @@ namespace MarketplaceArtesanato.Services.Services
             }
         }
 
-
         private async Task<CartDto> GetCartFromDbAsync(Guid customerId)
         {
             var dbCart = await _context.Carts
                 .Include(c => c.Items)
-                .ThenInclude(i => i.Product)
+                .ThenInclude(i => i.Product) 
+                .ThenInclude(p => p.Images) 
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
 
-            if (dbCart == null)
-            {
-                return new CartDto { CustomerId = customerId, Items = new() };
-            }
+            if (dbCart == null) return new CartDto { CustomerId = customerId, Items = new() };
 
             var dto = new CartDto
             {
@@ -146,55 +195,32 @@ namespace MarketplaceArtesanato.Services.Services
                 {
                     ProductId = i.ProductId,
                     ProductName = i.Product.Name,
-                    ProductImage = i.Product.Images.FirstOrDefault(),
+                    ProductImage = i.Product.Images != null && i.Product.Images.Any() ? i.Product.Images[0] : null,
                     Price = i.Product.Price,
-                    Quantity = i.Quantity
+                    Quantity = i.Quantity,
+                    SellerId = i.Product.SellerId
                 }).ToList()
             };
 
             return dto;
         }
-
-        private async Task SaveCartAsync(Guid customerId, CartDto cart)
-        {
-            await SyncRedisAsync(customerId, cart);
-
-            var dbCart = await _context.Carts
-                .Include(c => c.Items)
-                .FirstOrDefaultAsync(c => c.CustomerId == customerId);
-
-            if (dbCart == null)
-            {
-                dbCart = new Cart { CustomerId = customerId };
-                _context.Carts.Add(dbCart);
-            }
-            else
-            {
-                // Limpa itens antigos para substituir (simplificação)
-                // Em produção, faríamos um merge inteligente
-                _context.CartItems.RemoveRange(dbCart.Items);
-            }
-
-            // Recria itens
-            dbCart.Items = cart.Items.Select(i => new CartItem
-            {
-                ProductId = i.ProductId,
-                Quantity = i.Quantity
-            }).ToList();
-
-            await _context.SaveChangesAsync();
-        }
-
+        
         private async Task SyncRedisAsync(Guid customerId, CartDto cart)
         {
-            var key = $"{CartKeyPrefix}{customerId}";
-            var json = JsonSerializer.Serialize(cart);
-            await _redis.StringSetAsync(key, json, TimeSpan.FromHours(24)); // Expira em 24h
+            try
+            {
+                var key = $"{CartKeyPrefix}{customerId}";
+                var json = JsonSerializer.Serialize(cart);
+                await _redis.StringSetAsync(key, json, TimeSpan.FromHours(24));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[REDIS ERRO - SYNC] Não foi possível salvar no cache: {ex.Message}");
+            }
         }
 
         private async Task<CartDto> EnrichWithProductData(CartDto cart)
         {
-            // Garante que preço e nome estejam atualizados (se mudaram no banco desde o cache)
             foreach (var item in cart.Items)
             {
                 var product = await _context.Products.FindAsync(item.ProductId);
@@ -202,7 +228,8 @@ namespace MarketplaceArtesanato.Services.Services
                 {
                     item.ProductName = product.Name;
                     item.Price = product.Price;
-                    item.ProductImage = product.Images.FirstOrDefault();
+                    // Atualiza imagem caso tenha mudado
+                    item.ProductImage = product.Images != null && product.Images.Any() ? product.Images[0] : null;
                 }
             }
             return cart;

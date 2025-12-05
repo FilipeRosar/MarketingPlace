@@ -1,4 +1,4 @@
-import { Component, DestroyRef, Input, inject } from '@angular/core';
+import { Component, Input, inject, DestroyRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Product } from '../../models/product/product.model';
@@ -16,50 +16,51 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   templateUrl: './product-card.component.html',
   styleUrl: './product-card.component.css'
 })
-export class ProductCardComponent {
+export class ProductCardComponent implements OnInit {
   @Input({ required: true }) product!: Product;
 
   private cartService = inject(CartService);
-  private favoritesService = inject(FavoritesService);
+  public favoritesService = inject(FavoritesService);
   private authService = inject(AuthService);
-
   private destroyRef = inject(DestroyRef);
 
   isFavorite$ = this.favoritesService.favoriteProductIds$.pipe(
-    takeUntilDestroyed(this.destroyRef),
-    map(ids => ids.includes(this.product.id))
+    takeUntilDestroyed(),
+    map((ids: string[]) => ids.includes(this.product.id))
   );
+
+  // Variavel local para controle visual imediato (Otimista)
+  isFavoriteLocal = false;
+
+  ngOnInit() {
+    // Inscreve para atualizar o estado local
+    this.isFavorite$.subscribe(isFav => this.isFavoriteLocal = isFav);
+  }
 
   addToCart(event: Event, product: Product) {
     event.stopPropagation();
     this.cartService.addToCart(product);
-    console.log('Adicionado ao carrinho:', product.name);
   }
 
   toggleFavorite(event: Event) {
     event.stopPropagation();
 
-    this.authService.currentUser$.pipe(take(1)).subscribe(user => {
-      if (!user) {
-        alert('Faça login para salvar seus favoritos!');
-        return;
+    if (!this.authService.currentUserValue) {
+      alert('Faça login para salvar seus favoritos!');
+      return;
+    }
+
+    this.isFavoriteLocal = !this.isFavoriteLocal;
+
+    const action = this.isFavoriteLocal
+      ? this.favoritesService.addToFavorites(this.product.id)
+      : this.favoritesService.removeFromFavorites(this.product.id);
+
+    action.subscribe({
+      error: (err) => {
+        this.isFavoriteLocal = !this.isFavoriteLocal;
+        console.error("Falha ao atualizar favoritos:", err);
       }
-
-      const isCurrentlyFavorite = this.favoritesService.isFavorite(this.product.id);
-
-      const action = isCurrentlyFavorite
-        ? this.favoritesService.removeFromFavorites(this.product.id)
-        : this.favoritesService.addToFavorites(this.product.id);
-
-      action.subscribe({
-        next: () => {
-          console.log(`Produto ${isCurrentlyFavorite ? 'removido' : 'adicionado'} dos favoritos.`);
-        },
-        error: (err) => {
-          console.error("Falha ao atualizar favoritos:", err);
-          alert('Erro ao atualizar favoritos. Tente novamente.');
-        }
-      });
     });
   }
 }

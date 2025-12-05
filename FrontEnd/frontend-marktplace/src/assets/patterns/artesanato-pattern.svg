@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120px" height="120px" viewBox="0 0 120 120" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="artesanatoPattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+      <!-- Renda de bilro -->
+      <path d="M10 10 Q15 5, 20 10 T30 10" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.15"/>
+      <path d="M10 20 Q15 15, 20 20 T30 20" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.15"/>
+
+      <!-- Cestaria indígena -->
+      <circle cx="45" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.12"/>
+      <circle cx="45" cy="35" r="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.12"/>
+
+      <!-- Cerâmica (ondas do Jequitinhonha) -->
+      <path d="M5 45 Q15 40, 25 45 T45 45" fill="none" stroke="currentColor" stroke-width="2" opacity="0.18"/>
+      <path d="M10 50 Q20 45, 30 50 T50 50" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.16"/>
+
+      <!-- Ponto cruz -->
+      <path d="M50 5 L55 10 L50 15 L45 10 Z" fill="currentColor" opacity="0.1"/>
+      <path d="M8 52 L13 57 L8 62 L3 57 Z" fill="currentColor" opacity="0.1"/>
+
+      <!-- Macramê -->
+      <path d="M35 30 L40 40 L35 50 L30 40 Z" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.14"/>
+    </pattern>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#artesanatoPattern)" />
+</svg>

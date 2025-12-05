@@ -5,8 +5,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
 
 import { AuthResponse, LoginRequest, User } from '../../models/user/user.model';
-import { RegisterCustomer } from '../../models/register/register.model';
-import { RegisterSeller } from '../../models/register/register.model';
+import { RegisterCustomer, RegisterSeller } from '../../models/register/register.model';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +14,6 @@ export class AuthService {
   private apiUrl = `${environment.apiUrl}/auth`;
 
   private currentUserSubject = new BehaviorSubject<User | null>(null);
-
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(
@@ -27,77 +25,84 @@ export class AuthService {
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
-      tap(response => {
-        this.handleAuthSuccess(response);
-      })
+      tap(response => this.handleAuthSuccess(response))
     );
   }
 
   registerCustomer(data: RegisterCustomer): Observable<AuthResponse> {
-    const payload = { ...data, role: 'Customer' };
-
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register/customer`, payload).pipe(
-      tap(response => {
-        this.handleAuthSuccess(response);
-      })
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register/customer`, {
+      ...data,
+      role: 'Customer'
+    }).pipe(
+      tap(response => this.handleAuthSuccess(response))
     );
   }
 
   registerSeller(data: RegisterSeller): Observable<AuthResponse> {
-    const payload = { ...data, role: 'Seller' };
-
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register/seller`, payload).pipe(
-      tap(response => {
-        this.handleAuthSuccess(response);
-      })
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register/seller`, {
+      ...data,
+      role: 'Seller'
+    }).pipe(
+      tap(response => this.handleAuthSuccess(response))
     );
   }
   updateCurrentUser(user: User) {
-    if (isPlatformBrowser(this.platformId)) {
-        localStorage.setItem('user', JSON.stringify(user));
-    }
+    this.setStorageItem('user', JSON.stringify(user));
     this.currentUserSubject.next(user);
   }
 
   logout() {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
+    this.clearStorage();
     this.currentUserSubject.next(null);
   }
 
-  private handleAuthSuccess(response: AuthResponse) {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-    }
-    this.currentUserSubject.next(response.user);
-  }
-
   getToken(): string | null {
-    if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem('token');
-    }
-    return null;
+    return isPlatformBrowser(this.platformId) ? localStorage.getItem('token') : null;
   }
 
   get currentUserValue(): User | null {
     return this.currentUserSubject.value;
   }
 
+  isLoggedIn(): boolean {
+    return !!this.getToken() && !!this.currentUserValue;
+  }
+
+  // ====================== PRIVATE HELPERS ======================
+  private handleAuthSuccess(response: AuthResponse) {
+    this.setStorageItem('token', response.token);
+    this.setStorageItem('user', JSON.stringify(response.user));
+    this.currentUserSubject.next(response.user);
+  }
+
   private loadUserFromStorage() {
-    if (isPlatformBrowser(this.platformId)) {
-      const userJson = localStorage.getItem('user');
-      if (userJson) {
-        try {
-          const user = JSON.parse(userJson);
-          this.currentUserSubject.next(user);
-        } catch (e) {
-          console.error('Erro ao ler usuário do storage', e);
-          this.logout();
-        }
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const token = localStorage.getItem('token');
+    const userJson = localStorage.getItem('user');
+
+    if (token && userJson) {
+      try {
+        const user = JSON.parse(userJson);
+        this.currentUserSubject.next(user);
+      } catch (e) {
+        console.error('Erro ao parsear usuário do localStorage', e);
+        this.clearStorage();
       }
+    }
+  }
+
+  // Métodos seguros para localStorage (nunca quebram no SSR)
+  private setStorageItem(key: string, value: string) {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(key, value);
+    }
+  }
+
+  private clearStorage() {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
   }
 }

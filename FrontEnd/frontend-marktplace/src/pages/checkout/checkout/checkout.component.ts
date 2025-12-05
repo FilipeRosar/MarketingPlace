@@ -1,9 +1,8 @@
-import { CheckoutService } from './../../../services/checkout/checkout.service';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CartService } from '../../../services/cart/cart.service';
-import { OrderService } from '../../../services/order/order.service';
+import { CheckoutService } from '../../../services/checkout/checkout.service';
 import { CurrencyBrPipe } from '../../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../../components/loading-spinner.component/loading-spinner.component';
 import { AuthService } from '../../../services/auth/auth.service';
@@ -17,13 +16,19 @@ import { AuthService } from '../../../services/auth/auth.service';
 })
 export class CheckoutComponent implements OnInit {
   cartService = inject(CartService);
-  private orderService = inject(OrderService);
+  private checkoutService = inject(CheckoutService);
   private authService = inject(AuthService);
   private router = inject(Router);
-  private checkoutService = inject(CheckoutService);
+
   isLoading = false;
   cartItems = this.cartService.cartItems;
-  total = this.cartService.total;
+
+  subtotal = this.cartService.total;
+
+  // 2. Taxa de Serviço (Deve bater com a constante SERVICE_FEE_CENTS = 299 do Backend)
+  serviceFee = 2.99;
+
+  total = computed(() => this.subtotal() + this.serviceFee);
 
   ngOnInit() {
     if (!this.authService.currentUserValue) {
@@ -37,36 +42,31 @@ export class CheckoutComponent implements OnInit {
   }
 
   onCheckout() {
-  if (this.cartItems().length === 0) {
-    alert('Carrinho vazio!');
-    return;
+    if (this.cartItems().length === 0) {
+      alert('Carrinho vazio!');
+      return;
+    }
+
+    this.isLoading = true;
+
+    const itemsToBuy = this.cartItems();
+
+    this.checkoutService.createCheckoutSession(itemsToBuy).subscribe({
+      next: (response: any) => {
+        if (response.url) {
+          window.location.href = response.url;
+        } else {
+          console.error('URL não encontrada');
+          this.isLoading = false;
+          alert('Erro ao processar.');
+        }
+      },
+      error: (err) => {
+        console.error('Erro no checkout:', err);
+        this.isLoading = false;
+        const msg = err.error?.message || 'Erro ao iniciar pagamento.';
+        alert(msg);
+      }
+    });
   }
-
-  this.isLoading = true;
-
-  this.checkoutService.createCheckoutSession(this.cartItems()).subscribe({
-    next: (res) => {
-      window.location.href = res.url;
-    },
-    error: (err) => {
-      this.isLoading = false;
-      alert(err.error?.message || 'Erro ao iniciar pagamento');
-    }
-  });
-
-
-  this.isLoading = true;
-
-  this.checkoutService.createCheckoutSession(this.cartItems()).subscribe({
-    next: (res) => {
-      window.location.href = res.url; // Redireciona para o Stripe
-    },
-    error: (err) => {
-      this.isLoading = false;
-      const mensagem = err.error?.message || 'Erro ao iniciar pagamento. Tente novamente.';
-      alert(mensagem);
-    }
-  });
-
-}
 }

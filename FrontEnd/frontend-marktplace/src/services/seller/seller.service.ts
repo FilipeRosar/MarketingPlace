@@ -1,18 +1,32 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Seller } from '../../models/product/product.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SellerService {
   private apiUrl = `${environment.apiUrl}/sellers`;
+  private userApiUrl = `${environment.apiUrl}/users`; // Para upload de foto
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) { }
+  getSellerById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${id}`);
+  }
 
-  getSellerById(id: string): Observable<Seller> {
-    return this.http.get<Seller>(`${this.apiUrl}/${id}`);
+  searchSellers(query: string): Observable<any[]> {
+    const params = new HttpParams().set('search', query);
+    return this.http.get<any[]>(this.apiUrl, { params });
+  }
+
+  updateProfile(data: any): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/profile`, data);
+  }
+
+  uploadBanner(file: File): Observable<{ imageUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ imageUrl: string }>(`${this.userApiUrl}/upload-banner`, formData); // Criar esse endpoint no Backend se quiser
   }
 }

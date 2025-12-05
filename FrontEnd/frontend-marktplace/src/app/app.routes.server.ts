@@ -27,15 +27,15 @@ export const serverRoutes: ServerRoute[] = [
   },
   {
     path: 'cart',
-    renderMode: RenderMode.Client
+    renderMode: RenderMode.Server
   },
   {
     path: 'orders',
-    renderMode: RenderMode.Client
+    renderMode: RenderMode.Server
   },
   {
     path: 'seller-dashboard',
-    renderMode: RenderMode.Client
+    renderMode: RenderMode.Server
   },
   {
     path: 'add-product',

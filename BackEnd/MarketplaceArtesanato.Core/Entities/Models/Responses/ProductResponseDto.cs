@@ -18,6 +18,9 @@ namespace MarketplaceArtesanato.API.Models.Responses
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
         [Required]
+        public List<string> Tags { get; set; } = new();
+
+        [Required]
         public int StockQuantity { get; set; } = 0;
         public List<string> Images { get; set; } = new List<string>();
         public string ImageUrl => Images.FirstOrDefault() ?? "";
