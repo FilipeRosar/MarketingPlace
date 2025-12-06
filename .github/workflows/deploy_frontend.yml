@@ -42,7 +42,7 @@ jobs:
         working-directory: ./FrontEnd/frontend-marktplace/
 
       - name: Create .nojekyll file
-        run: touch FrontEnd/frontend-marktplace/docs/.nojekyll
+        run: touch FrontEnd/frontend-marktplace/docs/browser/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -50,7 +50,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'FrontEnd/frontend-marktplace/docs' 
+          path: 'FrontEnd/frontend-marktplace/docs/browser' 
           
       - name: Deploy to GitHub Pages
         id: deployment
