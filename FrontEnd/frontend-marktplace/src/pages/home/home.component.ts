@@ -1,19 +1,12 @@
 // src/app/pages/home/home.component.ts
-import { Component, inject, signal, OnInit, OnDestroy, PLATFORM_ID, effect } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, PLATFORM_ID, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
-
 import { ProductService } from '../../services/product/product.service';
+import { SeoService } from '../../services/SEO/seo.service';
+import { Product } from '../../models/product/product.model';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
-
-interface CategoryHighlight {
-  value: string;
-  label: string;
-  img: string;
-  count: string;
-}
 
 @Component({
   selector: 'app-home',
@@ -29,74 +22,99 @@ interface CategoryHighlight {
 })
 export class HomeComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
+  private seoService = inject(SeoService);
   private platformId = inject(PLATFORM_ID);
 
-  // Signals = performance máxima + reatividade instantânea
-  featuredProducts = signal<any[]>([]);
-  isLoading = signal(true);
-  heroPrincipal = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1350&q=80';
-  // Categorias em destaque na home
-  highlightCategories = [
-  { value: '0', label: 'Decoração',     img: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=800&q=80',  count: '1.247' },
-  { value: '1', label: 'Joias',         img: 'https://images.unsplash.com/photo-1599643478518-a6f0a3f02367?auto=format&fit=crop&w=800&q=80',  count: '892' },
-  { value: '2', label: 'Roupas',        img: 'https://images.unsplash.com/photo-1585487000161-6eb9c7e7c65c?auto=format&fit=crop&w=800&q=80',  count: '567' },
-  { value: '3', label: 'Arte',          img: 'https://images.unsplash.com/photo-1544966249-0a422026a3dc?auto=format&fit=crop&w=800&q=80',  count: '1.034' },
-  { value: '6', label: 'Móveis',        img: 'https://images.unsplash.com/photo-1555041469-0a266c3f8c12?auto=format&fit=crop&w=800&q=80',  count: '423' },
-  { value: '7', label: 'Cozinha',       img: 'https://images.unsplash.com/photo-1600585154363-227d82c8a5e4?auto=format&fit=crop&w=800&q=80',  count: '789' },
-  { value: '4', label: 'Brinquedos',    img: 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=800&q=80',  count: '312' },
-  { value: '9', label: 'Outros',        img: 'https://images.unsplash.com/photo-1615529214802-2eca9af8b3c0?auto=format&fit=crop&w=800&q=80',  count: '2.104' }
+  @ViewChild('categoriesContainer') categoriesContainer!: ElementRef;
+
+  // Dados
+  featuredProducts: Product[] = [];
+  isLoading = true;
+
+  // Hero Images (Unsplash estáveis)
+  heroImages = [
+    { id: 1, src: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=600&q=80' },
+    { id: 2, src: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&q=80' },
+    { id: 3, src: 'https://images.unsplash.com/photo-1590736969955-71cc94801759?w=600&q=80' },
+    { id: 4, src: 'https://images.unsplash.com/photo-1605518216938-7c31b7b14ad0?w=600&q=80' },
+    { id: 5, src: 'https://images.unsplash.com/photo-1584589167171-541ce45f1eea?w=600&q=80' },
+    { id: 6, src: 'https://images.unsplash.com/photo-1622226069815-843b9f040e96?w=600&q=80' },
+    { id: 7, src: 'https://images.unsplash.com/photo-1595079676339-1534801fafde?w=600&q=80' },
+    { id: 8, src: 'https://images.unsplash.com/photo-1616627988031-f912e383a694?w=600&q=80' }
   ];
-  heroAlternativas = [
-    'https://images.unsplash.com/photo-1606787620651-54df5dc2e9aa?auto=format&fit=crop&w=1350&q=80', // Cerâmica nordestina
-    'https://images.unsplash.com/photo-1616594039963-ae4c9c9a11e4?auto=format&fit=crop&w=1350&q=80', // Renda de bilro
-    'https://images.unsplash.com/photo-1604176354204-9268737828e4?auto=format&fit=crop&w=1350&q=80', // Cestaria indígena
+
+  carouselCategories = [
+    { label: 'Decoração', value: '0', img: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&q=80' },
+    { label: 'Joias', value: '1', img: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80' },
+    { label: 'Roupas', value: '2', img: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&q=80' },
+    { label: 'Arte', value: '3', img: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&q=80' },
+    { label: 'Móveis', value: '6', img: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&q=80' },
+    { label: 'Cozinha', value: '7', img: 'https://images.unsplash.com/photo-1556910103-1c02745a30bf?w=400&q=80' }
   ];
-  featuredExample = 'https://images.unsplash.com/photo-1616593918054-5449e757e0d6?auto=format&fit=crop&w=800&q=80';
-  private subscription = new Subscription();
+
+  private shuffleInterval: any;
+
+  constructor() {
+    // CHAMA TUDO ANTES DO RENDER
+    this.setupSEO();
+    this.loadFeaturedProducts();
+  }
 
   ngOnInit(): void {
-    this.loadFeaturedProducts();
-
-    // Preload da imagem hero (LCP < 1s garantido)
     if (isPlatformBrowser(this.platformId)) {
-      const heroImg = new Image();
-      heroImg.src = 'assets/hero/principal.jpg';
-
-      // Preconnect nas fontes e CDN se usar
-      const link = document.createElement('link');
-      link.rel = 'preconnect';
-      link.href = 'https://fonts.googleapis.com';
-      document.head.appendChild(link);
+      this.startShuffle();
     }
   }
 
   ngOnDestroy(): void {
-    this.subscription.unsubscribe();
+    if (this.shuffleInterval) clearInterval(this.shuffleInterval);
+  }
+
+  private setupSEO(): void {
+    this.seoService.updateSeoData({
+      title: 'Mitrama - O Maior Marketplace de Artesanato do Brasil',
+      description: 'Peças únicas feitas à mão por artesãos de todo o Brasil. Decoração, moda e presentes com alma.',
+      image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=80',
+      slug: '/'
+    });
   }
 
   private loadFeaturedProducts(): void {
-    this.isLoading.set(true);
-
-    // Aqui você pode criar um endpoint específico /featured ou usar filtro
-    this.subscription.add(
-      this.productService.getAllProducts(1, 12, '', '', 'featured: true').subscribe({
-        next: (res: any) => {
-          const products = Array.isArray(res)
-            ? res
-            : (res.items || res.data || []);
-
-          this.featuredProducts.set(products);
-          this.isLoading.set(false);
-        },
-        error: (err) => {
-          console.error('Erro ao carregar destaques:', err);
-          this.featuredProducts.set([]);
-          this.isLoading.set(false);
-        }
-      })
-    );
+    this.isLoading = true;
+    this.productService.getAllProducts(1, 8).subscribe({
+      next: (data: any) => {
+        const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
+        this.featuredProducts = items;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.featuredProducts = [];
+        this.isLoading = false;
+      }
+    });
   }
 
-  // Método opcional pra recarregar ao voltar na home (se quiser)
-  // Pode conectar com um BehaviorSubject no service se precisar de refresh
+  startShuffle(): void {
+    this.shuffleSquares();
+    this.shuffleInterval = setInterval(() => this.shuffleSquares(), 4000);
+  }
+
+  shuffleSquares(): void {
+    const array = [...this.heroImages];
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    this.heroImages = array;
+  }
+
+  scrollCategories(direction: 'left' | 'right'): void {
+    if (isPlatformBrowser(this.platformId) && this.categoriesContainer) {
+      const amount = 300;
+      this.categoriesContainer.nativeElement.scrollBy({
+        left: direction === 'left' ? -amount : amount,
+        behavior: 'smooth'
+      });
+    }
+  }
 }

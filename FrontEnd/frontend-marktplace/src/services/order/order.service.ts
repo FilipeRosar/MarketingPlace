@@ -15,7 +15,7 @@ export class OrderService {
   constructor() { }
 
   getMyOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>(this.apiUrl);
+    return this.http.get<Order[]>(`${this.apiUrl}/my-orders`);
   }
   updateTracking(orderId: string, trackingCode: string, carrier: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/${orderId}/tracking`, { trackingCode, carrier });

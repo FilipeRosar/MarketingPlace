@@ -4,6 +4,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Product } from '../../models/product/product.model';
 import { AuthService } from '../auth/auth.service';
 import { environment } from '../../environments/environment';
+import { NotificationService } from '../notification/notification.service';
 import { firstValueFrom } from 'rxjs';
 
 export interface CartItem {
@@ -17,6 +18,7 @@ export interface CartItem {
 export class CartService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.apiUrl}/carts`;
 
@@ -26,23 +28,21 @@ export class CartService {
   total = computed(() => this.cartItems().reduce((acc, item) => acc + (item.product.price * item.quantity), 0));
 
   constructor() {
-    // Carrega o carrinho salvo no navegador (se houver) ao iniciar
     this.loadCart();
-
-    // Escuta mudanças no login/logout
     this.authService.currentUser$.subscribe(user => {
       if (user) {
-        // Se o usuário logou, sincroniza com o que está no banco de dados
         this.syncCartWithServer();
       } else {
-        // CORREÇÃO: Se o usuário deslogou, LIMPA o carrinho local
         this.clearLocalCart();
       }
     });
   }
 
   async addToCart(product: Product) {
+    const previousItems = this.cartItems();
     this.updateLocalState(product, 1);
+
+    this.notificationService.success(`${product.name} adicionado!`);
 
     if (this.authService.currentUserValue) {
       try {
@@ -52,33 +52,66 @@ export class CartService {
         }));
       } catch (err) {
         console.error('Erro ao salvar carrinho no servidor', err);
+        this.cartItems.set(previousItems);
+        this.saveLocal();
+        this.notificationService.error('Erro ao salvar no carrinho. Tente novamente.');
       }
     }
   }
 
   async updateQuantity(productId: string, quantity: number) {
+    const previousItems = this.cartItems();
+
     this.cartItems.update(items =>
       items.map(item => item.product.id === productId ? { ...item, quantity } : item)
     );
     this.saveLocal();
 
     if (this.authService.currentUserValue) {
-      this.http.put(`${this.apiUrl}/update`, { productId, quantity }).subscribe();
+      this.http.put(`${this.apiUrl}/update`, { productId, quantity }).subscribe({
+        error: (err) => {
+          console.error('Erro ao atualizar quantidade', err);
+          this.cartItems.set(previousItems);
+          this.saveLocal();
+          this.notificationService.error('Não foi possível atualizar a quantidade.');
+        }
+      });
     }
   }
 
   async removeFromCart(productId: string) {
+    const previousItems = this.cartItems();
+
     this.cartItems.set(this.cartItems().filter(i => i.product.id !== productId));
     this.saveLocal();
 
     if (this.authService.currentUserValue) {
-      this.http.delete(`${this.apiUrl}/remove/${productId}`).subscribe();
+      this.http.delete(`${this.apiUrl}/remove/${productId}`).subscribe({
+        error: (err) => {
+            console.error('Erro ao remover item', err);
+            this.cartItems.set(previousItems);
+            this.saveLocal();
+            this.notificationService.error('Erro ao remover item.');
+        }
+      });
     }
   }
 
   // --- Helpers ---
 
-  // Limpa o carrinho da memória e do localStorage
+  // Método Público para limpar o carrinho (usado no Checkout)
+  public clearCart() {
+    // Limpa localmente
+    this.clearLocalCart();
+
+    // Limpa no servidor se estiver logado
+    if (this.authService.currentUserValue) {
+      this.http.delete(`${this.apiUrl}/clear`).subscribe({
+        error: (err) => console.warn('Erro ao limpar carrinho no servidor', err)
+      });
+    }
+  }
+
   private clearLocalCart() {
     this.cartItems.set([]);
     if (isPlatformBrowser(this.platformId)) {
@@ -91,11 +124,13 @@ export class CartService {
     const existing = current.find(i => i.product.id === product.id);
 
     if (existing) {
-      this.updateQuantity(product.id, existing.quantity + qty);
+      this.cartItems.update(items =>
+          items.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + qty } : item)
+      );
     } else {
       this.cartItems.set([...current, { product, quantity: qty }]);
-      this.saveLocal();
     }
+    this.saveLocal();
   }
 
   private saveLocal() {
@@ -127,7 +162,6 @@ export class CartService {
                     name: i.productName,
                     price: i.price,
                     imageUrl: i.productImage,
-                    // Preenchemos o resto com dados padrão pois o DTO do carrinho é simplificado
                     description: '',
                     stockQuantity: 99,
                     category: '',
@@ -143,14 +177,11 @@ export class CartService {
             this.cartItems.set(items);
             this.saveLocal();
         } else {
-            // Se o servidor retornar vazio, garantimos que o local também fique vazio
             this.cartItems.set([]);
             this.saveLocal();
         }
       },
-      error: () => {
-        // Se der erro ao sincronizar (ex: token expirado), não faz nada ou limpa
-      }
+      error: (err) => console.error('Erro ao sincronizar carrinho:', err)
     });
   }
 }

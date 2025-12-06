@@ -15,29 +15,38 @@ import { ForgotPasswordComponent } from '../pages/forgot-password/forgot-passwor
 import { ResetPasswordComponent } from '../pages/reset-password/reset-password.component';
 import { AdminDashboardComponent } from '../pages/admin-dashboard/admin-dashboard.component';
 import { FavoritesComponent } from '../components/favorite/favorite.component';
+import { adminGuard } from '../guards/admin.guard';
+import { authGuard } from '../guards/auth-guard';
 
 export const routes: Routes = [
    { path: '', component: HomeComponent },
   { path: 'products/:id', component: ProductDetailComponent },
   { path: 'sellers/:id', component: SellerProfileComponent },
-
+  { path: 'categorias',loadComponent: () => import('../pages/categories-page/categories-page.component').then(m => m.CategoriesPageComponent) },
+  { path: 'categorias/:slug', loadComponent: () => import('../pages/categories-page/categories-page.component').then(m => m.CategoriesPageComponent) },
   // Auth
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterCustomerComponent },
   { path: 'register-seller', component: RegisterSellerComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
-  { path: 'admin', component: AdminDashboardComponent },
-
+  {
+  path: 'admin',
+  loadComponent: () => import('../pages/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+  canMatch: [adminGuard]
+  },
   // Privadas
   { path: 'cart', component: CartComponent },
   { path: 'checkout', component: CheckoutComponent },
-  { path: 'orders', component: OrdersComponent },
+  {
+  path: 'orders',
+  component: OrdersComponent,
+  canActivate: [authGuard],
+  data: { title: 'orders' }
+  },
   { path: 'profile', component: ProfileComponent },
   { path: 'add-product', component: AddProductComponent },
   { path: 'seller-dashboard', component: SellerDashboardComponent },
-  { path: 'orders', component: OrdersComponent },
   { path: 'favorites', component: FavoritesComponent },
-  { path: 'categorias',loadComponent: () => import('../pages/categories-page/categories-page.component').then(m => m.CategoriesPageComponent) },
   { path: '**', redirectTo: '' }
 ];

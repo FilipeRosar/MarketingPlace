@@ -28,30 +28,34 @@
       <!-- 3. Navegação Desktop -->
       <div class="hidden md:flex items-center space-x-6">
 
-        <!-- Dropdown Categorias (Hover) -->
-        <div class="relative group prevent-close" (mouseenter)="onMouseEnterCategory()" (mouseleave)="onMouseLeaveCategory()">
-          <button class="flex items-center text-gray-600 hover:text-primary font-medium transition-colors py-2 focus:outline-none">
+        <div class="relative"
+             (mouseenter)="onMouseEnterCategory()"
+             (mouseleave)="onMouseLeaveCategory()">
+
+          <button
+            (click)="toggleCategoryMenu()"
+            class="flex items-center text-gray-700 hover:text-primary font-medium transition py-2">
             Categorias
-            <svg class="ml-1 h-4 w-4 transition-transform duration-200" [class.rotate-180]="isCategoryMenuOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            <svg class="ml-1 w-4 h-4 transition-transform duration-200"
+                 [class.rotate-180]="isCategoryMenuOpen"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
           </button>
 
-          <!-- Menu Flutuante -->
           <div *ngIf="isCategoryMenuOpen"
-               class="absolute left-1/2 transform -translate-x-1/2 mt-0 w-64 pt-2 z-50 animate-fade-in-up origin-top">
-            <div class="rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden bg-white">
-              <div class="py-1 grid grid-cols-1">
-                @for (cat of categories; track cat.value) {
-                  <!-- MUDANÇA: Redireciona para /products -->
-                  <a [routerLink]="['/products']" [queryParams]="{category: cat.value}" (click)="closeMenus()"
-                     class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-primary transition-colors cursor-pointer group">
-                    <span class="mr-3 text-lg group-hover:scale-110 transition-transform">{{ cat.icon }}</span>
-                    {{ cat.label }}
-                  </a>
-                }
-              </div>
-            </div>
+               class="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-64 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden z-50"
+               (mouseenter)="onMouseEnterCategory()"
+               (mouseleave)="onMouseLeaveCategory()">
+            @for (cat of categories; track cat.value) {
+              <a [routerLink]="['/categorias']"
+                 [queryParams]="{ category: cat.value }"
+                 (click)="closeMenus()"
+                 class="flex items-center gap-3 px-6 py-4 text-gray-700 hover:bg-orange-50 hover:text-primary transition group">
+                <span class="text-2xl group-hover:scale-110 transition-transform">{{ cat.icon }}</span>
+                <span class="font-medium">{{ cat.label }}</span>
+              </a>
+            }
           </div>
         </div>
 
@@ -237,8 +241,7 @@
 
               <div *ngIf="isCategoryMenuOpen" class="pl-4 mt-1 space-y-1 border-l-2 border-stone-100 ml-4 animate-fade-in-down">
                 @for (cat of categories; track cat.value) {
-                  <!-- MUDANÇA: Redireciona para /products -->
-                  <a [routerLink]="['/products']" [queryParams]="{category: cat.value}" (click)="closeMenus()"
+                  <a [routerLink]="['/categorias']" [queryParams]="{category: cat.value}" (click)="closeMenus()"
                      class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-primary hover:bg-orange-50/50 rounded-lg transition-colors cursor-pointer">
                     <span class="mr-3 opacity-70">{{ cat.icon }}</span>
                     {{ cat.label }}

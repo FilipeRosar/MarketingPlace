@@ -6,6 +6,7 @@ import { CheckoutService } from '../../../services/checkout/checkout.service';
 import { CurrencyBrPipe } from '../../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../../components/loading-spinner.component/loading-spinner.component';
 import { AuthService } from '../../../services/auth/auth.service';
+import { NotificationService } from '../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-checkout',
@@ -19,19 +20,18 @@ export class CheckoutComponent implements OnInit {
   private checkoutService = inject(CheckoutService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private notificationService = inject(NotificationService); // Injetar
 
   isLoading = false;
   cartItems = this.cartService.cartItems;
 
   subtotal = this.cartService.total;
-
-  // 2. Taxa de Serviço (Deve bater com a constante SERVICE_FEE_CENTS = 299 do Backend)
   serviceFee = 2.99;
-
   total = computed(() => this.subtotal() + this.serviceFee);
 
   ngOnInit() {
     if (!this.authService.currentUserValue) {
+      this.notificationService.info('Faça login para finalizar a compra.', 'Atenção');
       this.router.navigate(['/login']);
       return;
     }
@@ -43,7 +43,7 @@ export class CheckoutComponent implements OnInit {
 
   onCheckout() {
     if (this.cartItems().length === 0) {
-      alert('Carrinho vazio!');
+      this.notificationService.warning('Seu carrinho está vazio!', 'Ops!');
       return;
     }
 
@@ -54,18 +54,22 @@ export class CheckoutComponent implements OnInit {
     this.checkoutService.createCheckoutSession(itemsToBuy).subscribe({
       next: (response: any) => {
         if (response.url) {
+          // SUCESSO: Limpa o carrinho local antes de ir para o Stripe
+          this.cartService.clearCart();
+
+          // Redireciona
           window.location.href = response.url;
         } else {
-          console.error('URL não encontrada');
+          console.error('URL de pagamento não encontrada');
           this.isLoading = false;
-          alert('Erro ao processar.');
+          this.notificationService.error('Erro ao processar pagamento. Tente novamente.', 'Erro');
         }
       },
       error: (err) => {
         console.error('Erro no checkout:', err);
         this.isLoading = false;
-        const msg = err.error?.message || 'Erro ao iniciar pagamento.';
-        alert(msg);
+        const msg = err.error?.message || 'Erro ao iniciar pagamento. Tente novamente.';
+        this.notificationService.error(msg, 'Erro no Checkout');
       }
     });
   }

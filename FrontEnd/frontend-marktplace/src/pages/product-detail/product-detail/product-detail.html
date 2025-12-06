@@ -98,6 +98,22 @@
           <div class="prose prose-sm text-gray-500 leading-relaxed border-t border-stone-100 pt-4">
             <p>{{ product.description }}</p>
           </div>
+
+          <!-- Tags (NOVO) -->
+          @if (product.tags && product.tags.length > 0) {
+            <div class="mt-6 pt-6 border-t border-stone-100">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tags:</h4>
+              <div class="flex flex-wrap gap-2">
+                @for (tag of product.tags; track tag) {
+                  <!-- Link para a busca filtrada por essa tag (Opcional) -->
+                  <a [routerLink]="['/category-page']" [queryParams]="{search: tag}"
+                     class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-primary cursor-pointer transition-colors">
+                    #{{ tag }}
+                  </a>
+                }
+              </div>
+            </div>
+          }
         </div>
       </div>
 

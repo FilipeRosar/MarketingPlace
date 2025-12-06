@@ -1,36 +1,25 @@
+// src/app/interceptors/auth.interceptor.ts
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth/auth.service';
-import { isPlatformBrowser } from '@angular/common';
-import { PLATFORM_ID } from '@angular/core';
-import { environment } from '../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const platformId = inject(PLATFORM_ID);
+  const auth = inject(AuthService);
 
-  if (!isPlatformBrowser(platformId)) {
+  // Não adiciona token para login, register e endpoints públicos
+  const publicPaths = ['/auth/login', '/auth/register', '/auth/refresh'];
+  if (publicPaths.some(p => req.url.includes(p))) {
     return next(req);
   }
 
-  const isApiRequest = req.url.includes('localhost:7113') || req.url.includes('/api/');
+  const token = auth.getToken();         
+  if (!token) return next(req);
 
-  if (isApiRequest) {
-    const token = authService.getToken();
-
-    if (token) {
-      if (!environment.production) {
-        console.log('Token adicionado à requisição');
-      }
-
-      const authReq = req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return next(authReq);
+  const authReq = req.clone({
+    setHeaders: {
+      Authorization: `Bearer ${token}`
     }
-  }
+  });
 
-  return next(req);
+  return next(authReq);
 };

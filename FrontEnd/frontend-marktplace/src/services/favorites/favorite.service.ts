@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
-import { AuthService } from '../auth/auth.service'; // 1. Importar AuthService
+import { AuthService } from '../auth/auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +12,7 @@ export class FavoritesService {
   private apiUrl = `${environment.apiUrl}/favorites`;
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
-  private authService = inject(AuthService); // 2. Injetar AuthService
+  private authService = inject(AuthService);
 
   private favoriteProductIdsSubject = new BehaviorSubject<string[]>([]);
   public favoriteProductIds$ = this.favoriteProductIdsSubject.asObservable();

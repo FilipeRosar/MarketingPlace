@@ -1,5 +1,4 @@
-// src/app/pages/categories/categories-page.component.ts
-import { Component, inject, OnInit, OnDestroy, signal, effect } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, effect, computed } from '@angular/core'; // Adicionado 'computed'
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -8,6 +7,7 @@ import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { ProductService } from '../../services/product/product.service';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
+import { SeoService } from '../../services/SEO/seo.service';
 
 interface FilterState {
   search: string;
@@ -34,6 +34,7 @@ interface FilterState {
 })
 export class CategoriesPageComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
+  private seoService = inject(SeoService); // Injetar SeoService
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private destroy$ = new Subject<void>();
@@ -57,7 +58,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     sortBy: 'relevance'
   });
 
-  // Opções dos filtros
+  // Opções dos filtros (Mapeamento para label)
   categories = [
     { value: '', label: 'Todas as categorias' },
     { value: '0', label: 'Decoração' },
@@ -90,15 +91,34 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     { value: 'bestsellers', label: 'Mais vendidos' }
   ];
 
+  // Título Dinâmico (Computed Signal)
+  pageTitle = computed(() => {
+    const f = this.filters();
+
+    if (f.search) {
+      return `Resultados para "${f.search}"`;
+    }
+
+    if (f.category) {
+      const cat = this.categories.find(c => c.value === f.category);
+      return cat ? cat.label : 'Categoria';
+    }
+
+    if (f.color) {
+      return `Produtos na cor ${f.color}`;
+    }
+
+    return 'Explorar Produtos';
+  });
+
   // Debounce na busca
   private searchSubject = new Subject<string>();
 
   ngOnInit() {
-    // Ler query params na entrada
     this.route.queryParams.subscribe(params => {
       this.filters.update(f => ({
         ...f,
-        search: params['q'] || '',
+        search: params['search'] || '', // Ajustado para 'search' (era 'q' no exemplo anterior, mas header usa 'search')
         category: params['category'] || '',
         color: params['color'] || '',
         region: params['region'] || '',
@@ -108,7 +128,6 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
       this.loadProducts();
     });
 
-    // Debounce na busca digitada
     this.searchSubject.pipe(
       debounceTime(500),
       distinctUntilChanged(),
@@ -117,9 +136,16 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
       this.updateUrl({ search: term });
     });
 
-    // Reagir a mudanças nos filtros
+    // Efeito para atualizar SEO e Filtros quando mudarem
     effect(() => {
       this.applyFilters();
+
+      // Atualiza título da aba do navegador
+      this.seoService.updateSeoData({
+        title: this.pageTitle(),
+        description: `Encontre o melhor de ${this.pageTitle()} no Trama.`,
+        slug: this.router.url
+      });
     });
   }
 
@@ -128,7 +154,6 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // Carregar produtos
   loadProducts() {
     this.isLoading.set(true);
     const f = this.filters();
@@ -143,6 +168,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
         const items = Array.isArray(res) ? res : (res.items || res.data || []);
         this.products.set(items);
         this.totalItems.set(res.total || items.length);
+        this.applyFilters(); // Reaplica filtros locais se houver (cor, preço)
         this.isLoading.set(false);
       },
       error: () => {
@@ -152,27 +178,26 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Aplicar filtros locais (cor, preço, região)
   applyFilters() {
     const f = this.filters();
     let filtered = [...this.products()];
 
+    // Filtros locais (que o backend talvez não suporte ainda ou para refinamento)
     if (f.color) {
-      filtered = filtered.filter(p => p.tags?.toLowerCase().includes(f.color.toLowerCase()));
+      // Simulação: filtra se a tag contém a cor
+      filtered = filtered.filter(p => p.tags?.some((t: string) => t.toLowerCase().includes(f.color.toLowerCase())));
     }
+
     if (f.priceMin > 0 || f.priceMax < 2000) {
       filtered = filtered.filter(p => p.price >= f.priceMin && p.price <= f.priceMax);
     }
-    if (f.region && f.region !== 'Todas as regiões') {
-      filtered = filtered.filter(p => p.seller?.region === f.region);
-    }
 
-    // Ordenação
+    // Ordenação local (se o backend não ordenar)
     filtered.sort((a, b) => {
       switch (f.sortBy) {
         case 'price-low': return a.price - b.price;
         case 'price-high': return b.price - a.price;
-        case 'newest': return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        // case 'newest': ... (precisa de data no produto)
         default: return 0;
       }
     });
@@ -180,18 +205,27 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     this.filteredProducts.set(filtered);
   }
 
-  // Atualizar URL sem recarregar
   updateUrl(partial: Partial<FilterState>) {
     const current = this.filters();
-    const updated = { ...current, ...partial, page: undefined };
+    // Remove search se categoria mudar, ou vice-versa, se desejar comportamento exclusivo
+    // Aqui mantemos acumulativo, mas limpamos search se estiver vazio
+    const updated = { ...current, ...partial };
+
+    // Limpeza de objetos vazios para a URL ficar bonita
+    const queryParams: any = {
+        search: updated.search || null,
+        category: updated.category || null,
+        color: updated.color || null,
+        region: updated.region || null,
+        sort: updated.sortBy !== 'relevance' ? updated.sortBy : null
+    };
+
     this.router.navigate([], {
-      queryParams: updated,
+      queryParams,
       queryParamsHandling: 'merge',
-      replaceUrl: true
     });
   }
 
-  // Handlers
   onSearchChange(term: string) {
     this.searchSubject.next(term);
   }

@@ -1,7 +1,9 @@
-﻿using MarketplaceArtesanato.API.Extensions;
+﻿using AutoMapper;
+using MarketplaceArtesanato.API.Extensions;
 using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
+using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data.Data;
 using MarketplaceArtesanato.Services.Services;
@@ -17,13 +19,82 @@ namespace MarketplaceArtesanato.API.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly ArtesianDbContext _context;
-        private readonly StripePaymentService _stripeService; // Descomente se for usar
+        private readonly StripePaymentService _stripeService;
+        private readonly IMapper _mapper;
 
         public OrdersController(ArtesianDbContext context , StripePaymentService stripeService )
         {
             _context = context;
             _stripeService = stripeService;
         }
+
+        [HttpGet("my-orders")]
+        [Authorize]
+        public async Task<ActionResult<List<OrderResponseDto>>> GetMyOrders()
+        {
+            var userId = User.GetUserId();
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            IQueryable<Order> query = _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Images) // Carrega imagens do produto
+                .Include(o => o.Buyer) // Opcional, se quiser dados do comprador
+                .AsNoTracking();
+
+            // Lógica de Filtro
+            if (role == "Seller" || role == "Admin")
+            {
+                // Vendedor vê pedidos que contêm produtos dele
+                // Nota: Um pedido pode ter produtos de vários vendedores. 
+                // Aqui retornamos o pedido inteiro se tiver pelo menos um item dele.
+                query = query.Where(o => o.Items.Any(i => i.Product.SellerId == userId));
+            }
+            else
+            {
+                // Cliente vê seus próprios pedidos
+                query = query.Where(o => o.BuyerId == userId);
+            }
+
+            var orders = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+
+            // Mapeia para DTO (Use o AutoMapper ou manual se preferir)
+            // Se não tiver AutoMapper configurado para OrderResponseDto, ajuste aqui.
+            var dtos = _mapper.Map<List<OrderResponseDto>>(orders);
+
+            return Ok(dtos);
+        }
+
+        // --- GET: DETALHES DO PEDIDO ---
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<ActionResult<OrderResponseDto>> GetOrder(Guid id)
+        {
+            var userId = User.GetUserId();
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Images)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null) return NotFound();
+
+            // Verificação de Segurança
+            bool isBuyer = order.BuyerId == userId;
+            bool isSeller = role == "Seller" && order.Items.Any(i => i.Product.SellerId == userId);
+            bool isAdmin = role == "Admin";
+
+            if (!isBuyer && !isSeller && !isAdmin)
+                return Forbid();
+
+            var dto = _mapper.Map<OrderResponseDto>(order);
+            return Ok(dto);
+        }
+
 
         [HttpPost("checkout")]
         [Authorize(Roles = "Customer")]

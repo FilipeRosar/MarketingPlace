@@ -8,11 +8,15 @@ namespace MarketplaceArtesanato.API.Mapping
     {
         public OrderProfile()
         {
-            CreateMap<Order, OrderResponseDto>();
+
+            CreateMap<Order, OrderResponseDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
             CreateMap<OrderItem, OrderItemResponseDto>()
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
-                .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.Product.Images.FirstOrDefault()));
+                .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src =>
+                    src.Product.Images != null && src.Product.Images.Any() ? src.Product.Images[0] : null));
         }
     }
 }
+

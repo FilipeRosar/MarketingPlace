@@ -1,171 +1,247 @@
-<!-- src/app/pages/home/home.component.html -->
-<!-- HERO PRINCIPAL – IMPACTO MÁXIMO -->
-<section class="relative min-h-screen flex items-center bg-gradient-to-br from-stone-900 via-stone-800 to-amber-900 overflow-hidden">
-  <div class="absolute inset-0 bg-black/50"></div>
-
-  <div class="relative z-10 max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-    <!-- Texto -->
-    <div class="text-center lg:text-left space-y-8">
-      <div class="inline-block px-8 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
-        <span class="text-amber-200 font-bold tracking-widest text-sm md:text-base">
-          O MAIOR MARKETPLACE DE ARTESANATO DO BRASIL
-        </span>
-      </div>
-
-      <h1 class="text-5xl md:text-7xl font-black text-white leading-tight">
+<!-- 1. HERO SECTION (Mantido) -->
+<div class="relative w-full bg-stone-900 overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900"></div>
+  <section class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <div class="text-center md:text-left">
+      <span class="inline-block py-1 px-3 rounded-full bg-primary/20 text-primary-light text-xs md:text-sm font-semibold tracking-wider mb-6 border border-primary/30 backdrop-blur-sm">
+        MARKETPLACE EXCLUSIVO
+      </span>
+      <h1 class="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight mb-6">
         Feito à mão,<br>
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-orange-100 to-amber-300">
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-orange-200">
           feito com alma.
         </span>
       </h1>
-
-      <p class="text-xl md:text-2xl text-amber-100 font-light max-w-2xl mx-auto lg:mx-0 opacity-95 leading-relaxed">
-        Cada peça carrega a história de um artesão brasileiro. Compre direto de quem faz — com afeto, respeito e valor justo.
+      <p class="text-lg md:text-xl text-stone-300 mb-8 leading-relaxed font-light">
+        Conectamos você aos melhores artesãos do Brasil. Peças únicas com história e afeto em cada detalhe.
       </p>
-
-      <div class="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
-        <a routerLink="/categorias"
-           class="group inline-flex items-center px-10 py-6 bg-amber-500 hover:bg-amber-400 text-stone-900 font-black text-xl rounded-full shadow-2xl hover:shadow-amber-500/60 transition-all duration-500 hover:-translate-y-2 btn-glow">
-          Explorar Produtos
-          <svg class="ml-4 w-7 h-7 group-hover:translate-x-3 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/>
-          </svg>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+        <a routerLink="/category-page" class="inline-flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-primary hover:bg-primary-light transition-all duration-300 shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 cursor-pointer">
+          Explorar Coleção
         </a>
-
-        <a routerLink="/register-seller"
-           class="inline-flex items-center px-10 py-6 bg-white/10 hover:bg-white/20 backdrop-blur-md border-2 border-white/30 hover:border-white text-white font-bold text-xl rounded-full transition-all duration-500">
-          Virar Artesão
+        <a routerLink="/register-seller" class="inline-flex justify-center items-center px-8 py-3 border border-stone-600 text-base font-medium rounded-full text-stone-200 hover:bg-white/10 hover:border-white transition-all duration-300 cursor-pointer">
+          Quero Vender
         </a>
       </div>
     </div>
-
-    <!-- Imagem Hero -->
-    <div class="relative">
-      <img
-        src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1350&q=80"
-        alt="Cerâmica artesanal brasileira feita à mão"
-        class="w-full h-96 lg:h-full object-cover rounded-3xl shadow-2xl"
-        loading="eager"
-        fetchpriority="high">
-      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent rounded-3xl"></div>
-      <div class="absolute bottom-8 left-8 text-white">
-        <p class="text-3xl font-black drop-shadow-2xl">Cerâmica do Jequitinhonha</p>
-        <p class="text-lg opacity-90 drop-shadow-lg">Feita por Dona Maria · Minas Gerais</p>
-      </div>
+    <div class="grid grid-cols-4 gap-2 h-[400px] md:h-[500px] overflow-hidden p-2 opacity-90">
+      @for (img of heroImages; track img.id) {
+        <div class="w-full h-full rounded-lg bg-stone-800 overflow-hidden relative transition-all duration-1000 ease-in-out transform">
+           <img [src]="img.src" class="w-full h-full object-cover hover:scale-110 transition-transform duration-700">
+        </div>
+      }
     </div>
+  </section>
+</div>
+
+<!-- 2. BARRA DE VANTAGENS (Mantido) -->
+<section class="bg-white border-b border-stone-100 relative z-20 -mt-8 mx-4 md:mx-auto max-w-6xl rounded-xl shadow-xl p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+  <div class="flex items-center space-x-4">
+    <div class="p-3 bg-orange-50 rounded-full text-primary">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
+    </div>
+    <div><h3 class="font-bold text-gray-900">Curadoria Exclusiva</h3><p class="text-sm text-gray-500">Apenas artesãos verificados</p></div>
+  </div>
+  <div class="flex items-center space-x-4">
+    <div class="p-3 bg-orange-50 rounded-full text-primary">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    </div>
+    <div><h3 class="font-bold text-gray-900">Compra Segura</h3><p class="text-sm text-gray-500">Proteção total ao comprador</p></div>
+  </div>
+  <div class="flex items-center space-x-4">
+    <div class="p-3 bg-orange-50 rounded-full text-primary">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+    </div>
+    <div><h3 class="font-bold text-gray-900">Apoie o Local</h3><p class="text-sm text-gray-500">Valorize a cultura brasileira</p></div>
   </div>
 </section>
 
-<!-- TRUST BAR -->
-<section class="bg-white dark:bg-surface py-16 border-b border-stone-200 dark:border-stone-700">
-  <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-    <div class="group">
-      <div class="inline-flex p-6 bg-amber-50 dark:bg-amber-900/20 rounded-3xl mb-5 group-hover:scale-110 transition-transform duration-500">
-        <svg class="w-14 h-14 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
-      <h3 class="text-2xl font-black text-gray-900 dark:text-white">Compra 100% Segura</h3>
-      <p class="text-gray-600 dark:text-gray-400 mt-2">Proteção total ao comprador</p>
+<!-- 3. CARROSSEL DE CATEGORIAS (Mantido) -->
+<section class="py-16 bg-surface overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+    <div class="flex justify-between items-end mb-8 px-2">
+        <h2 class="text-3xl font-bold text-gray-900 text-center md:text-left w-full md:w-auto">Navegue por Categoria</h2>
+        <div class="hidden md:flex gap-2">
+            <button (click)="scrollCategories('left')" class="p-2 rounded-full bg-white border hover:border-primary text-stone-600 hover:text-primary transition shadow-sm">←</button>
+            <button (click)="scrollCategories('right')" class="p-2 rounded-full bg-white border hover:border-primary text-stone-600 hover:text-primary transition shadow-sm">→</button>
+        </div>
     </div>
-
-    <div class="group">
-      <div class="inline-flex p-6 bg-amber-50 dark:bg-amber-900/20 rounded-3xl mb-5 group-hover:scale-110 transition-transform duration-500">
-        <svg class="w-14 h-14 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-        </svg>
-      </div>
-      <h3 class="text-2xl font-black text-gray-900 dark:text-white">70% vai pro artesão</h3>
-      <p class="text-gray-600 dark:text-gray-400 mt-2">Valorização real da cultura brasileira</p>
-    </div>
-
-    <div class="group">
-      <div class="inline-flex p-6 bg-amber-50 dark:bg-amber-900/20 rounded-3xl mb-5 group-hover:scale-110 transition-transform duration-500">
-        <svg class="w-14 h-14 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
-        </svg>
-      </div>
-      <h3 class="text-2xl font-black text-gray-900 dark:text-white">Feito no Brasil</h3>
-      <p class="text-gray-600 dark:text-gray-400 mt-2">De norte a sul, com orgulho</p>
-    </div>
-  </div>
-</section>
-
-<!-- DESTAQUES DA SEMANA -->
-<section class="py-24 bg-gradient-to-b from-stone-50 to-white dark:from-stone-900 dark:to-surface">
-  <div class="max-w-7xl mx-auto px-6">
-    <div class="text-center mb-16">
-      <h2 class="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-4">
-        Destaques da Semana
-      </h2>
-      <p class="text-xl text-gray-600 dark:text-gray-400">Peças escolhidas com carinho pela nossa curadoria</p>
-    </div>
-
-    @if (isLoading()) {
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        @for (i of [].constructor(8); track i) {
-          <div class="bg-gray-200 dark:bg-gray-800 rounded-3xl h-96 animate-pulse shadow-xl"></div>
-        }
-      </div>
-    } @else {
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        @for (product of featuredProducts(); track product.id) {
-          <app-product-card [product]="product"></app-product-card>
-        }
-      </div>
-    }
-
-    <div class="text-center mt-20">
-      <a routerLink="/categorias"
-         class="inline-block px-12 py-6 bg-amber-500 hover:bg-amber-400 text-stone-900 font-black text-2xl rounded-full shadow-2xl hover:shadow-amber-500/60 transition-all duration-500 hover:-translate-y-2 btn-glow">
-        Ver Todos os Produtos →
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- CATEGORIAS EM DESTAQUE -->
-<section class="py-24 bg-white dark:bg-surface">
-  <div class="max-w-7xl mx-auto px-6">
-    <h2 class="text-center text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-20">
-      Explore por Categoria
-    </h2>
-
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-10">
-      @for (cat of highlightCategories; track cat.value) {
-        <a [routerLink]="['/categorias']" [queryParams]="{category: cat.value}"
-           class="category-card group block relative overflow-hidden rounded-3xl shadow-2xl">
-          <img [src]="cat.img" [alt]="cat.label"
-               class="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-700">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
-            <div class="absolute bottom-0 left-0 p-8 text-white">
-              <h3 class="text-3xl font-black mb-2">{{ cat.label }}</h3>
-              <p class="text-lg opacity-90">{{ cat.count }} peças incríveis</p>
-            </div>
+    <div #categoriesContainer class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+      @for (cat of carouselCategories; track cat.value) {
+        <a [routerLink]="['/category-page']" [queryParams]="{category: cat.value}"
+           class="flex-shrink-0 w-40 md:w-48 snap-start group cursor-pointer">
+          <div class="aspect-square rounded-full overflow-hidden border-2 border-transparent group-hover:border-primary transition-all mb-3 shadow-md">
+            <img [src]="cat.img" [alt]="cat.label" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
           </div>
+          <p class="text-center font-medium text-gray-700 group-hover:text-primary">{{ cat.label }}</p>
         </a>
       }
     </div>
   </div>
 </section>
 
-<!-- NEWSLETTER FINAL -->
-<section class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 py-32 text-white">
-  <div class="max-w-5xl mx-auto text-center px-6">
-    <h2 class="text-5xl md:text-7xl font-black mb-8">
-      Faça parte da Trama
-    </h2>
-    <p class="text-2xl md:text-3xl mb-12 opacity-95 max-w-3xl mx-auto">
-      Receba em primeira mão novas coleções, histórias de artesãos e ofertas exclusivas
-    </p>
+<!-- 4. ARTESÃO EM DESTAQUE (Mantido) -->
+<section class="py-16 bg-orange-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row items-center gap-12 bg-white rounded-3xl shadow-lg overflow-hidden">
+            <div class="md:w-1/2 h-96 md:h-auto relative min-h-[400px]">
+                <img src="https://images.unsplash.com/photo-1590736969955-71cc94801759?w=800" class="absolute inset-0 w-full h-full object-cover">
+                <div class="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-black/80 to-transparent w-full">
+                    <span class="bg-primary text-white text-xs px-2 py-1 rounded uppercase font-bold">Artesão da Semana</span>
+                    <h3 class="text-white text-2xl font-bold mt-2">Ateliê Cestaria Viva</h3>
+                    <p class="text-white/80 text-sm">📍 Bahia</p>
+                </div>
+            </div>
+            <div class="md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">"Trançando memórias, criando futuros."</h2>
+                <p class="text-gray-600 mb-8 text-lg">
+                    Cada cesto produzido pelo Ateliê Cestaria Viva carrega a tradição de gerações de artesãos. Ao comprar no Mitrama, você não leva apenas um objeto de decoração, leva uma história de resistência e beleza.
+                </p>
+                <a routerLink="/category-page" class="inline-flex self-start items-center px-6 py-3 bg-stone-900 text-white rounded-full hover:bg-stone-700 transition shadow-md hover:shadow-lg transform hover:-translate-y-1">
+                    Ver Produtos da Loja
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
 
-    <form class="flex flex-col md:flex-row gap-6 max-w-2xl mx-auto">
-      <input type="email" placeholder="seu@email.com.br"
-             class="flex-1 px-10 py-6 rounded-full text-gray-900 text-xl placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all">
-      <button type="submit"
-              class="px-12 py-6 bg-white text-amber-600 font-black text-xl rounded-full hover:bg-gray-100 shadow-2xl hover:shadow-white/50 transition-all duration-300">
-        Quero fazer parte!
-      </button>
+<!-- 5. CLUBE TRAMA (Design Ajustado - Grid Restaurado) -->
+<section class="py-24 relative overflow-hidden bg-gradient-to-br from-stone-900 to-stone-800 text-white">
+
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+      <!-- Coluna Texto -->
+      <div class="text-left space-y-6">
+
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-400 text-xs font-bold uppercase tracking-widest w-fit">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+          </span>
+          Lançamento em Breve
+        </div>
+
+        <h2 class="text-4xl md:text-5xl font-extrabold leading-tight">
+          O melhor do Brasil na sua porta. <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-orange-400">Todo mês.</span>
+        </h2>
+
+        <p class="text-lg text-stone-300 font-light max-w-lg">
+           Assine o <strong>Clube Trama Box</strong> e receba uma curadoria surpresa de peças artesanais únicas. Uma experiência sensorial de unboxing que valoriza nossa cultura.
+        </p>
+
+        <ul class="space-y-4 text-stone-300 text-sm">
+            <li class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">📦</span>
+                <span><strong>Curadoria Temática:</strong> Uma nova região ou técnica todo mês.</span>
+            </li>
+            <li class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">✨</span>
+                <span><strong>2 a 3 Peças Exclusivas:</strong> Itens selecionados a dedo.</span>
+            </li>
+            <li class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">🚚</span>
+                <span><strong>Frete Grátis:</strong> Entrega cortesia para assinantes.</span>
+            </li>
+        </ul>
+
+        <!-- Form -->
+        <form class="flex flex-col sm:flex-row gap-3 mt-6 max-w-md">
+          <input type="email" placeholder="Seu melhor e-mail" class="flex-1 px-6 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <button class="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:to-orange-500 text-white font-bold rounded-full shadow-lg transition transform hover:scale-105">
+            Lista VIP
+          </button>
+        </form>
+        <p class="text-xs text-stone-500">*Vagas limitadas para a primeira edição.</p>
+      </div>
+
+      <!-- Coluna Visual (Caixa/Imagem) -->
+      <div class="relative flex justify-center items-center">
+         <!-- Círculo de Luz -->
+         <div class="absolute w-96 h-96 bg-amber-500/20 rounded-full blur-3xl -z-10"></div>
+
+         <!-- Mockup Visual da Caixa -->
+         <div class="relative w-72 h-80 bg-orange-100 rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-all duration-500 flex flex-col items-center justify-center p-8 border-4 border-white/10">
+            <span class="text-6xl mb-4">🎁</span>
+            <h3 class="text-2xl font-black text-stone-800">Trama Box</h3>
+            <p class="text-stone-600 text-sm mt-2 text-center">A partir de <strong class="text-amber-600">R$ 79,90</strong></p>
+
+            <div class="absolute -top-4 -right-4 bg-stone-900 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg rotate-12 border border-amber-500">
+                Edição #01
+            </div>
+         </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 6. DESTAQUES DA SEMANA (Mantido) -->
+<div id="produtos" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+  <div class="text-center mb-12">
+    <h2 class="text-3xl font-bold text-gray-900">Achadinhos da Semana</h2>
+    <p class="text-gray-600 mt-2">Peças recém-chegadas que a nossa curadoria amou.</p>
+  </div>
+
+  @if (isLoading) {
+     <app-loading-spinner></app-loading-spinner>
+  } @else {
+     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        @for (product of featuredProducts; track product.id) {
+           <app-product-card [product]="product"></app-product-card>
+        }
+     </div>
+
+     <div class="text-center mt-16">
+        <a routerLink="/categorias" class="inline-flex items-center px-10 py-4 border border-stone-300 rounded-full text-sm font-bold text-stone-700 hover:bg-stone-100 transition-all transform hover:-translate-y-1 shadow-sm hover:shadow-md cursor-pointer">
+           Ver Todo o Catálogo
+           <span class="ml-2">→</span>
+        </a>
+     </div>
+  }
+</div>
+
+<!-- 7. DEPOIMENTOS (Mantido) -->
+<section class="py-20 bg-stone-50 border-t border-stone-200">
+    <div class="max-w-5xl mx-auto px-4 text-center">
+        <h2 class="text-3xl font-bold text-gray-900 mb-12">Quem comprou, amou ❤️</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-stone-100 hover:shadow-md transition-shadow">
+                <div class="flex justify-center text-yellow-400 mb-4 text-xl">★★★★★</div>
+                <p class="text-gray-600 italic mb-6 leading-relaxed">"Amei o vaso que comprei! Chegou super bem embalado e com um bilhetinho da artesã. Experiência única."</p>
+                <div class="flex items-center justify-center gap-3">
+                    <div class="w-10 h-10 bg-stone-200 rounded-full overflow-hidden"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Ana" alt="Avatar"></div>
+                    <p class="font-bold text-gray-900 text-sm uppercase tracking-wide">Ana Paula, SP</p>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-stone-100 hover:shadow-md transition-shadow">
+                <div class="flex justify-center text-yellow-400 mb-4 text-xl">★★★★★</div>
+                <p class="text-gray-600 italic mb-6 leading-relaxed">"Finalmente um lugar para encontrar decoração autêntica do Nordeste sem sair de casa. O suporte foi excelente."</p>
+                <div class="flex items-center justify-center gap-3">
+                    <div class="w-10 h-10 bg-stone-200 rounded-full overflow-hidden"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto" alt="Avatar"></div>
+                    <p class="font-bold text-gray-900 text-sm uppercase tracking-wide">Roberto, RJ</p>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-stone-100 hover:shadow-md transition-shadow">
+                <div class="flex justify-center text-yellow-400 mb-4 text-xl">★★★★★</div>
+                <p class="text-gray-600 italic mb-6 leading-relaxed">"A qualidade das peças é impressionante. Valorizo muito quem faz com as mãos e o Trama facilita isso."</p>
+                <div class="flex items-center justify-center gap-3">
+                    <div class="w-10 h-10 bg-stone-200 rounded-full overflow-hidden"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Carla" alt="Avatar"></div>
+                    <p class="font-bold text-gray-900 text-sm uppercase tracking-wide">Carla, MG</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 8. NEWSLETTER (Rodapé) -->
+<section class="bg-stone-900 py-24 relative overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
+    <h2 class="text-3xl font-bold text-white mb-4">Ainda não quer comprar?</h2>
+    <p class="text-stone-400 mb-8 max-w-xl mx-auto">Tudo bem! Assine nossa newsletter para receber inspirações de decoração e histórias de artesãos toda semana.</p>
+    <form class="max-w-md mx-auto flex gap-2">
+      <input type="email" placeholder="Seu melhor e-mail" class="flex-1 px-6 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-primary transition">
+      <button class="px-8 py-3 bg-white text-stone-900 hover:bg-stone-200 rounded-full font-bold transition-colors">Inscrever</button>
     </form>
   </div>
 </section>
