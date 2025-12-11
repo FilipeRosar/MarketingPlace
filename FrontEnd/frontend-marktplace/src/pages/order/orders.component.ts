@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { OrderService } from '../../services/order/order.service';
-import { Order } from '../../models/order/order.model'; // Importar o modelo correto
+import { Order } from '../../models/order/order.model'; 
 import { CurrencyBrPipe } from '../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
 
@@ -11,7 +11,7 @@ import { LoadingSpinnerComponent } from '../../components/loading-spinner.compon
   standalone: true,
   imports: [CommonModule, RouterLink, CurrencyBrPipe, DatePipe, LoadingSpinnerComponent],
   templateUrl: './orders.html',
-  styleUrl: './orders.css' 
+  styleUrl: './orders.css'
 })
 export class OrdersComponent implements OnInit {
   private orderService = inject(OrderService);

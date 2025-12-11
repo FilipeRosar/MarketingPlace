@@ -29,6 +29,9 @@ export class ProductService {
 
     return this.http.get<any>(this.apiUrl, { params });
   }
+   updateProduct(id: string, productData: any): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}`, productData);
+  }
 
   getProductById(id: string): Observable<Product> {
     return this.http.get<Product>(`${this.apiUrl}/${id}`);

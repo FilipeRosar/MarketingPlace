@@ -1,28 +1,52 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface DashboardStats {
+  totalGMV: number;
+  totalOrders: number;
+  newUsersLastMonth: number;
+  platformRevenue: number;
+  pendingApprovals: number;
+}
+
+export interface PendingSeller {
+  id: string;
+  name: string;
+  email: string;
+  bio: string | null;
+  createdAt: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AdminService {
-  private apiUrl = `${environment.apiUrl}/admin`;
   private http = inject(HttpClient);
+  private apiUrl = `${environment.apiUrl}/admin`;
 
-  getPendingSellers(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/sellers/pending`);
+  getDashboardStats(): Observable<DashboardStats> {
+    return this.http.get<DashboardStats>(`${this.apiUrl}/dashboard-stats`);
   }
 
-  approveSeller(id: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/sellers/${id}/approve`, {});
+  getPendingSellers(): Observable<PendingSeller[]> {
+    return this.http.get<PendingSeller[]>(`${this.apiUrl}/pending-sellers`);
   }
 
-  rejectSeller(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/sellers/${id}/reject`);
+  approveSeller(sellerId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/approve-seller/${sellerId}`, {});
   }
 
-  getStats(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/stats`);
+  rejectSeller(sellerId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reject-seller/${sellerId}`, {});
+  }
+
+  updateCommissionRate(rate: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/commission-rate`, { rate });
+  }
+
+  updateServiceFee(fee: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/service-fee`, { fee });
   }
 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductService } from '../../services/product/product.service';
+import { NotificationService } from '../../services/notification/notification.service'; // Importar Notification
 
 @Component({
   selector: 'app-add-product',
@@ -15,6 +16,8 @@ export class AddProductComponent {
   private fb = inject(FormBuilder);
   private productService = inject(ProductService);
   private router = inject(Router);
+  private notificationService = inject(NotificationService); // Injetar
+
   tags: string[] = [];
   productForm: FormGroup;
   selectedFile: File | null = null;
@@ -22,16 +25,16 @@ export class AddProductComponent {
   isLoading = false;
 
   categories = [
-    { label: 'Decoração', value: 'HomeDecor' },
-    { label: 'Joias', value: 'Jewelry' },
-    { label: 'Roupas', value: 'Clothing' },
-    { label: 'Arte', value: 'Art' },
-    { label: 'Brinquedos', value: 'Toys' },
-    { label: 'Acessórios', value: 'Accessories' },
-    { label: 'Móveis', value: 'Furniture' },
-    { label: 'Cozinha', value: 'Kitchenware' },
-    { label: 'Papelaria', value: 'Stationery' },
-    { label: 'Outros', value: 'Other' }
+    { label: 'Decoração', value: '0' }, 
+    { label: 'Joias', value: '1' },
+    { label: 'Roupas', value: '2' },
+    { label: 'Arte', value: '3' },
+    { label: 'Brinquedos', value: '4' },
+    { label: 'Acessórios', value: '5' },
+    { label: 'Móveis', value: '6' },
+    { label: 'Cozinha', value: '7' },
+    { label: 'Papelaria', value: '8' },
+    { label: 'Outros', value: '9' }
   ];
 
   constructor() {
@@ -57,12 +60,14 @@ export class AddProductComponent {
       reader.readAsDataURL(file);
     }
   }
+
   addTag(value: string) {
     const tag = value.trim();
     if (tag && !this.tags.includes(tag)) {
       this.tags.push(tag);
     }
   }
+
   removeTag(index: number) {
     this.tags.splice(index, 1);
   }
@@ -76,37 +81,46 @@ export class AddProductComponent {
     this.isLoading = true;
 
     const formData = new FormData();
-    formData.append('name', this.productForm.get('name')?.value);
-    formData.append('description', this.productForm.get('description')?.value);
+    formData.append('Name', this.productForm.get('name')?.value);
+    formData.append('Description', this.productForm.get('description')?.value);
 
-    // Tratamento de preço para garantir formato correto
-    const priceValue = this.productForm.get('price')?.value;
-    formData.append('price', priceValue.toString().replace(',', '.'));
+    // Converte preço para string com ponto decimal (culture invariant)
+    const price = this.productForm.get('price')?.value;
+    formData.append('Price', price.toString().replace(',', '.'));
 
-    formData.append('stockQuantity', this.productForm.get('stockQuantity')?.value);
-    formData.append('category', this.productForm.get('category')?.value);
+    formData.append('StockQuantity', this.productForm.get('stockQuantity')?.value);
+    formData.append('Category', this.productForm.get('category')?.value);
 
-    formData.append('images', this.selectedFile);
+    // CORREÇÃO CRÍTICA: Enviar a imagem com o nome exato 'Images'
+    // O Backend espera: public List<IFormFile> Images { get; set; }
+    formData.append('Images', this.selectedFile, this.selectedFile.name);
 
-    console.log('--- Enviando Produto ---');
-    formData.forEach((value, key) => {
-      console.log(`${key}:`, value);
-    });
+    // Envio de Tags (List<string>)
     for (let i = 0; i < this.tags.length; i++) {
-        formData.append(`tags[${i}]`, this.tags[i]);
+        formData.append(`Tags[${i}]`, this.tags[i]);
     }
+
     this.productService.createProduct(formData).subscribe({
       next: () => {
         this.isLoading = false;
-        alert('Produto criado com sucesso!');
+        this.notificationService.success('Produto criado com sucesso!');
         this.router.navigate(['/seller-dashboard']);
       },
       error: (err) => {
         console.error('Erro ao criar produto:', err);
         this.isLoading = false;
 
-        const serverMsg = typeof err.error === 'string' ? err.error : err.error?.title || 'Erro desconhecido';
-        alert(`Falha ao cadastrar: ${serverMsg}`);
+        // Extrai mensagem de erro detalhada se vier do ValidationProblemDetails
+        let errorMsg = 'Erro desconhecido.';
+        if (err.error?.errors) {
+            errorMsg = Object.values(err.error.errors).flat().join(', ');
+        } else if (err.error?.message) {
+            errorMsg = err.error.message;
+        } else if (typeof err.error === 'string') {
+            errorMsg = err.error;
+        }
+
+        this.notificationService.error(`Falha ao cadastrar: ${errorMsg}`);
       }
     });
   }

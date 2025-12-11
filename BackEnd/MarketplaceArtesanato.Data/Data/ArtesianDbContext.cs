@@ -20,6 +20,8 @@ public class ArtesianDbContext : DbContext
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Address> Addresses => Set<Address>();
     public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<Banner> Banners => Set<Banner>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<UserFavorite> UserFavorites => Set<UserFavorite>();
 
@@ -52,10 +54,8 @@ public class ArtesianDbContext : DbContext
             .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<Cart>()
-            .HasOne(c => c.Customer)
-            .WithOne(c => c.Cart)
-            .HasForeignKey<Cart>(c => c.CustomerId)
-            .OnDelete(DeleteBehavior.Cascade);
+             .HasIndex(c => c.UserId)
+             .IsUnique();
 
         modelBuilder.Entity<CartItem>()
             .HasOne(ci => ci.Cart)
@@ -88,7 +88,7 @@ public class ArtesianDbContext : DbContext
 
         modelBuilder.Entity<Product>().HasIndex(p => p.Category);
         modelBuilder.Entity<Product>().HasIndex(p => p.Status);
-        modelBuilder.Entity<Cart>().HasIndex(c => c.CustomerId).IsUnique();
+        modelBuilder.Entity<Cart>().HasIndex(c => c.UserId).IsUnique();
         modelBuilder.Entity<Order>().HasIndex(o => o.BuyerId);
         modelBuilder.Entity<OrderItem>().HasIndex(oi => oi.OrderId);
 

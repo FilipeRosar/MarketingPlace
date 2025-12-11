@@ -10,6 +10,7 @@ namespace MarketplaceArtesanato.Core.Entities
     {
         public Guid Id { get; set; }
         public Guid CartId { get; set; }
+        public decimal Price { get; set; }
         public Cart Cart { get; set; } = null!;
         public Guid ProductId { get; set; }
         public Product Product { get; set; } = null!;

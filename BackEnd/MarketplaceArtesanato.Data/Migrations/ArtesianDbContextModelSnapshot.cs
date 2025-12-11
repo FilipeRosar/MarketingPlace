@@ -57,6 +57,46 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.ToTable("Addresses");
                 });
 
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Banner", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LinkUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Subtitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Banners");
+                });
+
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Cart", b =>
                 {
                     b.Property<Guid>("Id")
@@ -66,18 +106,18 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("CustomerId")
+                    b.HasIndex("UserId")
                         .IsUnique();
 
                     b.ToTable("Carts");
@@ -91,6 +131,9 @@ namespace MarketplaceArtesanato.Data.Migrations
 
                     b.Property<Guid>("CartId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
@@ -119,6 +162,9 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Property<string>("CPF")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("CartId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -154,6 +200,8 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AddressId");
+
+                    b.HasIndex("CartId");
 
                     b.ToTable("Customer");
                 });
@@ -259,10 +307,6 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.PrimitiveCollection<string>("Images")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -273,6 +317,9 @@ namespace MarketplaceArtesanato.Data.Migrations
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SalePrice")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("SellerId")
@@ -300,6 +347,26 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.ProductImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductImage");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Rating", b =>
@@ -359,6 +426,9 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .HasMaxLength(14)
                         .HasColumnType("nvarchar(14)");
 
+                    b.Property<decimal?>("CommissionRate")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -399,6 +469,38 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.ToTable("Sellers");
                 });
 
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.SystemSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemSettings");
+                });
+
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.UserFavorite", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -424,17 +526,6 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("UserFavorites");
-                });
-
-            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Cart", b =>
-                {
-                    b.HasOne("MarketplaceArtesanato.Core.Entities.Customer", "Customer")
-                        .WithOne("Cart")
-                        .HasForeignKey("MarketplaceArtesanato.Core.Entities.Cart", "CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.CartItem", b =>
@@ -464,7 +555,13 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MarketplaceArtesanato.Core.Entities.Cart", "Cart")
+                        .WithMany()
+                        .HasForeignKey("CartId");
+
                     b.Navigation("Address");
+
+                    b.Navigation("Cart");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Order", b =>
@@ -510,6 +607,17 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Seller");
+                });
+
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.ProductImage", b =>
+                {
+                    b.HasOne("MarketplaceArtesanato.Core.Entities.Product", "Product")
+                        .WithMany("Images")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Rating", b =>
@@ -568,8 +676,6 @@ namespace MarketplaceArtesanato.Data.Migrations
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Customer", b =>
                 {
-                    b.Navigation("Cart");
-
                     b.Navigation("Orders");
 
                     b.Navigation("Ratings");
@@ -582,6 +688,8 @@ namespace MarketplaceArtesanato.Data.Migrations
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Product", b =>
                 {
+                    b.Navigation("Images");
+
                     b.Navigation("Ratings");
                 });
 

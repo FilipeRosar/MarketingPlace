@@ -160,7 +160,16 @@ namespace MarketplaceArtesanato.API.Controllers
                 .FirstOrDefaultAsync(s => s.Email == dto.Email);
 
             object? user = customer ?? (object?)seller;
-            string role = customer != null ? "Customer" : (seller != null ? "Seller" : "");
+
+            string role = "Customer";
+            if (seller != null)
+            {
+                role = seller.Role == UserRole.Admin ? "Admin" : "Seller";
+            }
+            else if (customer != null)
+            {
+                role = "Customer";
+            }
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, GetPasswordHash(user)))
             {
@@ -193,14 +202,22 @@ namespace MarketplaceArtesanato.API.Controllers
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim(ClaimTypes.Email, email),
-                new Claim(ClaimTypes.Role, role),
                 new Claim(ClaimTypes.Name, name),
                 new Claim("UserType", role)
             };
+
+            if (email == "admin@trama.com" || role == "Admin")
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            }
+            else
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
@@ -211,7 +228,6 @@ namespace MarketplaceArtesanato.API.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
         private string GetPasswordHash(object user) => user is Customer c ? c.PasswordHash : ((Seller)user).PasswordHash;
         private Guid GetUserId(object user) => user is Customer c ? c.Id : ((Seller)user).Id;
         private string GetUserName(object user) => user is Customer c ? c.Name : ((Seller)user).Name;

@@ -5,7 +5,7 @@
 namespace MarketplaceArtesanato.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AddIsApprovedToSeller : Migration
+    public partial class AddBanners : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

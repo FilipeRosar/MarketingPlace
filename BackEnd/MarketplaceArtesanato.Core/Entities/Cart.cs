@@ -9,8 +9,8 @@ namespace MarketplaceArtesanato.Core.Entities
 {
     public class Cart : BaseEntity
     {
-        public Guid CustomerId { get; set; }
-        public Customer Customer { get; set; } = null!;
+        public Guid Id { get; set; }
+        public Guid UserId { get; set; }
         public List<CartItem> Items { get; set; } = new();
     }
 }

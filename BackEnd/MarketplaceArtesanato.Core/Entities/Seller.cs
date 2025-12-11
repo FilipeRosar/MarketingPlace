@@ -26,7 +26,7 @@ namespace MarketplaceArtesanato.Core.Entities
         public string? Phone { get; set; }
         [StringLength(14)]
         public string? CPF { get; set; }
-
+        public decimal? CommissionRate { get; set; }
         [StringLength(18)]
         public string? CNPJ { get; set; }
         [Required(ErrorMessage = "CPF ou CNPJ é obrigatório")]

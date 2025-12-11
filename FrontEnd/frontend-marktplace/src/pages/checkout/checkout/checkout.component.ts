@@ -7,6 +7,8 @@ import { CurrencyBrPipe } from '../../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../../components/loading-spinner.component/loading-spinner.component';
 import { AuthService } from '../../../services/auth/auth.service';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-checkout',
@@ -26,10 +28,15 @@ export class CheckoutComponent implements OnInit {
   cartItems = this.cartService.cartItems;
 
   subtotal = this.cartService.total;
-  serviceFee = 2.99;
-  total = computed(() => this.subtotal() + this.serviceFee);
+  serviceFee = 0;
 
+  total = computed(() => this.subtotal() + this.serviceFee);
+  private http = inject(HttpClient);
   ngOnInit() {
+    this.http.get<number>(`${environment.apiUrl}/settings/service-fee`).subscribe({
+    next: (fee) => this.serviceFee = fee,
+    error: () => this.serviceFee = 2.99
+    });
     if (!this.authService.currentUserValue) {
       this.notificationService.info('Faça login para finalizar a compra.', 'Atenção');
       this.router.navigate(['/login']);

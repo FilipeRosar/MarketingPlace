@@ -32,29 +32,41 @@
         <!-- Coluna Esquerda: Imagem -->
         <div class="product-image-container mb-10 lg:mb-0">
           <div class="aspect-square rounded-3xl overflow-hidden bg-gray-100 relative shadow-soft group">
-            <img [src]="product.imageUrl"
-                 [alt]="product.name"
-                 class="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700">
+
+            <!-- Imagem com fallback -->
+            @if (product.imageUrl) {
+                <img [src]="product.imageUrl" [alt]="product.name" class="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700">
+            } @else {
+                <div class="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">Sem imagem</div>
+            }
 
             <!-- Badge de Categoria -->
             <span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
               {{ product.category }}
             </span>
+
+            <!-- Badge de Oferta -->
+            @if (product.salePrice && product.salePrice > 0 && product.salePrice < product.price) {
+                <span class="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm animate-pulse">
+                  OFERTA
+                </span>
+            }
           </div>
         </div>
 
         <!-- Coluna Direita: Detalhes -->
         <div class="product-info flex flex-col justify-start">
 
-          <!-- Info Vendedor -->
+          <!-- Info Vendedor (Com proteção para sellerName null) -->
           <div class="flex items-center mb-4 cursor-pointer hover:opacity-80 transition-opacity"
                [routerLink]="['/sellers', product.sellerId]">
             <div class="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-primary font-bold mr-3">
-              {{ product.sellerName.charAt(0).toUpperCase() }}
+              <!-- Uso de ? e || para evitar crash -->
+              {{ (product.sellerName?.charAt(0) || 'V').toUpperCase() }}
             </div>
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide">Vendido por</p>
-              <p class="text-sm font-semibold text-gray-900 underline">{{ product.sellerName }}</p>
+              <p class="text-sm font-semibold text-gray-900 underline">{{ product.sellerName || 'Vendedor' }}</p>
             </div>
           </div>
 
@@ -62,7 +74,7 @@
             {{ product.name }}
           </h1>
 
-          <!-- Área de Avaliação (Estrelas e Contagem) -->
+          <!-- Área de Avaliação -->
           <div class="mb-6 flex items-center space-x-2">
             <app-rating-stars
               [rating]="product.averageRating"
@@ -73,11 +85,28 @@
 
           <!-- Preço -->
           <div class="mt-4 mb-8">
-            <p class="text-4xl font-bold text-primary tracking-tight">
-              {{ product.price | currencyBr }}
-            </p>
+            @if (product.salePrice && product.salePrice > 0 && product.salePrice < product.price) {
+                <!-- Preço Promocional -->
+                <div class="flex items-baseline gap-3">
+                    <p class="text-4xl font-bold text-green-600 tracking-tight">
+                        {{ product.salePrice | currencyBr }}
+                    </p>
+                    <p class="text-lg text-gray-400 line-through decoration-red-500/50">
+                        {{ product.price | currencyBr }}
+                    </p>
+                </div>
+                <p class="text-sm text-green-600 mt-1 font-medium">
+                    Economize {{ (product.price - product.salePrice) | currencyBr }}
+                </p>
+            } @else {
+                <!-- Preço Normal -->
+                <p class="text-4xl font-bold text-primary tracking-tight">
+                    {{ product.price | currencyBr }}
+                </p>
+            }
+
             <p class="text-sm text-gray-500 mt-1">
-              Em até 12x de {{ (product.price / 12) | currencyBr }}
+              Em até 12x de {{ ((product.salePrice || product.price) / 12) | currencyBr }}
             </p>
           </div>
 
@@ -99,13 +128,12 @@
             <p>{{ product.description }}</p>
           </div>
 
-          <!-- Tags (NOVO) -->
+          <!-- Tags -->
           @if (product.tags && product.tags.length > 0) {
             <div class="mt-6 pt-6 border-t border-stone-100">
               <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tags:</h4>
               <div class="flex flex-wrap gap-2">
                 @for (tag of product.tags; track tag) {
-                  <!-- Link para a busca filtrada por essa tag (Opcional) -->
                   <a [routerLink]="['/category-page']" [queryParams]="{search: tag}"
                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-primary cursor-pointer transition-colors">
                     #{{ tag }}
@@ -117,15 +145,14 @@
         </div>
       </div>
 
-      <!-- SEÇÃO DE REVIEWS E COMENTÁRIOS -->
+      <!-- SEÇÃO DE REVIEWS (MANTIDO) -->
       <section class="max-w-4xl mx-auto mt-16">
         <h2 class="text-2xl font-bold text-gray-900 mb-8 border-b border-stone-200 pb-2">
           Avaliações dos Clientes
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-
-          <!-- Coluna 1: Média e Resumo -->
+          <!-- Coluna 1: Média -->
           <div class="md:col-span-1">
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 text-center">
               <p class="text-sm text-gray-500 mb-2">Nota Média</p>
@@ -140,16 +167,13 @@
             </div>
           </div>
 
-          <!-- Coluna 2 e 3: Formulário e Listagem -->
+          <!-- Coluna 2 e 3: Formulário e Lista -->
           <div class="md:col-span-2 space-y-8">
-
-            <!-- Formulário de Nova Avaliação -->
+            <!-- Formulário -->
             @if (currentUser$ | async) {
               <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Deixe sua Avaliação</h3>
                 <form [formGroup]="reviewForm" (ngSubmit)="submitReview()" class="space-y-4">
-
-                  <!-- Seleção de Estrelas -->
                   <div class="flex items-center space-x-2">
                     <p class="text-sm font-medium text-gray-700 mr-2">Sua Nota:</p>
                     @for (star of [1, 2, 3, 4, 5]; track star) {
@@ -160,18 +184,11 @@
                         <path d="M9.049 2.927c.3-.921 1.631-.921 1.932 0l1.243 3.824a1 1 0 00.95.691h4.026c.969 0 1.371 1.24.588 1.81l-3.266 2.372a1 1 0 00-.364 1.118l1.243 3.824c.3.921-.755 1.688-1.54 1.118l-3.266-2.372a1 1 0 00-1.176 0l-3.266 2.372c-.784.57-1.84-.197-1.54-1.118l1.243-3.824a1 1 0 00-.364-1.118L2.096 9.252c-.783-.57-.381-1.81.588-1.81h4.026a1 1 0 00.95-.691l1.243-3.824z" />
                       </svg>
                     }
-                    <span *ngIf="reviewForm.get('rating')?.invalid && reviewForm.get('rating')?.touched" class="text-red-500 text-xs ml-4">Mínimo 1 estrela.</span>
                   </div>
-
-                  <!-- Comentário -->
                   <div>
                     <textarea formControlName="comment" rows="3" placeholder="O que você achou do produto?"
                               class="w-full border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary p-3"></textarea>
-                    <div *ngIf="reviewForm.get('comment')?.invalid && reviewForm.get('comment')?.touched" class="text-red-500 text-xs mt-1">
-                      Comentário obrigatório (10-500 caracteres).
-                    </div>
                   </div>
-
                   <button type="submit" [disabled]="reviewForm.invalid || isSubmittingReview"
                           class="px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-all disabled:opacity-50">
                     Enviar Avaliação
@@ -179,13 +196,12 @@
                 </form>
               </div>
             } @else {
-              <!-- Mensagem para deslogado -->
               <div class="bg-stone-50 border border-stone-200 p-4 rounded-lg text-center">
-                <p class="text-sm text-gray-700">Faça <a routerLink="/login" class="text-primary font-medium hover:underline">login</a> para deixar sua avaliação sobre esta peça.</p>
+                <p class="text-sm text-gray-700">Faça <a routerLink="/login" class="text-primary font-medium hover:underline">login</a> para deixar sua avaliação.</p>
               </div>
             }
 
-            <!-- Lista de Comentários -->
+            <!-- Lista -->
             <div class="space-y-6">
               @for (review of mockReviews; track $index) {
                 <div class="p-4 bg-white rounded-lg border border-stone-100 shadow-sm">
@@ -194,18 +210,14 @@
                     <p class="text-xs text-gray-500">{{ review.date }}</p>
                   </div>
                   <div class="mt-1 mb-3">
-                    <app-rating-stars
-                      [rating]="review.stars">
-                    </app-rating-stars>
+                    <app-rating-stars [rating]="review.stars"></app-rating-stars>
                   </div>
                   <p class="text-sm text-gray-700">{{ review.comment }}</p>
                 </div>
               }
             </div>
-
           </div>
         </div>
-
       </section>
 
     </div>

@@ -2,62 +2,40 @@
 using MarketplaceArtesanato.Core.Interfaces;
 using MassTransit;
 using Microsoft.Extensions.Logging;
-using MarketplaceArtesanato.Core.Entities.Models.Requests;
-using MarketplaceArtesanato.Core.Models.Requests;
+using System.Threading.Tasks;
+using System;
 
-namespace MarketplaceArtesanato.Infrastructure.Consumers;
-
-public class CheckoutConsumer : IConsumer<CheckoutInitiatedEvent>
+namespace MarketplaceArtesanato.Infrastructure.Consumers
 {
-    private readonly IOrderService _orderService;
-    private readonly ICartService _cartService;
-    private readonly IPublishEndpoint _publishEndpoint;
-    private readonly ILogger<CheckoutConsumer> _logger;
-
-    public CheckoutConsumer(
-        IOrderService orderService,
-        ICartService cartService,
-        IPublishEndpoint publishEndpoint,
-        ILogger<CheckoutConsumer> logger)
+    public class CheckoutConsumer : IConsumer<CheckoutInitiatedEvent>
     {
-        _orderService = orderService;
-        _cartService = cartService;
-        _publishEndpoint = publishEndpoint;
-        _logger = logger;
-    }
+        private readonly ICartService _cartService;
+        private readonly ILogger<CheckoutConsumer> _logger;
 
-    public async Task Consume(ConsumeContext<CheckoutInitiatedEvent> context)
-    {
-        var evt = context.Message;
-
-        try
+        public CheckoutConsumer(
+            ICartService cartService,
+            ILogger<CheckoutConsumer> logger)
         {
-            _logger.LogInformation($"Processando checkout para cliente {evt.CustomerId}");
-
-            var orderDto = await _orderService.CreateFromCartAsync(evt.CustomerId, new CheckoutRequestDto());
-
-            await _publishEndpoint.Publish(new OrderCreatedEvent
-            {
-                OrderId = orderDto.Id,
-                CustomerId = evt.CustomerId,
-                Total = orderDto.Total
-            });
-
-            await _cartService.ClearCartAsync(evt.CustomerId);
-
-            _logger.LogInformation("Checkout concluído: Pedido {OrderId}", orderDto.Id);
+            _cartService = cartService;
+            _logger = logger;
         }
-        catch (Exception ex)
+
+        public async Task Consume(ConsumeContext<CheckoutInitiatedEvent> context)
         {
-            _logger.LogError(ex, "Falha no checkout para cliente {CustomerId}", evt.CustomerId);
+            var evt = context.Message;
 
-            await _publishEndpoint.Publish(new CheckoutFailedEvent
+            try
             {
-                CustomerId = evt.CustomerId,
-                Error = ex.Message
-            });
+                _logger.LogInformation($"[EVENTO] Checkout iniciado para cliente {evt.CustomerId}. Sessão: {evt.StripeSessionId}");
 
-            throw; 
+                await _cartService.ClearCartAsync(evt.CustomerId);
+
+                _logger.LogInformation($"Carrinho limpo com sucesso para cliente {evt.CustomerId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro no processamento secundário do checkout para cliente {CustomerId}", evt.CustomerId);
+            }
         }
     }
 }

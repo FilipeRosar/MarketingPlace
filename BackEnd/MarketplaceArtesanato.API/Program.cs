@@ -1,9 +1,11 @@
 using MarketplaceArtesanato.API.Hubs;
 using MarketplaceArtesanato.API.Mapping;
 using MarketplaceArtesanato.Application.Services;
+using MarketplaceArtesanato.Core.Hubs;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Settings;
 using MarketplaceArtesanato.Data.Data;
+using MarketplaceArtesanato.Data.Seed;
 using MarketplaceArtesanato.Infrastructure.Consumers;
 using MarketplaceArtesanato.Services;
 using MarketplaceArtesanato.Services.Services;
@@ -48,6 +50,8 @@ builder.Services.AddScoped<StripePaymentService>();
 builder.Services.AddScoped<Stripe.BillingPortal.SessionService>();
 builder.Services.AddScoped<Stripe.Checkout.SessionService>();
 builder.Services.AddHttpClient<IShippingService, ShippingService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
 
 
 var stripeKey = builder.Configuration["Stripe:SecretKey"];
@@ -182,6 +186,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 builder.Services.AddAuthorization();
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+builder.Services.AddSignalR();
 
 builder.Services.AddMassTransit(x =>
 {
@@ -199,7 +204,14 @@ builder.Services.AddMassTransit(x =>
         });
     });
 });
-builder.Services.AddMassTransitHostedService();
+builder.Services.AddDbContext<ArtesianDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        )));
 
 var app = builder.Build();
 
@@ -210,6 +222,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 app.MapHub<ChatHub>("/chatHub");
+app.MapHub<NotificationHub>("/notificationhub"); 
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -218,7 +231,19 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
     c.DisplayRequestDuration();
 });
-
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        await SeedData.InitializeAsync(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Erro ao executar seed do admin");
+    }
+}
 app.UseHttpsRedirection();
 app.MapControllers();
 app.UseAuthorization();

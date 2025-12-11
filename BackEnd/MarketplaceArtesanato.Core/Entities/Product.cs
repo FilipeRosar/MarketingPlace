@@ -20,15 +20,25 @@ namespace MarketplaceArtesanato.Core.Entities
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
+        public decimal? SalePrice { get; set; }
         [Required]
         public int StockQuantity { get; set; } = 0;
         public string Tags { get; set; } = string.Empty;
-        public List<string> Images { get; set; } = new List<string>();
+        public List<ProductImage> Images { get; set; } = new();
         public ProductCategory Category { get; set; } 
         public ProductStatus Status { get; set; }
         public List<Rating> Ratings { get; set; } = new List<Rating>();
         public Guid SellerId { get; set; }
         public Seller Seller { get; set; }
+        public bool IsOnSale => SalePrice.HasValue && SalePrice.Value > 0 && SalePrice.Value < Price;
+
     }
-    
+    public class ProductImage
+    {
+        public Guid Id { get; set; }
+        public string Url { get; set; } = string.Empty;
+        public Guid ProductId { get; set; }
+        public Product Product { get; set; } = null!;
+    }
+
 }

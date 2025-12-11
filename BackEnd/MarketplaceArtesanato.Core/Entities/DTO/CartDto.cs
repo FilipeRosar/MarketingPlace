@@ -11,8 +11,10 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         public Guid Id { get; set; }
         public Guid CustomerId { get; set; }
         public List<CartItemDto> Items { get; set; } = new();
-        public int TotalItems => Items.Sum(i => i.Quantity);
-        public decimal TotalPrice => Items.Sum(i => i.Quantity * i.Quantity);
+        public decimal TotalPrice => Items.Sum(i => i.Quantity * i.Price);
+        public int TotalProducts => Items.Count;
+
+        public string TotalPriceFormatted => TotalPrice.ToString("C"); 
     }
 
 }

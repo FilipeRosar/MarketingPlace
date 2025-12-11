@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, Location, DecimalPipe, isPlatformBrowser } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProductService } from '../../../services/product/product.service';
 import { CartService } from '../../../services/cart/cart.service';
@@ -10,6 +10,7 @@ import { CurrencyBrPipe } from '../../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../../components/loading-spinner.component/loading-spinner.component';
 import { RatingStarsComponent } from '../../../components/rating-stars/rating-stars.component';
 import { SeoService } from '../../../services/SEO/seo.service';
+import { NotificationService } from '../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -27,8 +28,8 @@ export class ProductDetailComponent implements OnInit {
   private location = inject(Location);
   private fb = inject(FormBuilder);
   private seoService = inject(SeoService);
-
-  private platformId: Object;
+  private router = inject(Router);
+  private notificationService = inject(NotificationService);
 
   product: Product | null = null;
   isLoading = true;
@@ -43,9 +44,7 @@ export class ProductDetailComponent implements OnInit {
     { name: 'João Carlos', date: '15/11/2025', stars: 4.5, comment: 'Ótimo trabalho, mas o prazo de entrega foi um pouco longo.' },
   ];
 
-  constructor(@Inject(PLATFORM_ID) platformId: Object) {
-    this.platformId = platformId;
-
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
     this.reviewForm = this.fb.group({
       rating: [0, [Validators.required, Validators.min(1), Validators.max(5)]],
       comment: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]]
@@ -55,8 +54,6 @@ export class ProductDetailComponent implements OnInit {
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
-      console.log('ProductDetail: ID detectado na rota:', id);
-
       if (id) {
         this.product = null;
         this.isLoading = true;
@@ -68,19 +65,37 @@ export class ProductDetailComponent implements OnInit {
 
   loadProduct(id: string) {
     this.isLoading = true;
-    console.log('ProductDetail: Buscando produto...', id);
 
     this.productService.getProductById(id).subscribe({
-      next: (data) => {
-        console.log('ProductDetail: Dados recebidos', data);
+      next: (data: any) => { // Usando 'any' temporariamente para tratar a resposta
+
+        if (!data) {
+             this.error = 'Produto não encontrado.';
+             this.isLoading = false;
+             return;
+        }
+
+        // --- NORMALIZAÇÃO DE DADOS (Correção de Bugs) ---
+
+        // 1. Garante imageUrl se vier apenas lista de images
+        if (!data.imageUrl && data.images && data.images.length > 0) {
+            data.imageUrl = typeof data.images[0] === 'string' ? data.images[0] : data.images[0].url;
+        }
+
+        // 2. Garante SellerName para não quebrar o charAt(0)
+        if (!data.sellerName) {
+            data.sellerName = data.seller?.name || 'Vendedor Trama';
+        }
+
         this.product = data;
         this.isLoading = false;
 
+        // Atualiza SEO
         this.seoService.updateSeoData({
-          title: this.product.name,
-          description: this.product.description.substring(0, 150),
-          image: this.product.imageUrl,
-          slug: `/products/${this.product.id}`
+          title: this.product?.name || 'Produto',
+          description: this.product?.description?.substring(0, 150) || '',
+          image: this.product?.imageUrl,
+          slug: `/products/${this.product?.id}`
         });
 
         if (isPlatformBrowser(this.platformId)) {
@@ -98,9 +113,6 @@ export class ProductDetailComponent implements OnInit {
   addToCart() {
     if (this.product) {
       this.cartService.addToCart(this.product);
-      if (isPlatformBrowser(this.platformId)) {
-          alert('Produto adicionado ao carrinho!');
-      }
     }
   }
 
@@ -114,9 +126,7 @@ export class ProductDetailComponent implements OnInit {
 
     setTimeout(() => {
       this.isSubmittingReview = false;
-      if (isPlatformBrowser(this.platformId)) {
-          alert('Sua avaliação foi enviada com sucesso! (Simulação)');
-      }
+      this.notificationService.success('Sua avaliação foi enviada com sucesso!');
       this.reviewForm.reset({ rating: 0, comment: '' });
     }, 1500);
   }

@@ -86,7 +86,7 @@ namespace MarketplaceArtesanato.API.Controllers
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
                             Name = product.Name,
-                            Images = product.Images?.Any() == true ? new List<string> { product.Images[0] } : null
+                            Images = product.Images?.Any() == true ? new List<string> { product.Images[0].Url } : null
                         },
                         UnitAmount = (long)(product.Price * 100)
                     },

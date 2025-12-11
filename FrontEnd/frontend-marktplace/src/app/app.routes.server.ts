@@ -4,48 +4,48 @@ export const serverRoutes: ServerRoute[] = [
   // Rotas dinâmicas: Client Side (Navegador busca dados)
   {
     path: 'products/:id',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
   {
     path: 'sellers/:id',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
   {
     path: 'categorias/:slug',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
   {
     path: 'categorias',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
 
   {
     path: 'checkout',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
   {
     path: 'cart',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
   {
     path: 'orders',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
   {
     path: 'profile',
-    renderMode: RenderMode.Client
+    renderMode: RenderMode.Server
   },
   {
     path: 'seller-dashboard',
-    renderMode: RenderMode.Client
+    renderMode: RenderMode.Server
   },
   {
     path: 'add-product',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
   {
     path: 'favorites',
-    renderMode: RenderMode.Client
+     renderMode: RenderMode.Server
   },
   {
     path: 'admin',

@@ -13,7 +13,7 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         public string? ProductImage { get; set; }
         public decimal Price { get; set; }
         public int Quantity { get; set; }
-        public decimal Subtotal => Price * Quantity;
         public Guid SellerId { get; set; }
+        public decimal Subtotal => Price * Quantity;
     }
 }

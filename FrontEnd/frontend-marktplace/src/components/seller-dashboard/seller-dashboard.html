@@ -50,6 +50,7 @@
       <!-- TAB: VISÃO GERAL (DASHBOARD) -->
       @if (activeTab === 'overview') {
         <div class="space-y-8 animate-fade-in-up">
+
           <!-- Cards de Estatísticas -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
@@ -60,6 +61,7 @@
               <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.totalRevenue | currencyBr }}</p>
               <p class="text-xs text-gray-400 mt-1">nos últimos 30 dias</p>
             </div>
+
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Vendas Realizadas</h3>
@@ -68,6 +70,7 @@
               <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.totalSales }}</p>
               <p class="text-xs text-gray-400 mt-1">pedidos processados</p>
             </div>
+
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Produtos Ativos</h3>
@@ -77,86 +80,106 @@
               <p class="text-xs text-gray-400 mt-1">itens no catálogo</p>
             </div>
           </div>
-          <!-- Gráfico de Vendas -->
+
+          <!-- Gráfico de Vendas (Scroll Horizontal na Tabela/Gráfico se necessário) -->
           <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 overflow-hidden">
             <h3 class="text-lg font-bold text-gray-900 mb-6">Desempenho de Vendas</h3>
             <div class="overflow-x-auto pb-4">
               <div class="flex items-end space-x-4 sm:space-x-6 h-64 pb-2 border-b border-stone-200 min-w-[600px]">
-                  <!-- (Barras do gráfico mantidas igual) -->
-                  <div class="flex-1 flex flex-col items-center group">
-                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 40%"></div>
-                    <span class="text-xs text-gray-500 mt-2">Seg</span>
+                <!-- Barras do Gráfico (Simulação) -->
+                <div class="flex-1 flex flex-col items-center group">
+                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 40%">
+                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">R$ 400</span>
                   </div>
-                  <div class="flex-1 flex flex-col items-center group">
-                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 70%"></div>
-                    <span class="text-xs text-gray-500 mt-2">Ter</span>
+                  <span class="text-xs text-gray-500 mt-2">Seg</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center group">
+                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 70%"></div>
+                  <span class="text-xs text-gray-500 mt-2">Ter</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center group">
+                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 55%"></div>
+                  <span class="text-xs text-gray-500 mt-2">Qua</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center group">
+                  <div class="w-full bg-primary/80 hover:bg-primary transition-all rounded-t-md relative" style="height: 90%">
+                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">R$ 900 (Hoje)</span>
                   </div>
-                  <div class="flex-1 flex flex-col items-center group">
-                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 55%"></div>
-                    <span class="text-xs text-gray-500 mt-2">Qua</span>
-                  </div>
-                  <div class="flex-1 flex flex-col items-center group">
-                    <div class="w-full bg-primary/80 hover:bg-primary transition-all rounded-t-md relative" style="height: 90%"></div>
-                    <span class="text-xs text-gray-500 mt-2 font-bold text-primary">Qui</span>
-                  </div>
-                  <div class="flex-1 flex flex-col items-center group">
-                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 30%"></div>
-                    <span class="text-xs text-gray-500 mt-2">Sex</span>
-                  </div>
-                  <div class="flex-1 flex flex-col items-center group">
-                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 60%"></div>
-                    <span class="text-xs text-gray-500 mt-2">Sab</span>
-                  </div>
-                  <div class="flex-1 flex flex-col items-center group">
-                    <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 45%"></div>
-                    <span class="text-xs text-gray-500 mt-2">Dom</span>
-                  </div>
+                  <span class="text-xs text-gray-500 mt-2 font-bold text-primary">Qui</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center group">
+                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 30%"></div>
+                  <span class="text-xs text-gray-500 mt-2">Sex</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center group">
+                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 60%"></div>
+                  <span class="text-xs text-gray-500 mt-2">Sab</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center group">
+                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 45%"></div>
+                  <span class="text-xs text-gray-500 mt-2">Dom</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       }
 
-      <!-- TAB: PRODUTOS -->
+      <!-- TAB: PRODUTOS (Lista Existente com Ações de Edição) -->
       @if (activeTab === 'products') {
         <div class="animate-fade-in-up">
-          <div class="flex justify-between items-center mb-6">
+          <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <h3 class="text-lg font-bold text-gray-900">Catálogo de Produtos</h3>
-            <a routerLink="/add-product" class="inline-flex items-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-all">
+            <a routerLink="/add-product" class="inline-flex items-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-all w-full sm:w-auto justify-center cursor-pointer">
               + Novo Produto
             </a>
           </div>
 
           @if (products.length === 0) {
-             <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-stone-300">
+            <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-stone-300">
               <p class="text-gray-500">Você ainda não cadastrou produtos.</p>
             </div>
           } @else {
-             <div class="bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
+            <div class="bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
               <ul role="list" class="divide-y divide-gray-100">
                 @for (product of products; track product.id) {
-                  <li class="p-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
+                  <li class="p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-stone-50 transition-colors gap-4">
                     <div class="flex items-center">
                       <img [src]="product.imageUrl" class="h-16 w-16 rounded-lg object-cover bg-gray-100 border border-stone-100">
                       <div class="ml-4">
-                        <h4 class="text-base font-bold text-gray-900">{{ product.name }}</h4>
+                        <div class="flex items-center gap-2">
+                           <h4 class="text-base font-bold text-gray-900 line-clamp-1">{{ product.name }}</h4>
+                           @if (product.salePrice) {
+                              <span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Oferta</span>
+                           }
+                        </div>
                         <p class="text-sm text-gray-500">Estoque: {{ product.stockQuantity }}</p>
                       </div>
                     </div>
-                    <div class="text-right flex gap-2 items-center">
-                      <p class="text-sm font-bold text-primary mr-4">{{ product.price | currencyBr }}</p>
-                      <!-- Botão Editar -->
-                      <button class="text-gray-400 hover:text-primary transition-colors p-1" title="Editar">
-                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                      </button>
-                      <!-- Botão Excluir -->
-                      <button (click)="onDelete(product)" [disabled]="isDeleting" class="text-gray-400 hover:text-red-500 transition-colors p-1 disabled:opacity-50" title="Excluir">
-                          @if (isDeleting) {
-                              <svg class="animate-spin h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                          } @else {
-                              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          }
-                      </button>
+                    <div class="flex items-center justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
+                      <div class="mr-6 text-right">
+                         @if (product.salePrice) {
+                            <p class="text-xs text-gray-400 line-through">{{ product.price | currencyBr }}</p>
+                            <p class="text-sm font-bold text-green-600">{{ product.salePrice | currencyBr }}</p>
+                         } @else {
+                            <p class="text-sm font-bold text-primary">{{ product.price | currencyBr }}</p>
+                         }
+                      </div>
+
+                      <!-- Botões de Ação -->
+                      <div class="flex gap-3">
+                        <button (click)="openEditModal(product)" class="text-gray-400 hover:text-blue-500 transition-colors p-1" title="Editar">
+                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+
+                        <button (click)="onDelete(product)" [disabled]="isDeleting" class="text-gray-400 hover:text-red-500 transition-colors p-1 disabled:opacity-50" title="Excluir">
+                            @if (isDeleting) {
+                                <svg class="animate-spin h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            } @else {
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            }
+                        </button>
+                      </div>
                     </div>
                   </li>
                 }
@@ -172,7 +195,7 @@
           <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-gray-900">Gerenciamento de Pedidos</h3>
             <!-- Contador (opcional) -->
-            <!-- <span class="text-xs bg-stone-100 text-stone-600 py-1 px-2 rounded-full">{{ orders.length }} Pedidos</span> -->
+            <!-- <span class="text-xs bg-stone-100 text-stone-600 py-1 px-2 rounded-full">{{ recentOrders.length }} Pedidos</span> -->
           </div>
 
           <div class="overflow-x-auto">
@@ -183,15 +206,14 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Cliente</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Data</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Rastreio / Envio</th> <!-- COLUNA NOVA -->
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Rastreio / Envio</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ações</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <!-- Se você usar 'orders' real, troque 'recentOrders' por 'orders' aqui -->
                 @for (order of recentOrders; track order.id) {
                   <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{{ order.id }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{{ order.displayId || order.id }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.customer }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.date }}</td>
 
@@ -201,13 +223,13 @@
                             [ngClass]="{
                               'bg-yellow-100 text-yellow-800': order.status === 'Pendente',
                               'bg-green-100 text-green-800': order.status === 'Pago' || order.status === 'Entregue',
-                              'bg-blue-100 text-blue-800': order.status === 'Enviado'
+                              'bg-blue-100 text-blue-800': order.status === 'Enviado' || order.status === 'Shipped'
                             }">
                         {{ order.status }}
                       </span>
                     </td>
 
-                    <!-- Coluna de Rastreio (Mostra código ou aviso) -->
+                    <!-- Coluna de Rastreio -->
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       @if (order.trackingCode) {
                         <div class="flex flex-col">
@@ -216,7 +238,7 @@
                            </a>
                            <span class="text-xs text-gray-400">{{ order.carrier || 'Transportadora' }}</span>
                         </div>
-                      } @else if (order.status === 'Pago') {
+                      } @else if (order.status === 'Pago' || order.status === 'Paid') {
                         <span class="text-orange-500 text-xs font-medium">Aguardando envio</span>
                       } @else {
                         <span class="text-stone-300 text-xs">—</span>
@@ -225,12 +247,10 @@
 
                     <!-- Ações de Envio -->
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      @if (order.status === 'Pago' && !order.trackingCode) {
-                          <!-- Opção 1: Gerar Etiqueta Automática -->
+                      @if ((order.status === 'Pago' || order.status === 'Paid') && !order.trackingCode) {
                           <button (click)="generateLabel(order)" class="text-white bg-primary hover:bg-primary-dark px-3 py-1 rounded text-xs shadow-sm mr-2 transition-colors" title="Gerar com Melhor Envio">
                             Gerar Etiqueta
                           </button>
-                          <!-- Opção 2: Inserir Manual -->
                           <button (click)="addTrackingManual(order)" class="text-stone-500 hover:text-stone-700 text-xs underline" title="Inserir código dos Correios">
                             Manual
                           </button>
@@ -251,4 +271,61 @@
 
     }
   </div>
+
+  <!-- MODAL DE EDIÇÃO DE PRODUTO -->
+  @if (isEditing) {
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeEditModal()"></div>
+
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <h3 class="text-lg leading-6 font-bold text-gray-900 mb-4" id="modal-title">Editar Produto</h3>
+
+            <div class="space-y-4">
+                <!-- Nome -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nome</label>
+                    <input type="text" [(ngModel)]="editingProduct.name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
+                </div>
+
+                <!-- Preço e Promoção -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Preço Original (R$)</label>
+                        <input type="number" [(ngModel)]="editingProduct.price" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-green-700">Preço Promocional (R$)</label>
+                        <input type="number" [(ngModel)]="editingProduct.salePrice" placeholder="Opcional" class="mt-1 block w-full border-green-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm border p-2 bg-green-50">
+                    </div>
+                </div>
+
+                <!-- Estoque -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Estoque</label>
+                    <input type="number" [(ngModel)]="editingProduct.stockQuantity" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
+                </div>
+
+                <!-- Descrição -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Descrição</label>
+                    <textarea rows="3" [(ngModel)]="editingProduct.description" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2"></textarea>
+                </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button type="button" (click)="saveProduct()" [disabled]="isSaving" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
+              {{ isSaving ? 'Salvando...' : 'Salvar Alterações' }}
+            </button>
+            <button type="button" (click)="closeEditModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 </div>

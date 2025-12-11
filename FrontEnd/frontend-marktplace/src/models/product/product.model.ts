@@ -13,7 +13,7 @@ export interface Product {
 
   averageRating: number;
   totalRatings: number;
-
+  salePrice?: number;
   sellerId: string;
   seller: Seller;
   sellerName: string;

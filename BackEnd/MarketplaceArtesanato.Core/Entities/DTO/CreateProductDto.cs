@@ -19,6 +19,8 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
 
         [Required]
         public int StockQuantity { get; set; }
+        public decimal? SalePrice { get; set; }
+
         [Required]
         public List<string> Tags { get; set; } = new();
 
@@ -34,6 +36,7 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         [StringLength(100)] public string? Name { get; set; }
         [StringLength(1000)] public string? Description { get; set; }
         public decimal? Price { get; set; }
+        public decimal? SalePrice { get; set; }
         public int? StockQuantity { get; set; }
         public ProductCategory? Category { get; set; }
         public ProductStatus? Status { get; set; }
