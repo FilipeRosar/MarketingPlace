@@ -1,0 +1,18 @@
+.admin-menu-item {
+  @apply block w-full text-left px-8 py-5 text-lg font-bold text-orange-800
+         rounded-2xl transition-all duration-300 relative overflow-hidden;
+}
+
+.admin-menu-item:hover {
+  @apply bg-gradient-to-r from-orange-100 to-red-100 text-orange-900 transform -translate-y-1 shadow-xl;
+}
+
+.admin-menu-item.active {
+  @apply bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-2xl;
+  box-shadow: 0 10px 30px rgba(251, 146, 60, 0.4);
+}
+
+.admin-menu-item.active::before {
+  content: '';
+  @apply absolute left-0 top-0 bottom-0 w-2 bg-white/30 rounded-r-full;
+}

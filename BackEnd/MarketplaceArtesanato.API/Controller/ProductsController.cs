@@ -44,6 +44,7 @@ namespace MarketplaceArtesanato.API.Controllers
                     .ThenInclude(s => s.Address)
                 .Include(p => p.Ratings!)
                     .ThenInclude(r => r.Customer)
+                    .Include(p => p.Images)
                 .AsQueryable();
 
             query = query.Where(p => !p.IsDeleted);
@@ -59,7 +60,7 @@ namespace MarketplaceArtesanato.API.Controllers
                 query = query.Where(p =>
                     p.Name.ToLower().Contains(lowerSearch) ||
                     (p.Description != null && p.Description.ToLower().Contains(lowerSearch)) ||
-                    p.Seller!.Name.ToLower().Contains(lowerSearch));
+                    p.Seller!.StoreName.ToLower().Contains(lowerSearch));
             }
 
             if (category.HasValue)
@@ -100,6 +101,7 @@ namespace MarketplaceArtesanato.API.Controllers
                     .ThenInclude(s => s.Address)
                 .Include(p => p.Ratings!)
                     .ThenInclude(r => r.Customer)
+                    .Include(p => p.Images)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null) return NotFound();
@@ -159,7 +161,6 @@ namespace MarketplaceArtesanato.API.Controllers
                 product.CreatedAt = DateTime.UtcNow;
                 product.IsDeleted = false;
 
-                // Garante que SalePrice venha do DTO
                 if (dto.SalePrice.HasValue && dto.SalePrice > 0)
                 {
                     product.SalePrice = dto.SalePrice.Value;
@@ -201,8 +202,7 @@ namespace MarketplaceArtesanato.API.Controllers
             // Mapeamento Automático
             _mapper.Map(dto, product);
 
-            // CORREÇÃO CRÍTICA: Garantir que SalePrice seja atualizado explicitamente
-            // Se o DTO vier com SalePrice, atualiza. Se vier null, remove a promoção.
+
             product.SalePrice = dto.SalePrice;
 
             product.UpdatedAt = DateTime.UtcNow;
@@ -234,10 +234,6 @@ namespace MarketplaceArtesanato.API.Controllers
             if (product.SellerId != userId && role != "Admin")
                 return Forbid();
 
-            // Opção: Soft Delete
-            // product.IsDeleted = true;
-
-            // Opção: Hard Delete (remove do banco)
             foreach (var image in product.Images)
             {
                 try { await _storage.DeleteAsync(image.Url); } catch { }

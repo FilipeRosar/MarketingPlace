@@ -13,10 +13,11 @@ namespace MarketplaceArtesanato.API.Models.Requests
         [Required, MinLength(8)] 
         public string Password { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? Bio { get; set; }
         public string? CPF { get; set; }
         public string? CNPJ { get; set; }
         [Required]
-        public AddressDto Address { get; set; } = new();
+        public AddressDto Address { get; set; } = null!;
     }
 
 }

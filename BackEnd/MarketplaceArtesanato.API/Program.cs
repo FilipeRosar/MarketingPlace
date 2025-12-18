@@ -9,6 +9,7 @@ using MarketplaceArtesanato.Data.Seed;
 using MarketplaceArtesanato.Infrastructure.Consumers;
 using MarketplaceArtesanato.Services;
 using MarketplaceArtesanato.Services.Services;
+using MarketplaceArtesanato.Services.Services.Stripe;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -44,18 +45,18 @@ builder.Services.AddScoped<IStorageService, BlobService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFavoritesService, FavoritesService>();
-builder.Services.AddScoped<StripePaymentService>();
 builder.Services.AddScoped<Stripe.BillingPortal.SessionService>();
 builder.Services.AddScoped<Stripe.Checkout.SessionService>();
 builder.Services.AddHttpClient<IShippingService, ShippingService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
-
+builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
 
 var stripeKey = builder.Configuration["Stripe:SecretKey"];
-StripeConfiguration.ApiKey = stripeKey;
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
 {

@@ -32,7 +32,7 @@ namespace MarketplaceArtesanato.API.Controllers
 
                 if (seller.Address == null)
                 {
-                    Console.WriteLine($"[AVISO] Vendedor {seller.Name} está sem endereço vinculado.");
+                    Console.WriteLine($"[AVISO] Vendedor {seller.StoreName} está sem endereço vinculado.");
                 }
 
                 var dto = _mapper.Map<SellerResponseDto>(seller);

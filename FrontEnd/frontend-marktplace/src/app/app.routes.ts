@@ -17,6 +17,9 @@ import { AdminDashboardComponent } from '../pages/admin-dashboard/admin-dashboar
 import { FavoritesComponent } from '../components/favorite/favorite.component';
 import { adminGuard } from '../guards/admin.guard';
 import { authGuard } from '../guards/auth-guard';
+import { sellerGuard } from '../guards/seller-guard';
+import { PendingApprovalComponent } from '../components/modal/pending-approval/pending-approval.component';
+import { AdminLayoutComponent } from '../components/admin-layout.component/admin-layout.component';
 
 export const routes: Routes = [
    { path: '', component: HomeComponent },
@@ -24,6 +27,12 @@ export const routes: Routes = [
   { path: 'sellers/:id', component: SellerProfileComponent },
   { path: 'categorias',loadComponent: () => import('../pages/categories-page/categories-page.component').then(m => m.CategoriesPageComponent) },
   { path: 'categorias/:slug', loadComponent: () => import('../pages/categories-page/categories-page.component').then(m => m.CategoriesPageComponent) },
+  {
+    path: 'pending-approval',
+    loadComponent: () => import('../components/modal/pending-approval/pending-approval.component')
+      .then(m => m.PendingApprovalComponent)
+  },
+
   // Auth
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterCustomerComponent },
@@ -32,8 +41,13 @@ export const routes: Routes = [
   { path: 'reset-password', component: ResetPasswordComponent },
   {
   path: 'admin',
-  loadComponent: () => import('../pages/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
-  canMatch: [adminGuard]
+  component: AdminLayoutComponent,
+  canActivate: [adminGuard],
+  children: [
+    { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+    { path: 'dashboard', loadComponent: () => import('../pages/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent) },
+    { path: 'orders', loadComponent: () => import('../pages/order/orders.component').then(m => m.OrdersComponent) },
+  ]
   },
   // Privadas
   { path: 'cart', component: CartComponent },
@@ -46,7 +60,11 @@ export const routes: Routes = [
   },
   { path: 'profile', component: ProfileComponent },
   { path: 'add-product', component: AddProductComponent },
-  { path: 'seller-dashboard', component: SellerDashboardComponent },
+  {
+    path: 'seller-dashboard',
+    component: SellerDashboardComponent,
+    canActivate: [sellerGuard]
+  },
   { path: 'favorites', component: FavoritesComponent },
   { path: '**', redirectTo: '' }
 ];

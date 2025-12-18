@@ -13,37 +13,69 @@
 
         <div class="space-y-8 divide-y divide-gray-100">
 
-          <!-- Upload de Imagem -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-4">Foto do Produto <span class="text-red-500">*</span></label>
-            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:bg-stone-50 transition-colors relative cursor-pointer group"
-                 [class.border-red-300]="!selectedFile && productForm.touched">
+         <div>
+        <label class="block text-sm font-medium text-gray-700 mb-4">
+          Fotos do Produto <span class="text-red-500">*</span>
+        </label>
 
-              <input type="file" (change)="onFileSelected($event)" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+        <!-- Grid com previews + botão de adicionar -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
 
-              <div class="space-y-1 text-center" *ngIf="!imagePreview">
-                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <div class="flex text-sm text-gray-600 justify-center">
-                  <span class="relative bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none">Enviar um arquivo</span>
-                </div>
-                <p class="text-xs text-gray-500">PNG, JPG, GIF até 5MB</p>
+          <!-- PREVIEWS DAS IMAGENS JÁ SELECIONADAS -->
+          @for (preview of imagePreviews; track $index) {
+            <div class="relative group">
+              <div class="aspect-square rounded-2xl overflow-hidden border-4 border-orange-200 shadow-xl">
+                <img [src]="preview"
+                    class="w-full h-full object-cover hover:scale-110 transition-transform duration-300">
               </div>
 
-              <div *ngIf="imagePreview" class="relative w-full h-64">
-                <img [src]="imagePreview" class="w-full h-full object-contain rounded-lg">
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                  <span class="text-white font-medium">Trocar Imagem</span>
-                </div>
-              </div>
-            </div>
-            <!-- Mensagem de Erro da Imagem -->
-            <div *ngIf="!selectedFile" class="text-red-500 text-xs mt-2">
-              <span *ngIf="productForm.touched || productForm.dirty">A imagem é obrigatória.</span>
-            </div>
-          </div>
+              <!-- Botão remover -->
+              <button type="button"
+                      (click)="removeImage($index)"
+                      class="absolute -top-3 -right-3 w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110">
+                ×
+              </button>
 
+              <!-- Destaque se for a primeira (principal) -->
+              @if ($index === 0) {
+                <div class="absolute top-3 left-3 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                  Principal
+                </div>
+              }
+            </div>
+          }
+
+          <!-- BOTÃO DE ADICIONAR MAIS FOTOS -->
+          <label class="cursor-pointer">
+            <input type="file"
+                  multiple
+                  accept="image/*"
+                  (change)="onFileSelected($event)"
+                  class="hidden">
+
+            <div class="aspect-square rounded-2xl border-4 border-dashed border-orange-300 bg-orange-50 hover:bg-orange-100 hover:border-orange-500 transition-all duration-300 flex flex-col items-center justify-center group">
+              <svg class="w-16 h-16 text-orange-600 mb-3 group-hover:scale-110 transition-transform"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 4v16m8-8H4" />
+              </svg>
+              <p class="text-orange-700 font-bold text-lg">Adicionar</p>
+              <p class="text-orange-600 text-xs mt-1">{{ selectedFiles.length }}/10 fotos</p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Mensagem de erro se não tiver imagem -->
+        @if (selectedFiles.length === 0 && (productForm.touched || productForm.dirty)) {
+          <p class="text-red-500 text-xs mt-3">
+            Adicione pelo menos uma foto do produto.
+          </p>
+        }
+
+        <p class="text-xs text-gray-500 mt-4">
+          <strong>Dica:</strong> A primeira foto será a imagem principal na loja.
+        </p>
+      </div>
           <!-- Dados do Produto -->
           <div class="pt-8 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
 
@@ -135,15 +167,16 @@
 
         <div class="pt-8 flex flex-col items-end">
           <!-- Aviso de campos faltantes -->
-          <div *ngIf="productForm.invalid || !selectedFile" class="text-xs text-gray-500 mb-2 mr-2">
+          <div *ngIf="productForm.invalid || selectedFiles.length === 0" class="text-xs text-gray-500 mb-2 mr-2">
             Preencha todos os campos obrigatórios (*) e adicione uma foto.
           </div>
 
-          <button type="submit" [disabled]="productForm.invalid || !selectedFile || isLoading"
-                  class="ml-3 inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5">
-            <span *ngIf="isLoading">Salvando...</span>
-            <span *ngIf="!isLoading">Publicar Produto</span>
-          </button>
+          <button type="submit"
+        [disabled]="productForm.invalid || selectedFiles.length === 0 || isLoading"
+        class="inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5">
+          <span *ngIf="isLoading">Salvando...</span>
+          <span *ngIf="!isLoading">Publicar Produto</span>
+        </button>
         </div>
       </form>
     </div>

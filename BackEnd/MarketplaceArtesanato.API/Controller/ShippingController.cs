@@ -24,7 +24,7 @@ namespace MarketplaceArtesanato.API.Controller
             return Ok(options);
         }
 
-        [Authorize(Roles = "Seller")] 
+        [Authorize(Roles = "Seller,Admin")] 
         [HttpPost("generate-label")]
         public async Task<IActionResult> GenerateLabel([FromBody] GenerateLabelRequest request)
         {

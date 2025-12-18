@@ -5,7 +5,8 @@ using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
 using MarketplaceArtesanato.Core.Entities.Models.Responses;
-using MarketplaceArtesanato.Core.Models.Requests; 
+using MarketplaceArtesanato.Core.Interfaces;
+using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data.Data;
 using MarketplaceArtesanato.Services.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -20,12 +21,12 @@ namespace MarketplaceArtesanato.API.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly ArtesianDbContext _context;
-        private readonly StripePaymentService _stripeService;
+        private readonly IStripePaymentService _stripeService;
         private readonly IMapper _mapper;
 
         public OrdersController(
             ArtesianDbContext context,
-            StripePaymentService stripeService,
+            IStripePaymentService stripeService,
             IMapper mapper)
         {
             _context = context;
@@ -37,136 +38,146 @@ namespace MarketplaceArtesanato.API.Controllers
         [Authorize]
         public async Task<ActionResult<List<OrderResponseDto>>> GetMyOrders()
         {
-            try
+            var userId = User.GetUserId();
+            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Customer";
+
+            var query = _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                .AsNoTracking();
+
+            if (role == "Seller")
             {
-                var userIdClaim = User.FindFirst("sub")
-                               ?? User.FindFirst("nameid")
-                               ?? User.FindFirst(ClaimTypes.NameIdentifier);
-
-                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                {
-                    return Unauthorized("Token inválido ou usuário não encontrado");
-                }
-
-                var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Customer";
-
-                var query = _context.Orders
-                    .Include(o => o.Items)
-                        .ThenInclude(i => i.Product)
-                            .ThenInclude(p => p.Images)
-                    .AsNoTracking();
-
-                if (role == "Seller" || role == "Admin")
-                {
-                    query = query.Where(o => o.Items.Any(i => i.Product.SellerId == userId));
-                }
-                else
-                {
-                    query = query.Where(o => o.BuyerId == userId);
-                }
-
-                var orders = await query
-                    .OrderByDescending(o => o.CreatedAt)
-                    .ToListAsync();
-
-                var dtos = _mapper.Map<List<OrderResponseDto>>(orders);
-                return Ok(dtos);
+                query = query.Where(o => o.Items.Any(i => i.Product.SellerId == userId));
             }
-            catch (Exception ex)
+            else if (role == "Admin")
             {
-                Console.WriteLine($"[ERRO MY-ORDERS] {ex.Message}");
-                return StatusCode(500, "Erro interno do servidor");
             }
+            else
+            {
+                query = query.Where(o => o.BuyerId == userId);
+            }
+
+            var orders = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+
+            var dtos = _mapper.Map<List<OrderResponseDto>>(orders);
+            return Ok(dtos);
         }
+
         [HttpGet("{id}")]
         [Authorize]
         public async Task<ActionResult<OrderResponseDto>> GetOrder(Guid id)
         {
-            try
-            {
-                var userId = User.GetUserId();
-                var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userId = User.GetUserId();
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                var order = await _context.Orders
-                    .Include(o => o.Items)
-                        .ThenInclude(i => i.Product)
-                            .ThenInclude(p => p.Images)
-                    .FirstOrDefaultAsync(o => o.Id == id);
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Images)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Seller)
+                .FirstOrDefaultAsync(o => o.Id == id);
 
-                if (order == null) return NotFound();
+            if (order == null) return NotFound();
 
-                bool isBuyer = order.BuyerId == userId;
-                bool isSeller = role == "Seller" && order.Items.Any(i => i.Product != null && i.Product.SellerId == userId);
-                bool isAdmin = User.IsInRole("Admin");
+            bool isBuyer = order.BuyerId == userId;
+            bool isSeller = role == "Seller" && order.Items.Any(i => i.Product.SellerId == userId);
+            bool isAdmin = User.IsInRole("Admin");
 
-                if (!isBuyer && !isSeller && !isAdmin) return Forbid();
+            if (!isBuyer && !isSeller && !isAdmin) return Forbid();
 
-                var dto = _mapper.Map<OrderResponseDto>(order);
-                return Ok(dto);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERRO GET ORDER DETALHE] {ex.Message}");
-                return StatusCode(500, "Erro ao carregar detalhes do pedido.");
-            }
+            var dto = _mapper.Map<OrderResponseDto>(order);
+            return Ok(dto);
         }
 
         [HttpPost("checkout")]
-        [Authorize(Roles = "Customer")]
+        [Authorize]
         public async Task<ActionResult> Checkout([FromBody] CheckoutRequestDto dto)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdString, out var customerId))
-                return Unauthorized("Usuário inválido.");
+            var buyerId = User.GetUserId();
+            var buyer = await _context.Users.FindAsync(buyerId);
+            if (buyer == null) return NotFound("Usuário não encontrado.");
+
+            var productIds = dto.Items.Select(i => i.ProductId).ToList();
+            var products = await _context.Products
+                .Include(p => p.Seller)
+                .Where(p => productIds.Contains(p.Id))
+                .ToListAsync();
+
+            if (products.Count != productIds.Count)
+                return BadRequest("Algum produto não encontrado ou indisponível.");
 
             var order = new Order
             {
                 Id = Guid.NewGuid(),
-                BuyerId = customerId,
+                BuyerId = buyer.Id,
+                Buyer = buyer,
                 Status = OrderStatus.Pending,
                 CreatedAt = DateTime.UtcNow,
-                Items = new List<OrderItem>()
+                Items = new List<OrderItem>(),
+                SellerCommissions = new Dictionary<Guid, decimal>(),
+                TrackingCodes = new Dictionary<Guid, string>()
             };
 
-            decimal totalAmount = 0;
+            decimal orderTotal = 0;
 
             foreach (var itemDto in dto.Items)
             {
-                var product = await _context.Products.FindAsync(itemDto.ProductId);
-
-                if (product == null)
-                    return BadRequest(new { message = $"Produto {itemDto.ProductId} não encontrado" });
+                var product = products.First(p => p.Id == itemDto.ProductId);
 
                 if (product.StockQuantity < itemDto.Quantity)
-                    return BadRequest(new { message = $"Estoque insuficiente para {product.Name}" });
+                    return BadRequest($"Estoque insuficiente para {product.Name}");
 
-                totalAmount += product.Price * itemDto.Quantity;
-
-                order.Items.Add(new OrderItem
+                var orderItem = new OrderItem
                 {
                     Id = Guid.NewGuid(),
-                    ProductId = itemDto.ProductId,
+                    ProductId = product.Id,
+                    Product = product,
                     Quantity = itemDto.Quantity,
                     UnitPrice = product.Price,
-                    OrderId = order.Id
-                });
+                    ProductName = product.Name,
+                    ProductImage = product.Images.FirstOrDefault()?.Url
+                };
+
+                order.Items.Add(orderItem);
+                orderTotal += orderItem.UnitPrice * orderItem.Quantity;
+
+
+                var sellerId = product.SellerId;
+                var itemTotal = orderItem.UnitPrice * orderItem.Quantity;
+                var commission = itemTotal * (product.Seller.CommissionRate / 100m);
+
+                if (order.SellerCommissions.ContainsKey(sellerId))
+                    order.SellerCommissions[sellerId] += commission;
+                else
+                    order.SellerCommissions[sellerId] = commission;
             }
 
-            order.TotalAmount = totalAmount;
+            order.TotalAmount = orderTotal;
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            return Ok(new { order.Id, order.TotalAmount, status = order.Status.ToString() });
+            var paymentUrl = await _stripeService.CreateCheckoutSessionAsync(order, buyerId);
+
+            return Ok(new
+            {
+                message = "Pedido criado com sucesso! Redirecionando para pagamento...",
+                orderId = order.Id,
+                paymentUrl
+            });
         }
 
-        // --- PUT: RASTREIO ---
         [HttpPut("{id}/tracking")]
         [Authorize(Roles = "Seller,Admin")]
         public async Task<IActionResult> UpdateTracking(Guid id, [FromBody] UpdateTrackingDto dto)
         {
             var userId = User.GetUserId();
-            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
             var order = await _context.Orders
                 .Include(o => o.Items)
@@ -175,24 +186,35 @@ namespace MarketplaceArtesanato.API.Controllers
 
             if (order == null) return NotFound();
 
+            // Check if the seller owns any item in this order
             if (role == "Seller")
             {
-                bool isMyOrder = order.Items.Any(i => i.Product != null && i.Product.SellerId == userId);
-                if (!isMyOrder) return Forbid("Este pedido não contém seus produtos.");
+                bool isMyOrder = order.Items.Any(i => i.Product.SellerId == userId);
+                if (!isMyOrder) return Forbid("This order does not contain your products.");
+
+                // Update the dictionary for this specific seller
+                if (order.TrackingCodes == null) order.TrackingCodes = new Dictionary<Guid, string>();
+                order.TrackingCodes[userId] = dto.TrackingCode;
+            }
+            else if (role == "Admin")
+            {
+                // Admin logic...
+                var firstSeller = order.Items.First().Product.SellerId;
+                if (order.TrackingCodes == null) order.TrackingCodes = new Dictionary<Guid, string>();
+                order.TrackingCodes[firstSeller] = dto.TrackingCode;
             }
 
-            order.TrackingCode = dto.TrackingCode;
-            order.Carrier = dto.Carrier;
-            order.ShippedAt = DateTime.UtcNow;
-
+            // Update status logic...
             if (order.Status == OrderStatus.Paid)
             {
                 order.Status = OrderStatus.Sent;
             }
 
-            await _context.SaveChangesAsync();
+            // Important: Re-assign to ensure EF Core detects the change in the dictionary
+            order.TrackingCodes = new Dictionary<Guid, string>(order.TrackingCodes);
 
-            return Ok(new { message = "Rastreio atualizado com sucesso." });
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Tracking updated." });
         }
     }
 }

@@ -7,7 +7,7 @@ export interface User {
   phone?: string;
   cpf?: string;
   address?: any;
-
+  isApproved: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -22,10 +22,12 @@ import { filter } from 'rxjs/operators';
 export class HeaderComponent implements OnInit, OnDestroy {
 
   // Services
+
   private authService = inject(AuthService);
   private router = inject(Router);
   public cartService = inject(CartService);
   private platformId = inject(PLATFORM_ID);
+
 
   // Observables & Data
   currentUser$ = this.authService.currentUser$;

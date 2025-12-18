@@ -1,92 +1,104 @@
 <div class="min-h-screen py-8 sm:py-12 bg-surface">
 
-  <!-- Loading State -->
   @if (isLoading) {
     <div class="flex justify-center items-center h-96">
       <app-loading-spinner></app-loading-spinner>
     </div>
   }
 
-  <!-- Error State -->
   @if (error) {
     <div class="max-w-7xl mx-auto px-4 text-center py-20">
       <h2 class="text-2xl font-bold text-gray-900 mb-4">Ops!</h2>
       <p class="text-gray-600 mb-8">{{ error }}</p>
-      <button (click)="goBack()" class="text-primary hover:underline font-medium">
+      <button (click)="goBack()" class="text-primary hover:underline font-medium cursor-pointer">
         &larr; Voltar para a loja
       </button>
     </div>
   }
 
-  <!-- Product Content -->
-  @if (product && !isLoading) {
+  @if (!isLoading && product) {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-      <!-- Breadcrumb / Voltar -->
-      <nav class="flex mb-8 text-sm font-medium text-gray-500 hover:text-primary transition-colors cursor-pointer" (click)="goBack()">
+      <nav class="flex mb-8 text-sm font-medium text-gray-500 hover:text-primary transition-colors cursor-pointer w-fit" (click)="goBack()">
         <span class="mr-2">&larr;</span> Voltar
       </nav>
 
       <div class="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
 
-        <!-- Coluna Esquerda: Imagem -->
-        <div class="product-image-container mb-10 lg:mb-0">
-          <div class="aspect-square rounded-3xl overflow-hidden bg-gray-100 relative shadow-soft group">
+        <div class="product-image-container mb-10 lg:mb-0 flex flex-col-reverse md:flex-row gap-4">
 
-            <!-- Imagem com fallback -->
-            @if (product.imageUrl) {
-                <img [src]="product.imageUrl" [alt]="product.name" class="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700">
+          @if (galleryImages.length > 1) {
+            <div class="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto md:h-[500px] no-scrollbar py-2 px-1">
+              @for (img of galleryImages; track $index) {
+                <button (click)="selectImage($index)"
+                        class="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all duration-200 cursor-pointer"
+                        [class.border-primary]="currentImageIndex === $index"
+                        [class.border-transparent]="currentImageIndex !== $index"
+                        [class.ring-2]="currentImageIndex === $index"
+                        [class.ring-primary-light]="currentImageIndex === $index">
+                  <img [src]="img" class="w-full h-full object-cover" [alt]="product.name + ' - imagem ' + ($index + 1)">
+                </button>
+              }
+            </div>
+          }
+
+          <div class="flex-1 aspect-square rounded-3xl overflow-hidden bg-white relative shadow-soft group border border-stone-100 cursor-crosshair select-none"
+               (mousemove)="onMouseMove($event)"
+               (mouseleave)="onMouseLeave()">
+
+            @if (galleryImages.length > 0) {
+                <img [src]="galleryImages[currentImageIndex]"
+                     [alt]="product.name"
+                     class="w-full h-full object-cover object-center transition-transform duration-200 ease-out origin-center pointer-events-none"
+                     [style.transform-origin]="zoomPosition.x + '% ' + zoomPosition.y + '%'"
+                     [style.transform]="isZooming ? 'scale(2)' : 'scale(1)'">
             } @else {
-                <div class="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">Sem imagem</div>
+                <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+                    <svg class="w-16 h-16 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Sem imagem disponível</span>
+                </div>
             }
 
-            <!-- Badge de Categoria -->
-            <span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+            <span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm pointer-events-none z-10">
               {{ product.category }}
             </span>
 
-            <!-- Badge de Oferta -->
             @if (product.salePrice && product.salePrice > 0 && product.salePrice < product.price) {
-                <span class="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm animate-pulse">
+                <span class="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm animate-pulse pointer-events-none z-10">
                   OFERTA
                 </span>
             }
           </div>
         </div>
 
-        <!-- Coluna Direita: Detalhes -->
         <div class="product-info flex flex-col justify-start">
 
-          <!-- Info Vendedor (Com proteção para sellerName null) -->
-          <div class="flex items-center mb-4 cursor-pointer hover:opacity-80 transition-opacity"
-               [routerLink]="['/sellers', product.sellerId]">
-            <div class="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-primary font-bold mr-3">
-              <!-- Uso de ? e || para evitar crash -->
+          <div class="flex items-center mb-4 group w-fit cursor-pointer" [routerLink]="['/sellers', product.sellerId]">
+            <div class="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-primary font-bold mr-3 border-2 border-transparent group-hover:border-orange-200 transition-colors">
               {{ (product.sellerName?.charAt(0) || 'V').toUpperCase() }}
             </div>
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide">Vendido por</p>
-              <p class="text-sm font-semibold text-gray-900 underline">{{ product.sellerName || 'Vendedor' }}</p>
+              <p class="text-sm font-semibold text-gray-900 underline group-hover:text-primary transition-colors">{{ product.sellerName || 'Vendedor Parceiro' }}</p>
             </div>
           </div>
 
-          <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-2">
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-2 leading-tight">
             {{ product.name }}
           </h1>
 
-          <!-- Área de Avaliação -->
           <div class="mb-6 flex items-center space-x-2">
             <app-rating-stars
               [rating]="product.averageRating"
               [totalRatings]="product.totalRatings">
             </app-rating-stars>
-            <span class="text-sm text-gray-500">({{ product.totalRatings }} avaliações)</span>
+            <span class="text-sm text-gray-500 hover:text-gray-700 cursor-pointer underline decoration-dotted">({{ product.totalRatings }} avaliações)</span>
           </div>
 
-          <!-- Preço -->
-          <div class="mt-4 mb-8">
+          <div class="mt-2 mb-8 p-4 bg-stone-50 rounded-xl border border-stone-100">
             @if (product.salePrice && product.salePrice > 0 && product.salePrice < product.price) {
-                <!-- Preço Promocional -->
                 <div class="flex items-baseline gap-3">
                     <p class="text-4xl font-bold text-green-600 tracking-tight">
                         {{ product.salePrice | currencyBr }}
@@ -95,47 +107,52 @@
                         {{ product.price | currencyBr }}
                     </p>
                 </div>
-                <p class="text-sm text-green-600 mt-1 font-medium">
-                    Economize {{ (product.price - product.salePrice) | currencyBr }}
+                <p class="text-sm text-green-600 mt-1 font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    Você economiza {{ (product.price - product.salePrice) | currencyBr }}
                 </p>
             } @else {
-                <!-- Preço Normal -->
                 <p class="text-4xl font-bold text-primary tracking-tight">
                     {{ product.price | currencyBr }}
                 </p>
             }
 
-            <p class="text-sm text-gray-500 mt-1">
-              Em até 12x de {{ ((product.salePrice || product.price) / 12) | currencyBr }}
+            <p class="text-sm text-gray-500 mt-2 flex items-center gap-1">
+               <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+               Em até 12x de {{ ((product.salePrice || product.price) / 12) | currencyBr }}
             </p>
           </div>
 
-          <!-- Ações -->
           <div class="flex flex-col sm:flex-row gap-4 mb-10">
             <button (click)="addToCart()"
-                    class="flex-1 bg-primary border border-transparent rounded-full py-4 px-8 flex items-center justify-center text-base font-bold text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-lg shadow-orange-500/30 transition-all transform hover:-translate-y-1">
+                    class="flex-1 bg-primary border border-transparent rounded-full py-4 px-8 flex items-center justify-center text-base font-bold text-white hover:bg-primary-dark focus:outline-none focus:ring-4 focus:ring-primary/20 shadow-lg shadow-orange-500/30 transition-all transform hover:-translate-y-1 cursor-pointer active:scale-95">
+              <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
               Adicionar ao Carrinho
             </button>
 
-            <button class="flex-1 bg-white border border-stone-200 rounded-full py-4 px-8 flex items-center justify-center text-base font-bold text-gray-900 hover:bg-stone-50 hover:border-stone-300 transition-all">
-              <span class="mr-2">♥</span> Salvar
+            <button class="flex-1 bg-white border-2 border-stone-200 rounded-full py-4 px-8 flex items-center justify-center text-base font-bold text-gray-900 hover:bg-stone-50 hover:border-stone-300 transition-all cursor-pointer active:scale-95">
+              <svg class="w-5 h-5 mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+              Salvar na Lista
             </button>
           </div>
 
-          <!-- Descrição -->
-          <h3 class="text-lg font-bold text-gray-900 mb-3">Detalhes do Produto</h3>
-          <div class="prose prose-sm text-gray-500 leading-relaxed border-t border-stone-100 pt-4">
-            <p>{{ product.description }}</p>
+          <div>
+            <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Detalhes do Produto
+            </h3>
+            <div class="prose prose-sm text-gray-600 leading-relaxed border-t border-stone-100 pt-4">
+              <p class="whitespace-pre-line">{{ product.description }}</p>
+            </div>
           </div>
 
-          <!-- Tags -->
           @if (product.tags && product.tags.length > 0) {
-            <div class="mt-6 pt-6 border-t border-stone-100">
-              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tags:</h4>
+            <div class="mt-8 pt-6 border-t border-stone-100">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tags Relacionadas:</h4>
               <div class="flex flex-wrap gap-2">
                 @for (tag of product.tags; track tag) {
                   <a [routerLink]="['/category-page']" [queryParams]="{search: tag}"
-                     class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-primary cursor-pointer transition-colors">
+                     class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-primary cursor-pointer transition-colors border border-stone-200">
                     #{{ tag }}
                   </a>
                 }
@@ -145,74 +162,86 @@
         </div>
       </div>
 
-      <!-- SEÇÃO DE REVIEWS (MANTIDO) -->
-      <section class="max-w-4xl mx-auto mt-16">
-        <h2 class="text-2xl font-bold text-gray-900 mb-8 border-b border-stone-200 pb-2">
+      <section class="max-w-4xl mx-auto mt-20">
+        <h2 class="text-2xl font-bold text-gray-900 mb-8 border-b border-stone-200 pb-4">
           Avaliações dos Clientes
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-          <!-- Coluna 1: Média -->
           <div class="md:col-span-1">
-            <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 text-center">
-              <p class="text-sm text-gray-500 mb-2">Nota Média</p>
-              <p class="text-6xl font-extrabold text-primary mb-4">
-                {{ product.averageRating | number:'1.1-1' }}
-              </p>
-              <app-rating-stars
-                [rating]="product.averageRating"
-                [totalRatings]="product.totalRatings">
-              </app-rating-stars>
-              <p class="text-sm text-gray-500 mt-2">Baseado em {{ product.totalRatings }} avaliações.</p>
+            <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 text-center sticky top-24">
+              <p class="text-sm text-gray-500 mb-2 font-medium">Nota Média</p>
+              <div class="flex justify-center items-end gap-2 mb-4">
+                 <span class="text-6xl font-extrabold text-primary leading-none">{{ product.averageRating | number:'1.1-1' }}</span>
+                 <span class="text-gray-400 text-xl font-bold mb-2">/ 5</span>
+              </div>
+              <div class="flex justify-center mb-2">
+                  <app-rating-stars
+                    [rating]="product.averageRating"
+                    [totalRatings]="product.totalRatings">
+                  </app-rating-stars>
+              </div>
+              <p class="text-xs text-gray-500">Baseado em {{ product.totalRatings }} avaliações verificadas.</p>
             </div>
           </div>
 
-          <!-- Coluna 2 e 3: Formulário e Lista -->
           <div class="md:col-span-2 space-y-8">
-            <!-- Formulário -->
             @if (currentUser$ | async) {
-              <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+              <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-100">
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Deixe sua Avaliação</h3>
                 <form [formGroup]="reviewForm" (ngSubmit)="submitReview()" class="space-y-4">
                   <div class="flex items-center space-x-2">
                     <p class="text-sm font-medium text-gray-700 mr-2">Sua Nota:</p>
-                    @for (star of [1, 2, 3, 4, 5]; track star) {
-                      <svg (click)="setRating(star)"
-                           class="w-6 h-6 transition-colors cursor-pointer"
-                           [ngClass]="star <= reviewForm.get('rating')?.value ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'"
-                           fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9.049 2.927c.3-.921 1.631-.921 1.932 0l1.243 3.824a1 1 0 00.95.691h4.026c.969 0 1.371 1.24.588 1.81l-3.266 2.372a1 1 0 00-.364 1.118l1.243 3.824c.3.921-.755 1.688-1.54 1.118l-3.266-2.372a1 1 0 00-1.176 0l-3.266 2.372c-.784.57-1.84-.197-1.54-1.118l1.243-3.824a1 1 0 00-.364-1.118L2.096 9.252c-.783-.57-.381-1.81.588-1.81h4.026a1 1 0 00.95-.691l1.243-3.824z" />
-                      </svg>
-                    }
+                    <div class="flex gap-1">
+                        @for (star of [1, 2, 3, 4, 5]; track star) {
+                        <svg (click)="setRating(star)"
+                            class="w-8 h-8 transition-all cursor-pointer transform hover:scale-110"
+                            [ngClass]="star <= reviewForm.get('rating')?.value ? 'text-yellow-400 fill-current' : 'text-gray-300 hover:text-yellow-300'"
+                            viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9.049 2.927c.3-.921 1.631-.921 1.932 0l1.243 3.824a1 1 0 00.95.691h4.026c.969 0 1.371 1.24.588 1.81l-3.266 2.372a1 1 0 00-.364 1.118l1.243 3.824c.3.921-.755 1.688-1.54 1.118l-3.266-2.372a1 1 0 00-1.176 0l-3.266 2.372c-.784.57-1.84-.197-1.54-1.118l1.243-3.824a1 1 0 00-.364-1.118L2.096 9.252c-.783-.57-.381-1.81.588-1.81h4.026a1 1 0 00.95-.691l1.243-3.824z" />
+                        </svg>
+                        }
+                    </div>
                   </div>
                   <div>
-                    <textarea formControlName="comment" rows="3" placeholder="O que você achou do produto?"
-                              class="w-full border-stone-300 rounded-md shadow-sm focus:ring-primary focus:border-primary p-3"></textarea>
+                    <label class="sr-only">Comentário</label>
+                    <textarea formControlName="comment" rows="3" placeholder="O que você achou do produto? Conte detalhes..."
+                              class="w-full border-stone-300 rounded-xl shadow-sm focus:ring-primary focus:border-primary p-4 resize-none"></textarea>
                   </div>
-                  <button type="submit" [disabled]="reviewForm.invalid || isSubmittingReview"
-                          class="px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-all disabled:opacity-50">
-                    Enviar Avaliação
-                  </button>
+                  <div class="flex justify-end">
+                      <button type="submit" [disabled]="reviewForm.invalid || isSubmittingReview"
+                              class="px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                        {{ isSubmittingReview ? 'Enviando...' : 'Publicar Avaliação' }}
+                      </button>
+                  </div>
                 </form>
               </div>
             } @else {
-              <div class="bg-stone-50 border border-stone-200 p-4 rounded-lg text-center">
-                <p class="text-sm text-gray-700">Faça <a routerLink="/login" class="text-primary font-medium hover:underline">login</a> para deixar sua avaliação.</p>
+              <div class="bg-stone-50 border border-stone-200 p-6 rounded-2xl text-center">
+                <p class="text-gray-600">Quer avaliar este produto?</p>
+                <a routerLink="/login" class="text-primary font-bold hover:underline cursor-pointer mt-2 inline-block">Faça login na sua conta</a>
               </div>
             }
 
-            <!-- Lista -->
             <div class="space-y-6">
               @for (review of mockReviews; track $index) {
-                <div class="p-4 bg-white rounded-lg border border-stone-100 shadow-sm">
-                  <div class="flex justify-between items-start">
-                    <h4 class="font-bold text-gray-900">{{ review.name }}</h4>
-                    <p class="text-xs text-gray-500">{{ review.date }}</p>
+                <div class="p-6 bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center font-bold text-gray-600">
+                            {{ review.name.charAt(0) }}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 leading-none">{{ review.name }}</h4>
+                            <p class="text-xs text-gray-500 mt-1">Comprador verificado</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-400 bg-stone-50 px-2 py-1 rounded">{{ review.date }}</span>
                   </div>
-                  <div class="mt-1 mb-3">
+                  <div class="mb-3 pl-13">
                     <app-rating-stars [rating]="review.stars"></app-rating-stars>
                   </div>
-                  <p class="text-sm text-gray-700">{{ review.comment }}</p>
+                  <p class="text-sm text-gray-700 pl-13 leading-relaxed">"{{ review.comment }}"</p>
                 </div>
               }
             </div>

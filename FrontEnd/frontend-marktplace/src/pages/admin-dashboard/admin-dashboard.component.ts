@@ -41,7 +41,6 @@ interface Notification {
 export class AdminDashboardComponent implements OnInit {
   private adminService = inject(AdminService);
   private notification = inject(NotificationService);
-
   // Dados principais
   stats = signal<DashboardStats>({
   totalGMV: 0,
@@ -54,10 +53,11 @@ export class AdminDashboardComponent implements OnInit {
   pendingSellers = signal<PendingSeller[]>([]);
   allUsers = signal<User[]>([]);
   commissionReport = signal<CommissionReport[]>([]);
-
+  activeTab: 'overview' | 'customers' | 'pending' | 'commissions' | 'settings' = 'overview';
   // Busca
   userSearch = '';
-
+  customers = signal<any[]>([]);
+  customerSearch = '';
   // Configurações
   commissionRate = 15;
   serviceFee = 2.99;
@@ -73,7 +73,22 @@ export class AdminDashboardComponent implements OnInit {
       user.email.toLowerCase().includes(search)
     );
   });
-
+  setActiveTab(tab: 'overview' | 'customers' | 'pending' | 'commissions' | 'settings') {
+    this.activeTab = tab;
+  }
+  filteredCustomers = computed(() => {
+    const search = this.customerSearch.toLowerCase();
+    return this.customers().filter(c =>
+      c.name.toLowerCase().includes(search) ||
+      c.email.toLowerCase().includes(search)
+    );
+  });
+  loadCustomers() {
+  this.adminService.getCustomers().subscribe({
+    next: (data) => this.customers.set(data),
+    error: () => this.notification.error('Erro ao carregar clientes')
+  });
+}
   // Gráficos
   salesChartData: ChartData<'line'> = {
     labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
@@ -117,8 +132,12 @@ export class AdminDashboardComponent implements OnInit {
   };
 
   ngOnInit() {
-    this.loadAllData();
-  }
+  this.loadStats();
+  this.loadPendingSellers();
+  this.loadSalesChart();
+  this.loadCommissionReport();
+  this.loadCustomers();
+}
 
   loadAllData() {
     this.loadStats();
@@ -133,6 +152,24 @@ export class AdminDashboardComponent implements OnInit {
       error: () => this.notification.error('Erro ao carregar estatísticas')
     });
   }
+  loadSalesChart() {
+  this.adminService.getSalesByMonth().subscribe({
+    next: (data) => {
+      this.salesChartData = {
+        labels: data.map(d => d.month),
+        datasets: [{
+          label: 'Vendas (R$)',
+          data: data.map(d => d.total),
+          borderColor: '#f97316',
+          backgroundColor: 'rgba(249, 115, 22, 0.2)',
+          tension: 0.4,
+          fill: true
+        }]
+      };
+    },
+    error: () => this.notification.error('Erro ao carregar dados de vendas')
+  });
+}
 
   loadPendingSellers() {
     this.adminService.getPendingSellers().subscribe({

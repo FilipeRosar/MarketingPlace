@@ -20,7 +20,7 @@ namespace MarketplaceArtesanato.API.Mapping
                 .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(",", src.Tags)));
 
             CreateMap<Address, AddressResponseDto>();
-
+            CreateMap<ProductImage, ProductImageDto>();
             CreateMap<UpdateProductDto, Product>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
@@ -28,6 +28,7 @@ namespace MarketplaceArtesanato.API.Mapping
 
             CreateMap<Product, ProductResponseDto>()
                 .ForMember(dest => dest.Seller, opt => opt.MapFrom(src => src.Seller))
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller!.StoreName))
                 .ForMember(dest => dest.AverageRating, opt => opt.MapFrom(src =>
                     src.Ratings != null && src.Ratings.Any() ? src.Ratings.Average(r => r.Stars) : 0))
                 .ForMember(dest => dest.TotalRatings, opt => opt.MapFrom(src =>

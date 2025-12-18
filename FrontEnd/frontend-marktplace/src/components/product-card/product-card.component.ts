@@ -26,14 +26,32 @@ export class ProductCardComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
 
   isFavorite = false;
+
+  // Variável para guardar a imagem tratada (String limpa)
+  displayImage: string | null = null;
+
   private favSub?: Subscription;
 
   ngOnInit() {
-    // Escuta a lista global de favoritos.
-    // Se o ID deste produto estiver na lista, marca como favorito.
+    // 1. Lógica de Favoritos
     this.favSub = this.favoritesService.favoriteProductIds$.subscribe(ids => {
       this.isFavorite = ids.includes(this.product.id);
     });
+
+    // 2. Lógica da Imagem (IGUAL AO DETALHE)
+    this.normalizeImage();
+  }
+
+  // Função para garantir que temos uma URL válida
+  normalizeImage() {
+    if (this.product.images && this.product.images.length > 0) {
+      const firstImage = this.product.images[0];
+      // Verifica se é string ou objeto {url: ...}
+      this.displayImage = typeof firstImage === 'string' ? firstImage : (firstImage as any).url;
+    }
+    else if (this.product.imageUrl) {
+      this.displayImage = this.product.imageUrl;
+    }
   }
 
   ngOnDestroy() {
@@ -42,43 +60,38 @@ export class ProductCardComponent implements OnInit, OnDestroy {
 
   addToCart(event: Event, product: Product) {
     event.stopPropagation();
-    this.cartService.addToCart(product);
-    // Feedback visual elegante
+    // Garante que o produto vai pro carrinho com a imagem correta
+    const productToAdd = { ...product, imageUrl: this.displayImage || product.imageUrl };
+    this.cartService.addToCart(productToAdd);
     this.notificationService.success(`"${product.name}" adicionado ao carrinho!`);
   }
 
   toggleFavorite(event: Event) {
     event.stopPropagation();
-
-    // Verifica se está logado
     const user = this.authService.currentUserValue;
+
     if (!user) {
-      // Alerta amigável em vez de popup nativo
       this.notificationService.info('Faça login para salvar seus favoritos.', 'Atenção');
       return;
     }
 
-    // 1. Atualização Otimista (Muda a cor imediatamente para o usuário não esperar)
     const previousState = this.isFavorite;
     this.isFavorite = !this.isFavorite;
 
-    // 2. Chama o serviço para persistir
     const action = previousState
-      ? this.favoritesService.removeFromFavorites(this.product.id) // Se já era favorito, remove
-      : this.favoritesService.addToFavorites(this.product.id);     // Se não era, adiciona
+      ? this.favoritesService.removeFromFavorites(this.product.id)
+      : this.favoritesService.addToFavorites(this.product.id);
 
     action.pipe(take(1)).subscribe({
       next: () => {
-        // Sucesso: Feedback opcional (muitos apps não notificam "like", só mudam a cor)
         if (!previousState) {
              this.notificationService.success('Produto salvo nos favoritos!');
         }
       },
       error: (err) => {
-        // Erro: Reverte a mudança visual
         console.error("Erro ao favoritar:", err);
         this.isFavorite = previousState;
-        this.notificationService.error('Não foi possível atualizar favoritos. Tente novamente.');
+        this.notificationService.error('Erro ao atualizar favoritos.');
       }
     });
   }

@@ -16,6 +16,8 @@ namespace MarketplaceArtesanato.API.Models.Requests
         [Required, CPF]
         public string CPF { get; set; } = string.Empty;
         [Required]
+        public DateTime? BirthDate { get; set; }
+        [Required]
         public AddressResponseDto Address { get; set; } = new();
 
         [Required(ErrorMessage = "O telefone é obrigatório")]

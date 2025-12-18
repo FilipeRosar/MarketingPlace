@@ -2,7 +2,7 @@
 using MarketplaceArtesanato.API.Models.Requests;
 using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.DTO;
-using MarketplaceArtesanato.Core.Entities.Enums; // Importante
+using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data.Data;
@@ -26,47 +26,26 @@ namespace MarketplaceArtesanato.Services.Services
             _configuration = configuration;
         }
 
-        // --- LOGIN ---
         public async Task<AuthResponseDto> LoginAsync(LoginDto request)
         {
-            var customer = await _context.Customers
-                .Include(c => c.Address)
-                .FirstOrDefaultAsync(c => c.Email == request.Email);
+            var user = await _context.Users
+                .Include(u => u.SellerProfile)
+                .Include(u => u.CustomerProfile)
+                .Include(u => u.Address) 
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            var seller = await _context.Sellers
-                .Include(s => s.Address)
-                .FirstOrDefaultAsync(s => s.Email == request.Email);
-
-            object? user = customer ?? (object?)seller;
-
-            string roleString = "";
-
-            if (customer != null)
-            {
-                roleString = customer.Role.ToString(); 
-            }
-            else if (seller != null)
-            {
-                roleString = seller.Role.ToString(); 
-            }
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, GetPasswordHash(user)))
+            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 return new AuthResponseDto { Success = false, Message = "Credenciais inválidas." };
             }
 
-            var userId = GetUserId(user);
-            var userName = GetUserName(user);
-
-            var token = GenerateJwtToken(userId, roleString, userName, request.Email);
-
-
+            var token = GenerateJwtToken(user);
             var userDto = MapToUserDto(user);
-            userDto.Role = Enum.TryParse<UserRole>(roleString, out var parsedRole) ? parsedRole : UserRole.Customer;
 
             return new AuthResponseDto
             {
                 Success = true,
+                Message = "Login realizado com sucesso!",
                 Token = token,
                 User = userDto
             };
@@ -74,13 +53,12 @@ namespace MarketplaceArtesanato.Services.Services
 
         public async Task<AuthResponseDto> RegisterCustomerAsync(RegisterCostumerDto dto)
         {
-            if (await _context.Customers.AnyAsync(c => c.Email == dto.Email) ||
-                await _context.Sellers.AnyAsync(s => s.Email == dto.Email))
+            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
                 return new AuthResponseDto { Success = false, Message = "E-mail já está em uso." };
-
 
             var address = new Address
             {
+                Id = Guid.NewGuid(),
                 Street = dto.Address.Street,
                 Number = dto.Address.Number,
                 City = dto.Address.City,
@@ -89,22 +67,33 @@ namespace MarketplaceArtesanato.Services.Services
                 Country = dto.Address.Country ?? "Brasil"
             };
 
-            var customer = new Customer
+            var user = new User
             {
+                Id = Guid.NewGuid(),
                 Name = dto.Name,
                 Email = dto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 Phone = dto.Phone,
                 CPF = dto.CPF,
-                AddressId = address.Id,
+                Role = UserRole.Customer,
+                IsApproved = true,
+                CreatedAt = DateTime.UtcNow,
                 Address = address,
-                Role = UserRole.Customer, 
+                AddressId = address.Id
+            };
+
+            var customerProfile = new Customer
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                LoyaltyPoints = 0,
+                BirthDate = dto.BirthDate
             };
 
             try
             {
-                _context.Addresses.Add(address);
-                _context.Customers.Add(customer);
+                _context.Users.Add(user);
+                _context.Customers.Add(customerProfile);
                 await _context.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -112,24 +101,25 @@ namespace MarketplaceArtesanato.Services.Services
                 return new AuthResponseDto { Success = false, Message = $"Erro ao salvar: {ex.Message}" };
             }
 
-            var token = GenerateJwtToken(customer.Id, "Customer", customer.Name, customer.Email);
+            var token = GenerateJwtToken(user);
 
             return new AuthResponseDto
             {
                 Success = true,
                 Message = "Conta criada com sucesso!",
                 Token = token,
-                User = MapToUserDto(customer)
+                User = MapToUserDto(user)
             };
         }
 
         public async Task<AuthResponseDto> RegisterSellerAsync(RegisterSellerDto dto)
         {
-            if (await _context.Sellers.AnyAsync(s => s.Email == dto.Email))
+            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
                 return new AuthResponseDto { Success = false, Message = "E-mail já está em uso." };
 
-            var address = new Address
+            var userAddress = new Address
             {
+                Id = Guid.NewGuid(),
                 Street = dto.Address.Street,
                 Number = dto.Address.Number,
                 City = dto.Address.City,
@@ -138,23 +128,44 @@ namespace MarketplaceArtesanato.Services.Services
                 Country = dto.Address.Country ?? "Brasil"
             };
 
-            var seller = new Seller
+            var user = new User
             {
+                Id = Guid.NewGuid(),
                 Name = dto.Name,
                 Email = dto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 Phone = dto.Phone,
                 CPF = dto.CPF,
+                Role = UserRole.Seller,
+                IsApproved = true, 
+                CreatedAt = DateTime.UtcNow,
+                Address = userAddress,
+                AddressId = userAddress.Id
+            };
+
+            string slug = GenerateSlug(dto.Name); 
+
+            var sellerProfile = new Seller
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                StoreName = dto.Name, 
+                StoreSlug = slug,
                 CNPJ = dto.CNPJ,
-                AddressId = address.Id,
-                Address = address,
-                Role = UserRole.Seller, 
+                Address = userAddress, 
+                AddressId = userAddress.Id,
+                IsApproved = false, 
+                CommissionRate = 15.0m
             };
 
             try
             {
-                _context.Addresses.Add(address);
-                _context.Sellers.Add(seller);
+                _context.Users.Add(user);
+                _context.Sellers.Add(sellerProfile);
+
+                var customerProfile = new Customer { Id = Guid.NewGuid(), UserId = user.Id };
+                _context.Customers.Add(customerProfile);
+
                 await _context.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -162,30 +173,29 @@ namespace MarketplaceArtesanato.Services.Services
                 return new AuthResponseDto { Success = false, Message = $"Erro ao salvar: {ex.Message}" };
             }
 
-            var token = GenerateJwtToken(seller.Id, "Seller", seller.Name, seller.Email);
+            var token = GenerateJwtToken(user);
 
             return new AuthResponseDto
             {
                 Success = true,
-                Message = "Conta criada com sucesso!",
+                Message = "Conta criada com sucesso! Aguarde aprovação da loja.",
                 Token = token,
-                User = MapToUserDto(seller)
+                User = MapToUserDto(user)
             };
         }
 
-        // --- HELPERS ---
-        private string GenerateJwtToken(Guid userId, string role, string name, string email)
+        private string GenerateJwtToken(User user)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim(ClaimTypes.Email, email),
-                new Claim(ClaimTypes.Role, role), 
-                new Claim(ClaimTypes.Name, name),
-                new Claim("UserType", role)
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                new Claim(ClaimTypes.Name, user.Name),
+                new Claim("StoreApproved", (user.SellerProfile?.IsApproved ?? false).ToString())
             };
 
             var token = new JwtSecurityToken(
@@ -199,36 +209,24 @@ namespace MarketplaceArtesanato.Services.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private UserDto MapToUserDto(dynamic user)
+        private UserDto MapToUserDto(User user)
         {
-            string? imageUrl = null;
-            UserRole roleEnum = UserRole.Customer;
-
-            if (user is Customer c)
-            {
-                imageUrl = c.ProfileImageUrl;
-                roleEnum = c.Role;
-            }
-            else if (user is Seller s)
-            {
-                imageUrl = s.ProfileImageUrl;
-                roleEnum = s.Role; 
-            }
-
             return new UserDto
             {
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
-                Role = roleEnum,
-                ProfileImageUrl = imageUrl,
+                Role = user.Role,
+                ProfileImageUrl = user.ProfileImageUrl,
                 Phone = user.Phone,
                 CPF = user.CPF,
             };
         }
 
-        private string GetPasswordHash(object user) => user is Customer c ? c.PasswordHash : ((Seller)user).PasswordHash;
-        private Guid GetUserId(object user) => user is Customer c ? c.Id : ((Seller)user).Id;
-        private string GetUserName(object user) => user is Customer c ? c.Name : ((Seller)user).Name;
+        private string GenerateSlug(string phrase)
+        {
+            string str = phrase.ToLower();
+            return str.Replace(" ", "-").Trim();
+        }
     }
 }

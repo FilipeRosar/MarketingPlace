@@ -2,7 +2,7 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessC
 import { provideRouter } from '@angular/router';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { provideHttpClient, withInterceptors, withFetch } from '@angular/common/http';
-
+import { provideNgxMask } from 'ngx-mask';
 import { routes } from './app.routes';
 import { authInterceptor } from '../interceptors/auth.interceptor';
 
@@ -19,6 +19,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authInterceptor]),
       withFetch()
-    )
+
+    ),
+    provideNgxMask()
   ]
 };

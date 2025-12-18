@@ -4,6 +4,14 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Product } from '../../models/product/product.model';
 
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pages: number;
+}
 @Injectable({
   providedIn: 'root'
 })
@@ -16,8 +24,10 @@ export class ProductService {
     page: number = 1,
     pageSize: number = 10,
     search: string = '',
-    category: string = '',
-    sellerId: string = ''
+    category?: string,
+    minPrice?: number,
+    maxPrice?: number,
+    sellerId?: string
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -26,7 +36,8 @@ export class ProductService {
     if (search) params = params.set('search', search);
     if (category) params = params.set('category', category);
     if (sellerId) params = params.set('sellerId', sellerId);
-
+    if (minPrice) params = params.set('minPrice', minPrice.toString());
+    if (maxPrice) params = params.set('maxPrice', maxPrice.toString());
     return this.http.get<any>(this.apiUrl, { params });
   }
    updateProduct(id: string, productData: any): Observable<void> {

@@ -16,16 +16,15 @@ export class AddProductComponent {
   private fb = inject(FormBuilder);
   private productService = inject(ProductService);
   private router = inject(Router);
-  private notificationService = inject(NotificationService); // Injetar
-
+  private notificationService = inject(NotificationService); 
+  selectedFiles: File[] = [];
+  imagePreviews: string[] = [];
   tags: string[] = [];
   productForm: FormGroup;
-  selectedFile: File | null = null;
-  imagePreview: string | null = null;
   isLoading = false;
 
   categories = [
-    { label: 'Decoração', value: '0' }, 
+    { label: 'Decoração', value: '0' },
     { label: 'Joias', value: '1' },
     { label: 'Roupas', value: '2' },
     { label: 'Arte', value: '3' },
@@ -48,18 +47,39 @@ export class AddProductComponent {
   }
 
   onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.selectedFile = file;
-      this.productForm.markAsDirty();
+  const files: FileList = event.target.files;
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.imagePreview = reader.result as string;
-      };
-      reader.readAsDataURL(file);
-    }
+  if (files.length === 0) return;
+
+  if (this.selectedFiles.length + files.length > 10) {
+    this.notificationService.warning('Máximo de 10 fotos por produto.');
+    return;
   }
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+
+    if (!file.type.startsWith('image/')) {
+      this.notificationService.error(`Arquivo ${file.name} não é uma imagem.`);
+      continue;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.notificationService.error(`Imagem ${file.name} muito grande (máx 5MB).`);
+      continue;
+    }
+
+    this.selectedFiles.push(file);
+
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      this.imagePreviews.push(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  this.productForm.markAsDirty();
+}
 
   addTag(value: string) {
     const tag = value.trim();
@@ -67,61 +87,52 @@ export class AddProductComponent {
       this.tags.push(tag);
     }
   }
-
+  removeImage(index: number) {
+  this.selectedFiles.splice(index, 1);
+  this.imagePreviews.splice(index, 1);
+  this.productForm.markAsDirty();
+}
   removeTag(index: number) {
     this.tags.splice(index, 1);
   }
 
-  onSubmit() {
-    if (this.productForm.invalid || !this.selectedFile) {
-      this.productForm.markAllAsTouched();
-      return;
-    }
-
-    this.isLoading = true;
-
-    const formData = new FormData();
-    formData.append('Name', this.productForm.get('name')?.value);
-    formData.append('Description', this.productForm.get('description')?.value);
-
-    // Converte preço para string com ponto decimal (culture invariant)
-    const price = this.productForm.get('price')?.value;
-    formData.append('Price', price.toString().replace(',', '.'));
-
-    formData.append('StockQuantity', this.productForm.get('stockQuantity')?.value);
-    formData.append('Category', this.productForm.get('category')?.value);
-
-    // CORREÇÃO CRÍTICA: Enviar a imagem com o nome exato 'Images'
-    // O Backend espera: public List<IFormFile> Images { get; set; }
-    formData.append('Images', this.selectedFile, this.selectedFile.name);
-
-    // Envio de Tags (List<string>)
-    for (let i = 0; i < this.tags.length; i++) {
-        formData.append(`Tags[${i}]`, this.tags[i]);
-    }
-
-    this.productService.createProduct(formData).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.notificationService.success('Produto criado com sucesso!');
-        this.router.navigate(['/seller-dashboard']);
-      },
-      error: (err) => {
-        console.error('Erro ao criar produto:', err);
-        this.isLoading = false;
-
-        // Extrai mensagem de erro detalhada se vier do ValidationProblemDetails
-        let errorMsg = 'Erro desconhecido.';
-        if (err.error?.errors) {
-            errorMsg = Object.values(err.error.errors).flat().join(', ');
-        } else if (err.error?.message) {
-            errorMsg = err.error.message;
-        } else if (typeof err.error === 'string') {
-            errorMsg = err.error;
-        }
-
-        this.notificationService.error(`Falha ao cadastrar: ${errorMsg}`);
-      }
-    });
+ onSubmit() {
+  if (this.productForm.invalid || this.selectedFiles.length === 0) {
+    this.productForm.markAllAsTouched();
+    this.notificationService.error('Preencha todos os campos e adicione pelo menos uma foto.');
+    return;
   }
+
+  this.isLoading = true;
+  const formData = new FormData();
+
+  formData.append('Name', this.productForm.get('name')!.value);
+  formData.append('Description', this.productForm.get('description')!.value);
+  formData.append('Price', this.productForm.get('price')!.value.toString().replace(',', '.'));
+  formData.append('StockQuantity', this.productForm.get('stockQuantity')!.value);
+  formData.append('Category', this.productForm.get('category')!.value);
+
+  // ENVIA TODAS AS IMAGENS
+  this.selectedFiles.forEach(file => {
+    formData.append('Images', file, file.name);
+  });
+
+  // Tags
+  this.tags.forEach((tag, i) => {
+    formData.append(`Tags[${i}]`, tag);
+  });
+
+  this.productService.createProduct(formData).subscribe({
+    next: () => {
+      this.notificationService.success('Produto criado com sucesso!');
+      this.router.navigate(['/seller-dashboard']);
+    },
+    error: (err) => {
+      this.isLoading = false;
+      console.error(err);
+      this.notificationService.error('Erro ao publicar. Verifique os dados.');
+    },
+    complete: () => this.isLoading = false
+  });
+}
 }

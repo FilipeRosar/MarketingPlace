@@ -28,7 +28,6 @@ export class ProductDetailComponent implements OnInit {
   private location = inject(Location);
   private fb = inject(FormBuilder);
   private seoService = inject(SeoService);
-  private router = inject(Router);
   private notificationService = inject(NotificationService);
 
   product: Product | null = null;
@@ -36,12 +35,20 @@ export class ProductDetailComponent implements OnInit {
   error: string | null = null;
   currentUser$ = this.authService.currentUser$;
 
+  // --- NOVAS PROPRIEDADES DA GALERIA ---
+  galleryImages: string[] = [];
+  currentImageIndex = 0;
+
+  // Controle de Zoom
+  isZooming = false;
+  zoomPosition = { x: 0, y: 0 };
+
   reviewForm: FormGroup;
   isSubmittingReview = false;
 
   mockReviews = [
-    { name: 'Maria Souza', date: '22/11/2025', stars: 5, comment: 'Peça linda, superou minhas expectativas! Chegou bem embalado.' },
-    { name: 'João Carlos', date: '15/11/2025', stars: 4.5, comment: 'Ótimo trabalho, mas o prazo de entrega foi um pouco longo.' },
+    { name: 'Maria Souza', date: '22/11/2025', stars: 5, comment: 'Peça linda, superou minhas expectativas!' },
+    { name: 'João Carlos', date: '15/11/2025', stars: 4.5, comment: 'Ótimo trabalho, mas a entrega demorou.' },
   ];
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
@@ -55,9 +62,6 @@ export class ProductDetailComponent implements OnInit {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
-        this.product = null;
-        this.isLoading = true;
-        this.error = null;
         this.loadProduct(id);
       }
     });
@@ -65,24 +69,25 @@ export class ProductDetailComponent implements OnInit {
 
   loadProduct(id: string) {
     this.isLoading = true;
-
     this.productService.getProductById(id).subscribe({
-      next: (data: any) => { // Usando 'any' temporariamente para tratar a resposta
-
+      next: (data: any) => {
         if (!data) {
              this.error = 'Produto não encontrado.';
              this.isLoading = false;
              return;
         }
 
-        // --- NORMALIZAÇÃO DE DADOS (Correção de Bugs) ---
+        this.galleryImages = [];
 
-        // 1. Garante imageUrl se vier apenas lista de images
-        if (!data.imageUrl && data.images && data.images.length > 0) {
-            data.imageUrl = typeof data.images[0] === 'string' ? data.images[0] : data.images[0].url;
+        if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+           this.galleryImages = data.images.map((img: any) =>
+             typeof img === 'string' ? img : img.url
+           );
+        }
+        else if (data.imageUrl) {
+           this.galleryImages = [data.imageUrl];
         }
 
-        // 2. Garante SellerName para não quebrar o charAt(0)
         if (!data.sellerName) {
             data.sellerName = data.seller?.name || 'Vendedor Trama';
         }
@@ -90,32 +95,54 @@ export class ProductDetailComponent implements OnInit {
         this.product = data;
         this.isLoading = false;
 
-        // Atualiza SEO
+        // Atualiza SEO com a imagem principal (índice 0)
         this.seoService.updateSeoData({
           title: this.product?.name || 'Produto',
           description: this.product?.description?.substring(0, 150) || '',
-          image: this.product?.imageUrl,
+          image: this.galleryImages[0],
           slug: `/products/${this.product?.id}`
         });
 
         if (isPlatformBrowser(this.platformId)) {
-            window.scrollTo(0, 0);
+           window.scrollTo(0, 0);
         }
       },
       error: (err) => {
-        console.error('ProductDetail: Erro ao carregar:', err);
-        this.error = 'Produto não encontrado ou indisponível.';
+        this.error = 'Produto indisponível.';
         this.isLoading = false;
       }
     });
   }
 
-  addToCart() {
-    if (this.product) {
-      this.cartService.addToCart(this.product);
-    }
+  // --- CONTROLE DA GALERIA ---
+  selectImage(index: number) {
+    this.currentImageIndex = index;
   }
 
+  onMouseMove(e: MouseEvent) {
+    const imageElement = e.target as HTMLElement;
+    const rect = imageElement.getBoundingClientRect();
+
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    this.zoomPosition = { x, y };
+    this.isZooming = true;
+  }
+
+  onMouseLeave() {
+    this.isZooming = false;
+    setTimeout(() => {
+        if (!this.isZooming) this.zoomPosition = { x: 50, y: 50 };
+    }, 200);
+  }
+
+  addToCart() {
+    if (this.product) {
+      const productToAdd = { ...this.product, imageUrl: this.galleryImages[this.currentImageIndex] };
+      this.cartService.addToCart(productToAdd);
+    }
+  }
   submitReview() {
     if (this.reviewForm.invalid) {
       this.reviewForm.markAllAsTouched();

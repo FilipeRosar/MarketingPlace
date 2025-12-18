@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
 using Stripe.Checkout;
+using MarketplaceArtesanato.Core.Interfaces;
 
 namespace MarketplaceArtesanato.API.Controllers
 {
@@ -13,76 +14,41 @@ namespace MarketplaceArtesanato.API.Controllers
     {
         private readonly IConfiguration _config;
         private readonly ArtesianDbContext _context;
+        private readonly IStripePaymentService _stripeService;
 
         public WebhookController(
             IConfiguration config,
-            ArtesianDbContext context)
+            ArtesianDbContext context,
+            IStripePaymentService stripePayment)
         {
             _config = config;
             _context = context;
+            _stripeService = stripePayment;
         }
 
         [HttpPost]
         public async Task<IActionResult> StripeWebhook()
         {
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+
             var signature = Request.Headers["Stripe-Signature"];
 
             try
             {
-                // Valida a assinatura do Stripe para garantir que o evento é legítimo
-                var webhookSecret = _config["Stripe:WebhookSecret"];
-                var stripeEvent = EventUtility.ConstructEvent(json, signature, webhookSecret);
-
-                // Verifica se o evento é de sessão completada
-                if (stripeEvent.Type == "checkout.session.completed")
-                {
-                    if (stripeEvent.Data.Object is Session session)
-                    {
-                        // Busca o ID do pedido nos metadados que enviamos no checkout
-                        if (session.Metadata != null && session.Metadata.TryGetValue("OrderId", out var orderIdStr))
-                        {
-                            if (Guid.TryParse(orderIdStr, out var orderId))
-                            {
-                                await ProcessOrderPayment(orderId, session);
-                            }
-                        }
-                    }
-                }
+                await _stripeService.HandleWebhookAsync(json, signature);
 
                 return Ok();
             }
             catch (StripeException e)
             {
-                Console.WriteLine($"[WEBHOOK ERRO] {e.Message}");
-                return BadRequest();
+                Console.WriteLine($"[WEBHOOK ERRO STRIPE] {e.Message}");
+                return BadRequest($"Stripe Error: {e.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERRO INTERNO] {ex.Message}");
-                return StatusCode(500);
+                Console.WriteLine($"[WEBHOOK ERRO INTERNO] {ex.Message}");
+                return StatusCode(500, $"Internal Error: {ex.Message}");
             }
-        }
-
-        private async Task ProcessOrderPayment(Guid orderId, Session session)
-        {
-            var order = await _context.Orders.FindAsync(orderId);
-
-            if (order == null || order.Status == Core.Entities.Enums.OrderStatus.Paid) return;
-
-            order.Status = Core.Entities.Enums.OrderStatus.Paid;
-            order.StripePaymentIntentId = session.PaymentIntentId;
-            order.UpdatedAt = DateTime.UtcNow;
-
-
-            if (session.AmountTotal.HasValue)
-            {
-                order.TotalAmount = session.AmountTotal.Value / 100m; 
-                // Opcional: atualizar o total se houver discrepância ou taxas dinâmicas
-            }
-
-            await _context.SaveChangesAsync();
-            Console.WriteLine($"[WEBHOOK] Pedido {orderId} confirmado e pago!");
         }
     }
 }

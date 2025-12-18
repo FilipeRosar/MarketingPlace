@@ -2,7 +2,6 @@
 using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Data.Data;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -16,17 +15,16 @@ public static class SeedData
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ArtesianDbContext>();
 
-        // Garante que o banco existe
         await context.Database.MigrateAsync();
 
-        // Verifica se já existe admin
-        if (await context.Sellers.AnyAsync(s => s.Email == "admin@trama.com"))
+        if (await context.Users.AnyAsync(u => u.Email == "admin@trama.com"))
         {
-            Console.WriteLine("Admin já existe. Pulando seed.");
+            Console.WriteLine("Seed já aplicado. Base de dados pronta.");
             return;
         }
 
-        // CRIA ENDEREÇO PARA O ADMIN
+        Console.WriteLine("Iniciando Seed do Admin...");
+
         var adminAddress = new Address
         {
             Id = Guid.NewGuid(),
@@ -39,33 +37,65 @@ public static class SeedData
         };
 
         context.Addresses.Add(adminAddress);
-        await context.SaveChangesAsync(); 
+        await context.SaveChangesAsync();
 
-        var admin = new Seller
+        var userAdmin = new User
         {
             Id = Guid.NewGuid(),
             Name = "Administrador Trama",
             Email = "admin@trama.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
             Role = UserRole.Admin,
-            isAproved = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            IsDeleted = false,
-            Bio = "Administrador do sistema Trama Artesanato",
             Phone = "(11) 99999-9999",
-            AddressId = adminAddress.Id,  
-            Address = adminAddress        
+            CPF = "000.000.000-00", 
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            IsDeleted = false,
+
+            AddressId = adminAddress.Id
         };
 
-        context.Sellers.Add(admin);
+        context.Users.Add(userAdmin);
+        await context.SaveChangesAsync();
+
+        var sellerAdmin = new Seller
+        {
+            Id = Guid.NewGuid(),
+            UserId = userAdmin.Id, 
+
+            StoreName = "Loja Admin Trama", 
+            StoreSlug = "loja-admin-trama", 
+            Bio = "Loja oficial do administrador do sistema Trama Artesanato.",
+
+            IsApproved = true,  
+            CommissionRate = 0, 
+            RatingAverage = 5.0m,
+
+            CreatedAt = DateTime.UtcNow,
+            IsDeleted = false,
+
+            AddressId = adminAddress.Id
+        };
+
+        context.Sellers.Add(sellerAdmin);
+
+        var adminProfile = new Admin
+        {
+            Id = Guid.NewGuid(),
+            UserId = userAdmin.Id,
+            InternalCode = "ADM-001",
+            Department = "Tecnologia"
+        };
+
+        context.Admins.Add(adminProfile);
+
         await context.SaveChangesAsync();
 
         Console.WriteLine("==============================================");
-        Console.WriteLine("USUÁRIO ADMIN CRIADO COM SUCESSO!");
+        Console.WriteLine("USUÁRIO & VENDEDOR ADMIN CRIADOS COM SUCESSO!");
+        Console.WriteLine($"User ID: {userAdmin.Id}");
         Console.WriteLine("Email: admin@trama.com");
         Console.WriteLine("Senha: Admin123!");
-        Console.WriteLine("Role: Admin");
         Console.WriteLine("==============================================");
     }
 }

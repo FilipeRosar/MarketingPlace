@@ -36,6 +36,38 @@ namespace MarketplaceArtesanato.API.Controllers
             return Ok(sellers);
         }
 
+        [HttpGet("customers")]
+        public async Task<ActionResult> GetCustomers()
+        {
+            var customers = await _context.Customers
+                .Include(c => c.User) 
+                .Where(c => !c.IsDeleted)
+                .Select(c => new
+                {
+                    c.Id,
+                    Name = c.User.Name,
+                    Email = c.User.Email,
+                    Phone = c.User.Phone,
+                    CPF = c.User.CPF,
+                    ProfileImageUrl = c.User.ProfileImageUrl ?? "/assets/default-avatar.png",
+
+                    CreatedAt = c.CreatedAt.ToString("dd/MM/yyyy"),
+
+                    LastOrderDate = c.Orders
+                        .OrderByDescending(o => o.CreatedAt)
+                        .Select(o => o.CreatedAt.ToString("dd/MM/yyyy"))
+                        .FirstOrDefault(),
+
+                    TotalSpent = c.Orders
+                        .Where(o => o.Status == OrderStatus.Paid || o.Status == OrderStatus.Delivered)
+                        .Sum(o => o.TotalAmount)
+                })
+                .OrderByDescending(x => x.TotalSpent) 
+                .ToListAsync();
+
+            return Ok(customers);
+        }
+
         [HttpPost("approve-seller/{id}")]
         public async Task<IActionResult> ApproveSeller(Guid id)
         {
@@ -108,11 +140,29 @@ namespace MarketplaceArtesanato.API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
         [HttpGet("settings/service-fee")]
         public async Task<IActionResult> GetServiceFee()
         {
             var fee = await _settingsService.GetServiceFeeAsync();
             return Ok(fee);
+        }
+
+        [HttpGet("sales-by-month")]
+        public async Task<ActionResult> GetSalesByMonth()
+        {
+            var sales = await _context.Orders
+                .Where(o => o.Status == OrderStatus.Paid || o.Status == OrderStatus.Sent || o.Status == OrderStatus.Delivered)
+                .GroupBy(o => new { o.CreatedAt.Year, o.CreatedAt.Month })
+                .Select(g => new
+                {
+                    month = $"{g.Key.Month:D2}/{g.Key.Year}",
+                    total = g.Sum(o => o.TotalAmount)
+                })
+                .OrderBy(g => g.month)
+                .ToListAsync();
+
+            return Ok(sales);
         }
     }
 }

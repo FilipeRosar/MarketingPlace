@@ -1,4 +1,5 @@
 ﻿using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Entities.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -22,8 +23,8 @@ namespace MarketplaceArtesanato.API.Models.Responses
 
         [Required]
         public int StockQuantity { get; set; } = 0;
-        public List<string> Images { get; set; } = new List<string>();
-        public string ImageUrl => Images.FirstOrDefault() ?? "";
+        public List<ProductImageDto> Images { get; set; } = new();
+        public string ImageUrl => Images.FirstOrDefault()?.Url ?? "";
         public ProductCategory Category { get; set; }
         public ProductStatus Status { get; set; }
         public double AverageRating { get; set; }  

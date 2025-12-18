@@ -15,85 +15,78 @@ namespace MarketplaceArtesanato.Services.Services
         private readonly ArtesianDbContext _context;
         private readonly ISettingsService _settingsService;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IEmailService _emailService;
+
         public AdminService(ArtesianDbContext context,
-                    ISettingsService settingsService,
-                    IHubContext<NotificationHub> hubContext) 
+                            ISettingsService settingsService,
+                            IHubContext<NotificationHub> hubContext,
+                            IEmailService emailService)
         {
             _context = context;
             _settingsService = settingsService;
-            _hubContext = hubContext;  
+            _hubContext = hubContext;
+            _emailService = emailService;
         }
 
-        // --- GESTÃO DE USUÁRIOS ---
         public async Task<List<UserDto>> GetAllUsersAsync()
         {
-            var customers = await _context.Customers
-                .Where(c => !c.IsDeleted)
-                .Select(c => new UserDto
+            var users = await _context.Users
+                .Where(u => !u.IsDeleted)
+                .Select(u => new UserDto
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Email = c.Email,
-                    Role = UserRole.Customer,
-                    ProfileImageUrl = c.ProfileImageUrl,
-                    CPF = c.CPF,
-                    Phone = c.Phone
+                    Id = u.Id,
+                    Name = u.Name,
+                    Email = u.Email,
+                    Role = u.Role,
+                    ProfileImageUrl = u.ProfileImageUrl,
+                    CPF = u.CPF,
+                    Phone = u.Phone
                 }).ToListAsync();
 
-            var sellers = await _context.Sellers
-                .Where(s => !s.IsDeleted)
-                .Select(s => new UserDto
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                    Email = s.Email,
-                    Role = s.Role,
-                    ProfileImageUrl = s.ProfileImageUrl,
-                    CPF = s.CPF ?? string.Empty,
-                    Phone = s.Phone
-                }).ToListAsync();
-
-            return customers.Concat(sellers).ToList();
+            return users;
         }
 
         public async Task DeleteUserAsync(Guid userId)
         {
-            var customer = await _context.Customers.FindAsync(userId);
-            if (customer != null)
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null)
             {
-                customer.IsDeleted = true;
+                user.IsDeleted = true;
                 await _context.SaveChangesAsync();
-                return;
             }
 
-            var seller = await _context.Sellers.FindAsync(userId);
-            if (seller != null)
-            {
-                seller.IsDeleted = true;
-                await _context.SaveChangesAsync();
-            }
         }
 
-        // --- APROVAÇÃO DE VENDEDORES ---
         public async Task<List<Seller>> GetPendingSellersAsync()
         {
             return await _context.Sellers
-                .Where(s => !s.isAproved && !s.IsDeleted)
+                .Include(s => s.User)    
                 .Include(s => s.Address)
+                .Where(s => !s.IsApproved && !s.IsDeleted) 
                 .OrderByDescending(s => s.CreatedAt)
                 .ToListAsync();
         }
 
         public async Task ApproveSellerAsync(Guid sellerId)
         {
-            var seller = await _context.Sellers.FindAsync(sellerId);
+            var seller = await _context.Sellers
+                .Include(s => s.User) 
+                .FirstOrDefaultAsync(s => s.Id == sellerId);
+
             if (seller == null) throw new KeyNotFoundException("Vendedor não encontrado.");
 
-            seller.isAproved = true;
+            seller.IsApproved = true; 
             await _context.SaveChangesAsync();
 
-            await _hubContext.Clients.User(seller.Id.ToString())
-                .SendAsync("SellerApproved", new { message = "Seu cadastro de vendedor foi aprovado!" });
+            await _emailService.SendApprovalEmailAsync(seller.User.Email, seller.User.Name);
+
+            await _hubContext.Clients.Group("Admins")
+                .SendAsync("ReceiveNotification", new
+                {
+                    title = "Vendedor Aprovado!",
+                    message = $"Vendedor {seller.StoreName} (de {seller.User.Name}) agora pode vender na Trama.",
+                    icon = "🎉"
+                });
         }
 
         public async Task RejectSellerAsync(Guid sellerId)
@@ -101,11 +94,10 @@ namespace MarketplaceArtesanato.Services.Services
             var seller = await _context.Sellers.FindAsync(sellerId);
             if (seller == null) throw new KeyNotFoundException("Vendedor não encontrado.");
 
-            seller.IsDeleted = true;
+            seller.IsDeleted = true; 
             await _context.SaveChangesAsync();
         }
 
-        // --- DASHBOARD FINANCEIRO ---
         public async Task<DashboardStatsResponse> GetDashboardStatsAsync()
         {
             var totalSales = await _context.Orders
@@ -115,11 +107,8 @@ namespace MarketplaceArtesanato.Services.Services
             var ordersCount = await _context.Orders
                 .CountAsync(o => o.Status == OrderStatus.Paid || o.Status == OrderStatus.Sent || o.Status == OrderStatus.Delivered);
 
-            var newUsers = await _context.Customers
-                .CountAsync(c => c.CreatedAt >= DateTime.UtcNow.AddDays(-30));
-
-            var newSellers = await _context.Sellers
-                .CountAsync(s => s.CreatedAt >= DateTime.UtcNow.AddDays(-30));
+            var newUsers = await _context.Users
+                .CountAsync(u => u.CreatedAt >= DateTime.UtcNow.AddDays(-30));
 
             var commissionRate = await _settingsService.GetCommissionRateAsync();
             var serviceFee = await _settingsService.GetServiceFeeAsync();
@@ -130,13 +119,12 @@ namespace MarketplaceArtesanato.Services.Services
             {
                 TotalGMV = totalSales,
                 TotalOrders = ordersCount,
-                NewUsersLastMonth = newUsers + newSellers,
+                NewUsersLastMonth = newUsers,
                 PlatformRevenue = platformRevenue,
-                PendingApprovals = await _context.Sellers.CountAsync(s => !s.isAproved && !s.IsDeleted)
+                PendingApprovals = await _context.Sellers.CountAsync(s => !s.IsApproved && !s.IsDeleted)
             };
         }
 
-        // --- CONFIGURAÇÕES GLOBAIS ---
         public async Task UpdateCommissionRateAsync(decimal rate)
         {
             if (rate < 0 || rate > 100) throw new ArgumentException("Taxa deve ser entre 0 e 100");
@@ -154,11 +142,15 @@ namespace MarketplaceArtesanato.Services.Services
             var seller = await _context.Sellers.FindAsync(sellerId);
             if (seller == null) throw new KeyNotFoundException("Vendedor não encontrado.");
 
-            if (rate.HasValue && (rate < 0 || rate > 100))
+            if (rate.HasValue && (rate.Value < 0 || rate.Value > 100))
                 throw new ArgumentException("Taxa deve ser entre 0 e 100");
 
-            seller.CommissionRate = rate;
-            await _context.SaveChangesAsync();
+
+            if (rate.HasValue)
+            {
+                seller.CommissionRate = rate.Value;
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

@@ -68,8 +68,8 @@ export class SellerProfileComponent implements OnInit {
 
   loadSellerProducts(sellerId: string) {
     // Filtra produtos deste vendedor
-    this.productService.getAllProducts(1, 100, '', '', sellerId).subscribe({
-      next: (response: any) => {
+        this.productService.getAllProducts(1, 100, '', '', undefined, undefined, sellerId).subscribe({
+        next: (response: any) => {
         const all = Array.isArray(response) ? response : (response.data || response.items || []);
         this.products = all.filter((p: any) => p.sellerId === sellerId);
         this.isLoading = false;

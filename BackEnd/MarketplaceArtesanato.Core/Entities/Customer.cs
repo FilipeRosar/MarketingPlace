@@ -12,24 +12,15 @@ namespace MarketplaceArtesanato.Core.Entities
     [Table("Customer")]
     public class Customer : BaseEntity
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid UserId { get; set; }
+        public User User { get; set; } = null!;
 
-        [Required] 
-        public string Name { get; set; } = string.Empty;
-        [Required]
-        public string Email { get; set; } = string.Empty;
-        public string? ProfileImageUrl { get; set; }
-        [Required]
-        public string PasswordHash { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string CPF { get; set; } = string.Empty;
-        public Cart? Cart { get; set; }
-        public UserRole Role { get; set; } = UserRole.Customer;
-
-        public Guid AddressId { get; set; }
-        public Address Address { get; set; } = null!;
-
-        public List<Order> Orders { get; set; } = new();
+        public DateTime? BirthDate { get; set; } 
+        public bool NewsletterSubscribed { get; set; } = true;
+        public int LoyaltyPoints { get; set; } = 0;
+        public DateTime? LastPurchaseDate { get; set; }
         public List<Rating> Ratings { get; set; } = new();
+        public List<Order> Orders { get; set; } = new();
+        public List<Product> FavoriteProducts { get; set; } = new(); 
     }
 }

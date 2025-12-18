@@ -12,6 +12,9 @@ namespace MarketplaceArtesanato.Core.Events
         public Guid CustomerId { get; set; }
         public decimal Total { get; set; }
         public DateTime PaidAt { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string? BuyerName { get; set; }
+        public string? BuyerEmail { get; set; }
         public Dictionary<Guid, decimal> SellerCommissions { get; set; } = new();
     }
 }

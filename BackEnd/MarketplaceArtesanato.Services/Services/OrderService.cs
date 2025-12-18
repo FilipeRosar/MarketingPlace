@@ -6,7 +6,6 @@ using MarketplaceArtesanato.Core.Entities.Models.Requests;
 using MarketplaceArtesanato.Core.Events;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Models.Requests;
-using MarketplaceArtesanato.Data;
 using MarketplaceArtesanato.Data.Data;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +18,6 @@ public class OrderService : IOrderService
     private readonly ICartService _cartService;
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly IMapper _mapper;
-    private const decimal CommissionRate = 0.12m; 
 
     public OrderService(
         ArtesianDbContext context,
@@ -39,48 +37,62 @@ public class OrderService : IOrderService
         if (!cart.Items.Any())
             throw new InvalidOperationException("Carrinho vazio.");
 
-        foreach (var item in cart.Items)
+        var productIds = cart.Items.Select(i => i.ProductId).ToList();
+
+        var products = await _context.Products
+            .Include(p => p.Seller) 
+            .Where(p => productIds.Contains(p.Id))
+            .ToListAsync();
+
+        var orderItems = new List<OrderItem>();
+        var commissions = new Dictionary<Guid, decimal>();
+
+        foreach (var cartItem in cart.Items)
         {
-            var product = await _context.Products.FindAsync(item.ProductId);
-            if (product == null || product.StockQuantity < item.Quantity)
-                throw new InvalidOperationException($"Estoque insuficiente para {product?.Name}");
+            var product = products.FirstOrDefault(p => p.Id == cartItem.ProductId);
+
+            if (product == null)
+                throw new InvalidOperationException($"Produto {cartItem.ProductName} não encontrado.");
+
+            if (product.StockQuantity < cartItem.Quantity)
+                throw new InvalidOperationException($"Estoque insuficiente para {product.Name}. Disponível: {product.StockQuantity}");
+
+            var orderItem = new OrderItem
+            {
+                ProductId = product.Id,
+                Quantity = cartItem.Quantity,
+                UnitPrice = product.Price, 
+                ProductName = product.Name,
+                ProductImage = product.Images.FirstOrDefault()?.Url 
+            };
+
+            orderItems.Add(orderItem);
+
+            var subtotal = orderItem.UnitPrice * orderItem.Quantity;
+
+            var rate = product.Seller.CommissionRate > 0 ? product.Seller.CommissionRate : 12.0m;
+            var commissionValue = subtotal * (rate / 100m);
+
+            if (commissions.ContainsKey(product.SellerId))
+                commissions[product.SellerId] += commissionValue;
+            else
+                commissions[product.SellerId] = commissionValue;
         }
 
         var order = new Order
         {
             BuyerId = customerId,
-            Items = cart.Items.Select(i => new OrderItem
-            {
-                ProductId = i.ProductId,
-                Quantity = i.Quantity,
-                UnitPrice = i.Price
-            }).ToList()
+            Items = orderItems,
+            SellerCommissions = commissions,
+            Status = OrderStatus.Pending,
+            CreatedAt = DateTime.UtcNow
         };
 
-        // Cálculo de comissão por Seller
-        var commissions = new Dictionary<Guid, decimal>();
-        foreach (var item in order.Items)
-        {
-            var product = await _context.Products
-                .Include(p => p.Seller)
-                .FirstAsync(p => p.Id == item.ProductId);
+        order.CalculateTotal();
 
-            var subtotal = item.UnitPrice * item.Quantity;
-            var commission = subtotal * CommissionRate;
-
-            if (commissions.ContainsKey(product.SellerId))
-                commissions[product.SellerId] += commission;
-            else
-                commissions[product.SellerId] = commission;
-
-            item.Product = product;
-        }
-
-        order.SellerCommissions = commissions;
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
 
-        // Limpar carrinho
         await _cartService.ClearCartAsync(customerId);
 
         return _mapper.Map<OrderDto>(order);
@@ -90,8 +102,11 @@ public class OrderService : IOrderService
     {
         var order = await _context.Orders
             .Include(o => o.Items)
-            .ThenInclude(i => i.Product)
+                .ThenInclude(i => i.Product)
+            .Include(o => o.Buyer)
             .FirstOrDefaultAsync(o => o.Id == evt.OrderId);
+
+        if (order != null && order.Status == OrderStatus.Paid) return true;
 
         if (order == null || order.Status != OrderStatus.Pending)
             return false;
@@ -103,7 +118,14 @@ public class OrderService : IOrderService
 
         foreach (var item in order.Items)
         {
-            item.Product.StockQuantity -= item.Quantity;
+            if (item.Product.StockQuantity >= item.Quantity)
+            {
+                item.Product.StockQuantity -= item.Quantity;
+            }
+            else
+            {
+                item.Product.StockQuantity = 0;
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -112,42 +134,31 @@ public class OrderService : IOrderService
         {
             OrderId = order.Id,
             Total = order.TotalAmount,
-            SellerCommissions = order.SellerCommissions
+            SellerCommissions = order.SellerCommissions,
+
+            BuyerEmail = order.Buyer.Email, 
+            BuyerName = order.Buyer.Name    
         });
 
         return true;
     }
-    public async Task ProcessCommissionAsync(Order order)
-    {
-        var commissions = new Dictionary<Guid, decimal>();
 
-        foreach (var item in order.Items)
-        {
-            var commission = item.Subtotal * 0.12m; // 12%
-            if (commissions.ContainsKey(item.SellerId))
-                commissions[item.SellerId] += commission;
-            else
-                commissions[item.SellerId] = commission;
-        }
-
-        order.SellerCommissions = commissions;
-        await _context.SaveChangesAsync();
-    }
     public async Task<OrderDto?> GetByIdAsync(Guid orderId, Guid userId)
     {
         var order = await _context.Orders
             .Include(o => o.Items)
-            .ThenInclude(i => i.Product)
-            .ThenInclude(p => p.Seller)
+            .Include(o => o.Buyer) 
             .FirstOrDefaultAsync(o => o.Id == orderId);
 
         if (order == null) return null;
 
         var isCustomer = order.BuyerId == userId;
-        var isSeller = order.Items.Any(i => i.Product.SellerId == userId);
+        var isSeller = order.Items.Any(i => i.SellerId == userId);
+   
+        // .Include(o => o.Items).ThenInclude(i => i.Product)
 
-        if (!isCustomer && !isSeller)
-            throw new UnauthorizedAccessException();
+        if (!isCustomer && !isSeller  )
+            throw new UnauthorizedAccessException("Acesso negado ao pedido.");
 
         return _mapper.Map<OrderDto>(order);
     }
@@ -156,8 +167,8 @@ public class OrderService : IOrderService
     {
         var orders = await _context.Orders
             .Where(o => o.BuyerId == customerId)
-            .Include(o => o.Items)
-            .ThenInclude(i => i.Product)
+            .Include(o => o.Items) 
+            .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();
 
         return _mapper.Map<List<OrderDto>>(orders);
@@ -169,6 +180,7 @@ public class OrderService : IOrderService
             .Include(o => o.Items)
             .ThenInclude(i => i.Product)
             .Where(o => o.Items.Any(i => i.Product.SellerId == sellerId))
+            .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();
 
         return _mapper.Map<List<OrderDto>>(orders);
