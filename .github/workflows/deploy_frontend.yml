@@ -35,19 +35,20 @@ jobs:
           cache-dependency-path: FrontEnd/frontend-marketplace/package-lock.json 
           
       - name: Install Dependencies
-        # Mudamos de 'npm ci' para 'npm install' com legacy-peer-deps para ignorar o conflito do ng2-charts
+        # Usamos --legacy-peer-deps para ignorar conflitos de versão do ng2-charts
         run: npm install --legacy-peer-deps 
         working-directory: ./FrontEnd/frontend-marketplace/
 
       - name: Build Angular Application
-        # Removido --output-path=docs pois o novo builder do Angular 18+ gerencia isso via angular.json
+        # Garantimos que o build é feito antes de tentar criar ficheiros na pasta dist
         run: npm run build -- --base-href=/MarketingPlace/
         working-directory: ./FrontEnd/frontend-marketplace/
 
       - name: Create .nojekyll file
-        # O caminho de saída segue o nome definido no seu angular.json: "frontend-marktplace"
-        run: touch FrontEnd/frontend-marketplace/dist/frontend-marktplace/browser/.nojekyll
-
+        # Criamos a pasta se ela não existir antes do touch para evitar o erro 'No such file'
+        run: |
+          mkdir -p FrontEnd/frontend-marketplace/dist/frontend-marktplace/browser
+          touch FrontEnd/frontend-marketplace/dist/frontend-marktplace/browser/.nojekyll
       - name: Setup Pages
         uses: actions/configure-pages@v5
         
