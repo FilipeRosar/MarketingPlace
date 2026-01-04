@@ -31,18 +31,17 @@ jobs:
         with:
           node-version: 20.x
           cache: 'npm'
-          cache-dependency-path: FrontEnd/frontend-marktplace/package-lock.json 
+          cache-dependency-path: FrontEnd/frontend-marketplace/package-lock.json 
           
       - name: Install Dependencies
         run: npm ci 
-        working-directory: ./FrontEnd/frontend-marktplace/
-
+        working-directory: ./FrontEnd/frontend-marketplace/
       - name: Build Angular Application
         run: npm run build -- --output-path=docs --base-href=/MarketingPlace/
-        working-directory: ./FrontEnd/frontend-marktplace/
+        working-directory: ./FrontEnd/frontend-marketplace/
 
       - name: Create .nojekyll file
-        run: touch FrontEnd/frontend-marktplace/docs/browser/.nojekyll
+        run: touch FrontEnd/frontend-marketplace/docs/browser/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -50,7 +49,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'FrontEnd/frontend-marktplace/docs/browser' 
+          path: 'FrontEnd/frontend-marketplace/docs/browser' 
           
       - name: Deploy to GitHub Pages
         id: deployment
