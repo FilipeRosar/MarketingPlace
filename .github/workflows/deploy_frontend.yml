@@ -47,16 +47,15 @@ jobs:
       - name: Create .nojekyll file
         # Criamos a pasta se ela não existir antes do touch para evitar o erro 'No such file'
         run: |
-          mkdir -p FrontEnd/frontend-marketplace/dist/frontend-marktplace/browser
-          touch FrontEnd/frontend-marketplace/dist/frontend-marktplace/browser/.nojekyll
+          mkdir -p FrontEnd/frontend-marketplace/dist/frontend-marketplace/browser
+          touch FrontEnd/frontend-marketplace/dist/frontend-marketplace/browser/.nojekyll
       - name: Setup Pages
         uses: actions/configure-pages@v5
         
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Caminho corrigido para onde o Angular realmente gera os ficheiros
-          path: 'FrontEnd/frontend-marketplace/dist/frontend-marktplace/browser' 
+          path: 'FrontEnd/frontend-marketplace/dist/frontend-marketplace/browser' 
           
       - name: Deploy to GitHub Pages
         id: deployment
