@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "frontend-marktplace": {
+    "frontend-marketplace": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -58,10 +58,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "frontend-marktplace:build:production"
+              "buildTarget": "frontend-marketplace:build:production"
             },
             "development": {
-              "buildTarget": "frontend-marktplace:build:development"
+              "buildTarget": "frontend-marketplace:build:development"
             }
           },
           "defaultConfiguration": "development"
