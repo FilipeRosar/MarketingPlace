@@ -1,21 +1,25 @@
-﻿using MarketplaceArtesanato.Core.Entities.DTO;
+﻿using MarketplaceArtesanato.API.Models.Responses; 
+using MarketplaceArtesanato.Core.Entities.DTO;
+using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
+using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Events;
 using MarketplaceArtesanato.Core.Models.Requests;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MarketplaceArtesanato.Core.Interfaces
 {
     public interface IOrderService
     {
-        Task<OrderDto> CreateFromCartAsync(Guid customerId, CheckoutRequestDto dto);
-        Task<bool> ProcessPaymentAsync(PaymentProcessedEvent evt);
-        Task<OrderDto?> GetByIdAsync(Guid orderId, Guid userId);
-        Task<IEnumerable<OrderDto>> GetByCustomerAsync(Guid customerId);
-        Task<IEnumerable<OrderDto>> GetBySellerAsync(Guid sellerId);
+        Task<List<OrderResponseDto>> GetByUserAsync(Guid userId, string role);
+        Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role);
+        Task<CheckoutResponseResult> CreateOrderAsync(Guid buyerId, CheckoutRequestDto dto);
+        Task UpdateTrackingAsync(Guid orderId, Guid userId, string role, string trackingCode);
+    }
+
+    public class CheckoutResponseResult
+    {
+        public Guid OrderId { get; set; }
+        public string PaymentUrl { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
     }
 }

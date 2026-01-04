@@ -2,10 +2,6 @@
 using MarketplaceArtesanato.Core.Interfaces;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MarketplaceArtesanato.Services.Services
@@ -22,7 +18,11 @@ namespace MarketplaceArtesanato.Services.Services
         public async Task SendApprovalEmailAsync(string toEmail, string sellerName)
         {
             var email = new MimeMessage();
-            email.From.Add(MailboxAddress.Parse(_configuration["Email:From"]));
+
+            var fromName = _configuration["Email:FromName"];
+            var fromEmail = _configuration["Email:FromEmail"];
+
+            email.From.Add(new MailboxAddress(fromName, fromEmail));
             email.To.Add(MailboxAddress.Parse(toEmail));
             email.Subject = "🎉 Sua loja foi aprovada na Trama Artesanato!";
 
@@ -42,26 +42,64 @@ namespace MarketplaceArtesanato.Services.Services
                             Sua criatividade tem casa na Trama!
                         </p>
                         <div style='text-align: center; margin: 30px 0;'>
-                            <a href='https://sua-plataforma.com/seller/dashboard' 
+                            <a href='http://localhost:4200/login' 
                                style='background: linear-gradient(to right, #fb923c, #ea580c); color: white; padding: 16px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 18px; box-shadow: 0 10px 20px rgba(251, 146, 60, 0.4);'>
                                 Acessar Minha Loja
                             </a>
                         </div>
-                        <p style='font-size: 14px; color: #6b7280; text-align: center;'>
-                            Qualquer dúvida, é só chamar no WhatsApp ou e-mail.<br>
-                            Estamos aqui pra te ajudar a crescer! 🚀
-                        </p>
-                    </div>
-                    <div style='text-align: center; margin-top: 30px; color: #9ca3af; font-size: 12px;'>
-                        © 2025 Trama Artesanato. Feito com carinho para artesãos como você.
                     </div>
                 </div>";
 
             email.Body = builder.ToMessageBody();
 
+            var smtpServer = _configuration["Email:SmtpServer"];
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"]);
+            var smtpUser = _configuration["Email:Username"];
+            var smtpPass = _configuration["Email:Password"];
+
             using var smtp = new SmtpClient();
-            await smtp.ConnectAsync(_configuration["Email:SmtpHost"], int.Parse(_configuration["Email:SmtpPort"]), MailKit.Security.SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(_configuration["Email:SmtpUser"], _configuration["Email:SmtpPass"]);
+
+            await smtp.ConnectAsync(smtpServer, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+
+            await smtp.AuthenticateAsync(smtpUser, smtpPass);
+            await smtp.SendAsync(email);
+            await smtp.DisconnectAsync(true);
+        }
+        public async Task SendPasswordResetEmailAsync(string toEmail, string userName, string resetLink)
+        {
+            var email = new MimeMessage();
+            var fromName = _configuration["Email:FromName"];
+            var fromEmail = _configuration["Email:FromEmail"];
+
+            email.From.Add(new MailboxAddress(fromName, fromEmail));
+            email.To.Add(MailboxAddress.Parse(toEmail));
+            email.Subject = "🔑 Recuperação de Senha - Trama Artesanato";
+
+            var builder = new BodyBuilder();
+            builder.HtmlBody = $@"
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 10px;'>
+            <h2 style='color: #ea580c;'>Recuperação de Senha</h2>
+            <p>Olá <strong>{userName}</strong>,</p>
+            <p>Recebemos uma solicitação para redefinir sua senha. Se não foi você, ignore este email.</p>
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='{resetLink}' 
+                   style='background-color: #ea580c; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none; font-weight: bold;'>
+                    Redefinir Senha
+                </a>
+            </div>
+            <p style='color: #6b7280; font-size: 12px;'>Este link expira em 1 hora.</p>
+        </div>";
+
+            email.Body = builder.ToMessageBody();
+
+            var smtpServer = _configuration["Email:SmtpServer"];
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"]);
+            var smtpUser = _configuration["Email:Username"];
+            var smtpPass = _configuration["Email:Password"];
+
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(smtpServer, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(smtpUser, smtpPass);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
         }

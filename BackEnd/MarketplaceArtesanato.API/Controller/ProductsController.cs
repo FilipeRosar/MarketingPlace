@@ -1,13 +1,10 @@
-﻿using AutoMapper;
+﻿using MarketplaceArtesanato.API.Extensions; // Para User.GetUserId()
 using MarketplaceArtesanato.API.Models.Requests;
 using MarketplaceArtesanato.API.Models.Responses;
-using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Interfaces;
-using MarketplaceArtesanato.Data.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace MarketplaceArtesanato.API.Controllers
@@ -16,18 +13,13 @@ namespace MarketplaceArtesanato.API.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly ArtesianDbContext _context;
-        private readonly IMapper _mapper;
-        private readonly IStorageService _storage;
+        private readonly IProductService _productService;
 
-        public ProductsController(ArtesianDbContext context, IMapper mapper, IStorageService storage)
+        public ProductsController(IProductService productService)
         {
-            _context = context;
-            _mapper = mapper;
-            _storage = storage;
+            _productService = productService;
         }
 
-        // GET: api/products
         [HttpGet]
         public async Task<ActionResult> GetProducts(
             [FromQuery] string? search = null,
@@ -36,225 +28,112 @@ namespace MarketplaceArtesanato.API.Controllers
             [FromQuery] decimal? maxPrice = null,
             [FromQuery] Guid? sellerId = null,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10,
-            CancellationToken cancellationToken = default)
+            [FromQuery] int pageSize = 10)
         {
-            var query = _context.Products
-                .Include(p => p.Seller!)
-                    .ThenInclude(s => s.Address)
-                .Include(p => p.Ratings!)
-                    .ThenInclude(r => r.Customer)
-                    .Include(p => p.Images)
-                .AsQueryable();
-
-            query = query.Where(p => !p.IsDeleted);
-
-            if (sellerId.HasValue)
-            {
-                query = query.Where(p => p.SellerId == sellerId.Value);
-            }
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var lowerSearch = search.Trim().ToLower();
-                query = query.Where(p =>
-                    p.Name.ToLower().Contains(lowerSearch) ||
-                    (p.Description != null && p.Description.ToLower().Contains(lowerSearch)) ||
-                    p.Seller!.StoreName.ToLower().Contains(lowerSearch));
-            }
-
-            if (category.HasValue)
-                query = query.Where(p => (int)p.Category == category.Value);
-
-            if (minPrice.HasValue)
-                query = query.Where(p => p.Price >= minPrice.Value);
-
-            if (maxPrice.HasValue)
-                query = query.Where(p => p.Price <= maxPrice.Value);
-
-            var total = await query.CountAsync(cancellationToken);
-
-            var products = await query
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(cancellationToken);
-
-            var dtos = _mapper.Map<List<ProductResponseDto>>(products);
-
-            return Ok(new
-            {
-                data = dtos,
-                total,
-                page,
-                pageSize,
-                pages = (int)Math.Ceiling(total / (double)pageSize)
-            });
+            var result = await _productService.GetAllAsync(page, pageSize, search, category, minPrice, maxPrice, sellerId);
+            return Ok(result);
         }
 
-        // GET: api/products/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<ProductResponseDto>> GetProduct(Guid id)
         {
-            var product = await _context.Products
-                .Include(p => p.Seller!)
-                    .ThenInclude(s => s.Address)
-                .Include(p => p.Ratings!)
-                    .ThenInclude(r => r.Customer)
-                    .Include(p => p.Images)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
+            var product = await _productService.GetByIdAsync(id);
             if (product == null) return NotFound();
-
-            var dto = _mapper.Map<ProductResponseDto>(product);
-            return Ok(dto);
+            return Ok(product);
         }
 
-        // POST: api/products
         [HttpPost]
         [Authorize(Roles = "Seller,Admin")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProductResponseDto>> CreateProduct([FromForm] CreateProductDto dto)
         {
+            Console.WriteLine($"DTO recebido:");
+            Console.WriteLine($"Name: {dto.Name}");
+            Console.WriteLine($"Images: {dto.Images?.Count ?? 0}");
+            Console.WriteLine($"Tags: {dto.Tags?.Count ?? 0}");
+            Console.WriteLine($"Category: {dto.Category}");
+            Console.WriteLine($"ModelState válido: {ModelState.IsValid}");
+
+            if (!ModelState.IsValid)
+            {
+                foreach (var error in ModelState)
+                {
+                    Console.WriteLine($"Erro em {error.Key}: {string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage))}");
+                }
+                return BadRequest(ModelState);
+            }
+            if (dto.Images == null || !dto.Images.Any()) return BadRequest("Pelo menos uma imagem é obrigatória.");
+
             try
             {
-                if (!ModelState.IsValid) return BadRequest(ModelState);
+                var userId = User.GetUserId();
+                var result = await _productService.CreateAsync(userId, dto);
 
-                var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (!Guid.TryParse(userIdString, out var userId))
-                    return Unauthorized("Token inválido.");
-
-                var seller = await _context.Sellers.FindAsync(userId);
-                if (seller == null) return Unauthorized("Vendedor não encontrado.");
-
-                if (dto.Images == null || !dto.Images.Any())
-                    return BadRequest("Pelo menos uma imagem é obrigatória.");
-
-                var imageUrls = new List<string>();
-
-                foreach (var file in dto.Images)
-                {
-                    if (file.Length > 0 && IsImage(file))
-                    {
-                        var url = await _storage.UploadFileAsync(file);
-                        imageUrls.Add(url);
-                    }
-                    else
-                    {
-                        return BadRequest($"Arquivo inválido: {file.FileName}.");
-                    }
-                }
-
-                var product = _mapper.Map<Product>(dto);
-                product.Id = Guid.NewGuid();
-                product.SellerId = userId;
-                product.Seller = seller;
-                product.Images = imageUrls
-                    .Select(url => new ProductImage
-                    {
-                        Id = Guid.NewGuid(),
-                        Url = url,
-                        ProductId = product.Id,
-                        Product = product
-                    })
-                    .ToList();
-                product.CreatedAt = DateTime.UtcNow;
-                product.IsDeleted = false;
-
-                if (dto.SalePrice.HasValue && dto.SalePrice > 0)
-                {
-                    product.SalePrice = dto.SalePrice.Value;
-                }
-                {
-                    if (dto.Images == null || !dto.Images.Any())
-                        return BadRequest("Pelo menos uma imagem é obrigatória.");
-
-                }
-                _context.Products.Add(product);
-                await _context.SaveChangesAsync();
-
-                var response = _mapper.Map<ProductResponseDto>(product);
-                return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, response);
+                return CreatedAtAction(nameof(GetProduct), new { id = result.Id }, result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERRO CRÍTICO] {ex.Message}");
-                return StatusCode(500, new { message = "Erro interno." });
+                Console.WriteLine($"[ERRO CREATE PRODUCT] {ex.Message}");
+                return StatusCode(500, "Erro interno ao criar produto.");
             }
         }
 
-        // PUT: api/products/{id}
         [HttpPut("{id}")]
         [Authorize(Roles = "Seller,Admin")]
         public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] UpdateProductDto dto)
         {
             if (id != dto.Id) return BadRequest("ID mismatch.");
 
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-            if (product == null) return NotFound();
-
-            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (product.SellerId != userId && role != "Admin")
-                return Forbid("Sem permissão.");
-
-            // Mapeamento Automático
-            _mapper.Map(dto, product);
-
-
-            product.SalePrice = dto.SalePrice;
-
-            product.UpdatedAt = DateTime.UtcNow;
-
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProductExists(id)) return NotFound();
-                throw;
-            }
+                var userId = User.GetUserId();
+                var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
 
-            return NoContent();
+                var success = await _productService.UpdateAsync(id, userId, role, dto);
+
+                if (!success) return NotFound();
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERRO UPDATE PRODUCT] {ex.Message}");
+                return StatusCode(500, "Erro interno.");
+            }
         }
 
-        // DELETE: api/products/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "Seller,Admin")]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-            if (product == null) return NotFound();
-
-            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (product.SellerId != userId && role != "Admin")
-                return Forbid();
-
-            foreach (var image in product.Images)
-            {
-                try { await _storage.DeleteAsync(image.Url); } catch { }
-            }
-            _context.Products.Remove(product);
-
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool IsImage(IFormFile file)
-        {
             try
             {
-                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-                return new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" }.Contains(ext);
-            }
-            catch { return false; }
-        }
+                var userId = User.GetUserId();
+                var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
 
-        private bool ProductExists(Guid id) => _context.Products.Any(e => e.Id == id);
+                var success = await _productService.DeleteAsync(id, userId, role);
+
+                if (!success) return NotFound();
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERRO DELETE PRODUCT] {ex.Message}");
+                return StatusCode(500, "Erro interno.");
+            }
+        }
     }
 }

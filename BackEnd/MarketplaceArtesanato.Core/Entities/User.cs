@@ -29,6 +29,7 @@ public class User : BaseEntity
 
     public Guid? AddressId { get; set; }
     public Address? Address { get; set; }
-
+    public string? PasswordResetToken { get; set; }
+    public DateTime? ResetTokenExpires { get; set; }
     public List<Order> OrdersAsBuyer { get; set; } = new();
 }

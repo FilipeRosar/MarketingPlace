@@ -14,4 +14,12 @@ namespace MarketplaceArtesanato.Core.Entities.Models.Responses
         public decimal PlatformRevenue { get; set; }
         public int PendingApprovals { get; set; }
     }
+    public class PendingSellerDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Bio { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+    }
 }

@@ -1,14 +1,15 @@
 ﻿using AutoMapper;
 using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
-using MarketplaceArtesanato.Core.Entities.DTO;
+using MarketplaceArtesanato.Core.Entities.DTO; // Ensure this namespace has your DTOs
 using MarketplaceArtesanato.Core.Entities.Enums;
+using MarketplaceArtesanato.Core.Entities.Models.Requests; // For UpdateCommissionRateDto, etc.
+using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using System.Security.Claims;
 
 namespace MarketplaceArtesanato.API.Controllers
@@ -29,43 +30,50 @@ namespace MarketplaceArtesanato.API.Controllers
             _settingsService = settingsService;
         }
 
-        [HttpGet("pending-sellers")]
-        public async Task<ActionResult> GetPendingSellers()
+        [HttpGet("sellers/pending")]
+        public async Task<ActionResult<List<PendingSellerDto>>> GetPendingSellers()
         {
             var sellers = await _adminService.GetPendingSellersAsync();
             return Ok(sellers);
         }
 
         [HttpGet("customers")]
-        public async Task<ActionResult> GetCustomers()
+        public async Task<ActionResult<List<CustomerResponseDto>>> GetCustomers()
         {
-            var customers = await _context.Customers
-                .Include(c => c.User) 
+            var customersData = await _context.Customers
+                .Include(c => c.User)
                 .Where(c => !c.IsDeleted)
                 .Select(c => new
                 {
                     c.Id,
-                    Name = c.User.Name,
-                    Email = c.User.Email,
-                    Phone = c.User.Phone,
-                    CPF = c.User.CPF,
+                    c.User.Name,
+                    c.User.Email,
+                    c.User.Phone,
+                    c.User.CPF,
                     ProfileImageUrl = c.User.ProfileImageUrl ?? "/assets/default-avatar.png",
-
-                    CreatedAt = c.CreatedAt.ToString("dd/MM/yyyy"),
-
-                    LastOrderDate = c.Orders
-                        .OrderByDescending(o => o.CreatedAt)
-                        .Select(o => o.CreatedAt.ToString("dd/MM/yyyy"))
-                        .FirstOrDefault(),
-
-                    TotalSpent = c.Orders
-                        .Where(o => o.Status == OrderStatus.Paid || o.Status == OrderStatus.Delivered)
-                        .Sum(o => o.TotalAmount)
+                    c.CreatedAt,
+                    Orders = c.Orders
                 })
-                .OrderByDescending(x => x.TotalSpent) 
                 .ToListAsync();
 
-            return Ok(customers);
+            var customerDtos = customersData.Select(c => new CustomerResponseDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Email = c.Email,
+                Phone = c.Phone,
+                CPF = c.CPF,
+                ProfileImageUrl = c.ProfileImageUrl,
+                CreatedAt = c.CreatedAt.ToString("dd/MM/yyyy"),
+                LastOrderDate = c.Orders.OrderByDescending(o => o.CreatedAt).FirstOrDefault()?.CreatedAt.ToString("dd/MM/yyyy"),
+                TotalSpent = c.Orders
+                    .Where(o => o.Status == OrderStatus.Paid || o.Status == OrderStatus.Delivered)
+                    .Sum(o => o.TotalAmount)
+            })
+            .OrderByDescending(x => x.TotalSpent)
+            .ToList();
+
+            return Ok(customerDtos);
         }
 
         [HttpPost("approve-seller/{id}")]
@@ -78,21 +86,21 @@ namespace MarketplaceArtesanato.API.Controllers
             }
             catch (KeyNotFoundException)
             {
-                return NotFound("Vendedor não encontrado.");
+                return NotFound(new { message = "Vendedor não encontrado." });
             }
         }
 
-        [HttpPost("reject-seller/{sellerId}")]
-        public async Task<IActionResult> RejectSeller(Guid sellerId)
+        [HttpPost("reject-seller/{id}")] 
+        public async Task<IActionResult> RejectSeller(Guid id)
         {
             try
             {
-                await _adminService.RejectSellerAsync(sellerId);
+                await _adminService.RejectSellerAsync(id);
                 return Ok(new { message = "Vendedor rejeitado." });
             }
             catch (KeyNotFoundException)
             {
-                return NotFound("Vendedor não encontrado.");
+                return NotFound(new { message = "Vendedor não encontrado." });
             }
         }
 
@@ -106,13 +114,14 @@ namespace MarketplaceArtesanato.API.Controllers
             }
             catch (KeyNotFoundException)
             {
-                return NotFound("Vendedor não encontrado.");
+                return NotFound(new { message = "Vendedor não encontrado." });
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
+
         [HttpPut("commission-rate")]
         public async Task<IActionResult> UpdateCommissionRate([FromBody] UpdateCommissionRateDto dto)
         {
@@ -123,7 +132,7 @@ namespace MarketplaceArtesanato.API.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -137,7 +146,7 @@ namespace MarketplaceArtesanato.API.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -145,24 +154,50 @@ namespace MarketplaceArtesanato.API.Controllers
         public async Task<IActionResult> GetServiceFee()
         {
             var fee = await _settingsService.GetServiceFeeAsync();
-            return Ok(fee);
+            return Ok(new { fee });
         }
 
         [HttpGet("sales-by-month")]
         public async Task<ActionResult> GetSalesByMonth()
         {
-            var sales = await _context.Orders
+            // ETAPA 1: Consulta ao Banco de Dados (SQL Puro)
+            // Trazemos apenas os dados numéricos (Ano, Mês e Total)
+            var rawData = await _context.Orders
                 .Where(o => o.Status == OrderStatus.Paid || o.Status == OrderStatus.Sent || o.Status == OrderStatus.Delivered)
                 .GroupBy(o => new { o.CreatedAt.Year, o.CreatedAt.Month })
                 .Select(g => new
                 {
-                    month = $"{g.Key.Month:D2}/{g.Key.Year}",
-                    total = g.Sum(o => o.TotalAmount)
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    Total = g.Sum(o => o.TotalAmount)
                 })
-                .OrderBy(g => g.month)
-                .ToListAsync();
+                .OrderBy(r => r.Year)       // Ordena corretamente por data (número)
+                .ThenBy(r => r.Month)
+                .ToListAsync(); // Aqui o EF executa a query e traz os dados para a memória
 
-            return Ok(sales);
+            // ETAPA 2: Formatação em Memória (C#)
+            // Agora que os dados estão na memória, podemos usar interpolação de string
+            var result = rawData.Select(x => new
+            {
+                month = $"{x.Month:D2}/{x.Year}", // Formata "05/2024"
+                total = x.Total
+            });
+
+            return Ok(result);
         }
+    }
+
+    // Simple DTO for Customers
+    public class CustomerResponseDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string CPF { get; set; }
+        public string ProfileImageUrl { get; set; }
+        public string CreatedAt { get; set; }
+        public string? LastOrderDate { get; set; }
+        public decimal TotalSpent { get; set; }
     }
 }

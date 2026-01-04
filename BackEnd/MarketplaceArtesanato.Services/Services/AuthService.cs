@@ -3,15 +3,18 @@ using MarketplaceArtesanato.API.Models.Requests;
 using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Entities.Enums;
+using MarketplaceArtesanato.Core.Hubs;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data.Data;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MarketplaceArtesanato.Services.Services
 {
@@ -19,42 +22,25 @@ namespace MarketplaceArtesanato.Services.Services
     {
         private readonly ArtesianDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IEmailService _emailService;
 
-        public AuthService(ArtesianDbContext context, IConfiguration configuration)
+        public AuthService(
+            ArtesianDbContext context,
+            IConfiguration configuration,
+            IHubContext<NotificationHub> hubContext,
+            IEmailService emailService)
         {
             _context = context;
             _configuration = configuration;
-        }
-
-        public async Task<AuthResponseDto> LoginAsync(LoginDto request)
-        {
-            var user = await _context.Users
-                .Include(u => u.SellerProfile)
-                .Include(u => u.CustomerProfile)
-                .Include(u => u.Address) 
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            {
-                return new AuthResponseDto { Success = false, Message = "Credenciais inválidas." };
-            }
-
-            var token = GenerateJwtToken(user);
-            var userDto = MapToUserDto(user);
-
-            return new AuthResponseDto
-            {
-                Success = true,
-                Message = "Login realizado com sucesso!",
-                Token = token,
-                User = userDto
-            };
+            _hubContext = hubContext;
+            _emailService = emailService;
         }
 
         public async Task<AuthResponseDto> RegisterCustomerAsync(RegisterCostumerDto dto)
         {
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-                return new AuthResponseDto { Success = false, Message = "E-mail já está em uso." };
+                return new AuthResponseDto { Success = false, Message = "Email já cadastrado." };
 
             var address = new Address
             {
@@ -73,9 +59,9 @@ namespace MarketplaceArtesanato.Services.Services
                 Name = dto.Name,
                 Email = dto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                Role = UserRole.Customer,
                 Phone = dto.Phone,
                 CPF = dto.CPF,
-                Role = UserRole.Customer,
                 IsApproved = true,
                 CreatedAt = DateTime.UtcNow,
                 Address = address,
@@ -106,7 +92,7 @@ namespace MarketplaceArtesanato.Services.Services
             return new AuthResponseDto
             {
                 Success = true,
-                Message = "Conta criada com sucesso!",
+                Message = "Cadastro realizado com sucesso! Bem-vindo à Trama.",
                 Token = token,
                 User = MapToUserDto(user)
             };
@@ -115,9 +101,9 @@ namespace MarketplaceArtesanato.Services.Services
         public async Task<AuthResponseDto> RegisterSellerAsync(RegisterSellerDto dto)
         {
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-                return new AuthResponseDto { Success = false, Message = "E-mail já está em uso." };
+                return new AuthResponseDto { Success = false, Message = "Email já cadastrado." };
 
-            var userAddress = new Address
+            var address = new Address
             {
                 Id = Guid.NewGuid(),
                 Street = dto.Address.Street,
@@ -134,39 +120,48 @@ namespace MarketplaceArtesanato.Services.Services
                 Name = dto.Name,
                 Email = dto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                Role = UserRole.Seller,
                 Phone = dto.Phone,
                 CPF = dto.CPF,
-                Role = UserRole.Seller,
-                IsApproved = true, 
+                IsApproved = true,
                 CreatedAt = DateTime.UtcNow,
-                Address = userAddress,
-                AddressId = userAddress.Id
+                Address = address,
+                AddressId = address.Id
             };
 
-            string slug = GenerateSlug(dto.Name); 
+            string slug = GenerateSlug(dto.Name);
 
-            var sellerProfile = new Seller
+            var seller = new Seller
             {
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
-                StoreName = dto.Name, 
+                User = user,
+                StoreName = dto.Name,
                 StoreSlug = slug,
                 CNPJ = dto.CNPJ,
-                Address = userAddress, 
-                AddressId = userAddress.Id,
-                IsApproved = false, 
+                Bio = dto.Bio ?? "",
+                AddressId = address.Id,
+                Address = address,
+                IsApproved = false,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
                 CommissionRate = 15.0m
             };
 
             try
             {
                 _context.Users.Add(user);
-                _context.Sellers.Add(sellerProfile);
-
-                var customerProfile = new Customer { Id = Guid.NewGuid(), UserId = user.Id };
-                _context.Customers.Add(customerProfile);
-
+                _context.Sellers.Add(seller);
                 await _context.SaveChangesAsync();
+
+                await _hubContext.Clients.Group("Admins")
+                    .SendAsync("ReceiveNotification", new
+                    {
+                        title = "Novo Artesão Cadastrado! 🎨",
+                        message = $"{user.Name} está aguardando aprovação.",
+                        icon = "🧑‍🎨",
+                        type = "info"
+                    });
             }
             catch (Exception ex)
             {
@@ -178,10 +173,92 @@ namespace MarketplaceArtesanato.Services.Services
             return new AuthResponseDto
             {
                 Success = true,
-                Message = "Conta criada com sucesso! Aguarde aprovação da loja.",
+                Message = "Cadastro realizado com sucesso! Aguarde aprovação do administrador.",
                 Token = token,
                 User = MapToUserDto(user)
             };
+        }
+
+        public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+        {
+            var user = await _context.Users
+                .Include(u => u.Address)
+                .Include(u => u.SellerProfile)
+                .FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+                return new AuthResponseDto { Success = false, Message = "Credenciais inválidas." };
+
+            if (user.Role == UserRole.Seller && user.SellerProfile != null && !user.SellerProfile.IsApproved)
+            {
+                return new AuthResponseDto { Success = false, Message = "Sua loja ainda está em análise." };
+            }
+
+            var token = GenerateJwtToken(user);
+
+            var responseDto = new AuthResponseDto
+            {
+                Success = true,
+                Message = "Login realizado com sucesso!",
+                Token = token,
+                User = MapToUserDto(user)
+            };
+
+            // Add store approval status if applicable (this requires AuthResponseDto or UserDto to have this field)
+            // Assuming UserDto is flexible or you can add it to the generic User object in AuthResponseDto
+            // For now, mapping directly what was in the controller:
+            responseDto.User = new UserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Role = user.Role,
+                Phone = user.Phone,
+                IsApproved = user.IsApproved, 
+                StoreApproved = user.SellerProfile?.IsApproved ?? true 
+            };
+
+            return responseDto;
+        }
+
+        public async Task<AuthResponseDto> ForgotPasswordAsync(ForgotPasswordDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null)
+            {
+                return new AuthResponseDto { Success = false, Message = "Usuário não encontrado." };
+            }
+
+            var token = Guid.NewGuid().ToString();
+            user.PasswordResetToken = token;
+            user.ResetTokenExpires = DateTime.UtcNow.AddHours(1);
+
+            await _context.SaveChangesAsync();
+
+            var resetLink = $"http://localhost:4200/reset-password?token={token}&email={dto.Email}";
+            await _emailService.SendPasswordResetEmailAsync(user.Email, user.Name, resetLink);
+
+            return new AuthResponseDto { Success = true, Message = "Email de recuperação enviado." };
+        }
+
+        public async Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null)
+                return new AuthResponseDto { Success = false, Message = "Usuário não encontrado." };
+
+            if (user.PasswordResetToken != dto.Token || user.ResetTokenExpires < DateTime.UtcNow)
+            {
+                return new AuthResponseDto { Success = false, Message = "Token inválido ou expirado." };
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.PasswordResetToken = null;
+            user.ResetTokenExpires = null;
+
+            await _context.SaveChangesAsync();
+
+            return new AuthResponseDto { Success = true, Message = "Senha alterada com sucesso!" };
         }
 
         private string GenerateJwtToken(User user)
@@ -193,16 +270,22 @@ namespace MarketplaceArtesanato.Services.Services
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.ToString()),
                 new Claim(ClaimTypes.Name, user.Name),
-                new Claim("StoreApproved", (user.SellerProfile?.IsApproved ?? false).ToString())
+                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                new Claim("role", user.Role.ToString()),
+                new Claim("isApproved", user.IsApproved.ToString())
             };
+
+            if (user.SellerProfile != null)
+            {
+                claims.Add(new Claim("StoreApproved", user.SellerProfile.IsApproved.ToString()));
+            }
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(8),
+                expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: creds
             );
 
@@ -220,13 +303,18 @@ namespace MarketplaceArtesanato.Services.Services
                 ProfileImageUrl = user.ProfileImageUrl,
                 Phone = user.Phone,
                 CPF = user.CPF,
+                IsApproved = user.IsApproved,
+                StoreApproved = user.SellerProfile?.IsApproved
             };
         }
 
         private string GenerateSlug(string phrase)
         {
             string str = phrase.ToLower();
-            return str.Replace(" ", "-").Trim();
+            str = Regex.Replace(str, @"[^a-z0-9\s-]", "");
+            str = Regex.Replace(str, @"\s+", " ").Trim();
+            str = Regex.Replace(str, @"\s", "-");
+            return str;
         }
     }
 }

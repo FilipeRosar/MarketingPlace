@@ -1,188 +1,197 @@
 ﻿using AutoMapper;
+using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
-using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Entities.Enums;
-using MarketplaceArtesanato.Core.Entities.Models.Requests;
-using MarketplaceArtesanato.Core.Events;
+using MarketplaceArtesanato.Core.Entities.Models.Responses; 
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data.Data;
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
-namespace MarketplaceArtesanato.Application.Services;
-
-public class OrderService : IOrderService
+namespace MarketplaceArtesanato.Services.Services
 {
-    private readonly ArtesianDbContext _context;
-    private readonly ICartService _cartService;
-    private readonly IPublishEndpoint _publishEndpoint;
-    private readonly IMapper _mapper;
-
-    public OrderService(
-        ArtesianDbContext context,
-        ICartService cartService,
-        IPublishEndpoint publishEndpoint,
-        IMapper mapper)
+    public class OrderService : IOrderService
     {
-        _context = context;
-        _cartService = cartService;
-        _publishEndpoint = publishEndpoint;
-        _mapper = mapper;
-    }
+        private readonly ArtesianDbContext _context;
+        private readonly IMapper _mapper;
+        private readonly IStripePaymentService _stripeService;
 
-    public async Task<OrderDto> CreateFromCartAsync(Guid customerId, CheckoutRequestDto dto)
-    {
-        var cart = await _cartService.GetCartAsync(customerId);
-        if (!cart.Items.Any())
-            throw new InvalidOperationException("Carrinho vazio.");
-
-        var productIds = cart.Items.Select(i => i.ProductId).ToList();
-
-        var products = await _context.Products
-            .Include(p => p.Seller) 
-            .Where(p => productIds.Contains(p.Id))
-            .ToListAsync();
-
-        var orderItems = new List<OrderItem>();
-        var commissions = new Dictionary<Guid, decimal>();
-
-        foreach (var cartItem in cart.Items)
+        public OrderService(
+            ArtesianDbContext context,
+            IMapper mapper,
+            IStripePaymentService stripeService)
         {
-            var product = products.FirstOrDefault(p => p.Id == cartItem.ProductId);
+            _context = context;
+            _mapper = mapper;
+            _stripeService = stripeService;
+        }
 
-            if (product == null)
-                throw new InvalidOperationException($"Produto {cartItem.ProductName} não encontrado.");
+        public async Task<List<OrderResponseDto>> GetByUserAsync(Guid userId, string role)
+        {
+            var query = _context.Orders
+                .Include(o => o.Items).ThenInclude(i => i.Product)
+                .AsNoTracking();
 
-            if (product.StockQuantity < cartItem.Quantity)
-                throw new InvalidOperationException($"Estoque insuficiente para {product.Name}. Disponível: {product.StockQuantity}");
-
-            var orderItem = new OrderItem
+            if (role == "Seller")
             {
-                ProductId = product.Id,
-                Quantity = cartItem.Quantity,
-                UnitPrice = product.Price, 
-                ProductName = product.Name,
-                ProductImage = product.Images.FirstOrDefault()?.Url 
+                // Vendedor vê pedidos que contenham seus produtos
+                query = query.Where(o => o.Items.Any(i => i.Product.SellerId == userId));
+            }
+            else if (role == "Admin")
+            {
+                // Admin vê tudo
+            }
+            else // Customer
+            {
+                query = query.Where(o => o.BuyerId == userId);
+            }
+
+            var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+            return _mapper.Map<List<OrderResponseDto>>(orders);
+        }
+
+        public async Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
+                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
+                .Include(o => o.Buyer) // Importante incluir o comprador
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null) throw new KeyNotFoundException("Pedido não encontrado.");
+
+            bool isBuyer = order.BuyerId == userId;
+            // Verifica se o usuário é vendedor E se tem algum produto dele no pedido
+            bool isSeller = role == "Seller" && order.Items.Any(i => i.Product.SellerId == userId);
+            bool isAdmin = role == "Admin";
+
+            if (!isBuyer && !isSeller && !isAdmin)
+                throw new UnauthorizedAccessException("Sem permissão para visualizar este pedido.");
+
+            return _mapper.Map<OrderResponseDto>(order);
+        }
+
+        public async Task<CheckoutResponseResult> CreateOrderAsync(Guid buyerId, CheckoutRequestDto dto)
+        {
+            var buyer = await _context.Users.FindAsync(buyerId);
+            if (buyer == null) throw new KeyNotFoundException("Comprador não encontrado.");
+
+            // 1. Validar e Buscar Produtos
+            var productIds = dto.Items.Select(i => i.ProductId).ToList();
+            var products = await _context.Products
+                .Include(p => p.Seller)
+                .Where(p => productIds.Contains(p.Id))
+                .ToListAsync();
+
+            if (products.Count != productIds.Count)
+                throw new InvalidOperationException("Algum produto do carrinho não foi encontrado ou está indisponível.");
+
+            // 2. Construir o Pedido
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                BuyerId = buyer.Id,
+                Buyer = buyer,
+                Status = OrderStatus.Pending,
+                CreatedAt = DateTime.UtcNow,
+                Items = new List<OrderItem>(),
+                SellerCommissions = new Dictionary<Guid, decimal>(),
+                TrackingCodes = new Dictionary<Guid, string>()
             };
 
-            orderItems.Add(orderItem);
+            decimal orderTotal = 0;
 
-            var subtotal = orderItem.UnitPrice * orderItem.Quantity;
+            foreach (var itemDto in dto.Items)
+            {
+                var product = products.First(p => p.Id == itemDto.ProductId);
 
-            var rate = product.Seller.CommissionRate > 0 ? product.Seller.CommissionRate : 12.0m;
-            var commissionValue = subtotal * (rate / 100m);
+                // Validação de Estoque
+                if (product.StockQuantity < itemDto.Quantity)
+                    throw new InvalidOperationException($"Estoque insuficiente para o produto: {product.Name}");
 
-            if (commissions.ContainsKey(product.SellerId))
-                commissions[product.SellerId] += commissionValue;
-            else
-                commissions[product.SellerId] = commissionValue;
+                var orderItem = new OrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = product.Id,
+                    Product = product,
+                    Quantity = itemDto.Quantity,
+                    UnitPrice = product.Price,
+                    ProductName = product.Name,
+                    ProductImage = product.Images.FirstOrDefault()?.Url
+                };
+
+                order.Items.Add(orderItem);
+                orderTotal += orderItem.UnitPrice * orderItem.Quantity;
+
+                // Cálculo de Comissão (Split)
+                var sellerId = product.SellerId;
+                var itemTotal = orderItem.UnitPrice * orderItem.Quantity;
+                var commission = itemTotal * (product.Seller.CommissionRate / 100m);
+
+                if (order.SellerCommissions.ContainsKey(sellerId))
+                    order.SellerCommissions[sellerId] += commission;
+                else
+                    order.SellerCommissions[sellerId] = commission;
+            }
+
+            order.TotalAmount = orderTotal;
+
+            // 3. Persistir Pedido (Status Pendente)
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            // 4. Gerar Sessão de Pagamento no Stripe
+            var paymentUrl = await _stripeService.CreateCheckoutSessionAsync(order, buyerId);
+
+            return new CheckoutResponseResult
+            {
+                OrderId = order.Id,
+                PaymentUrl = paymentUrl,
+                Message = "Pedido criado. Redirecionando para pagamento..."
+            };
         }
 
-        var order = new Order
+        public async Task UpdateTrackingAsync(Guid orderId, Guid userId, string role, string trackingCode)
         {
-            BuyerId = customerId,
-            Items = orderItems,
-            SellerCommissions = commissions,
-            Status = OrderStatus.Pending,
-            CreatedAt = DateTime.UtcNow
-        };
+            var order = await _context.Orders
+                .Include(o => o.Items).ThenInclude(i => i.Product)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
 
-        order.CalculateTotal();
+            if (order == null) throw new KeyNotFoundException("Pedido não encontrado.");
 
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync();
+            // Garante inicialização do dicionário se for nulo
+            if (order.TrackingCodes == null) order.TrackingCodes = new Dictionary<Guid, string>();
 
-        await _cartService.ClearCartAsync(customerId);
-
-        return _mapper.Map<OrderDto>(order);
-    }
-
-    public async Task<bool> ProcessPaymentAsync(PaymentProcessedEvent evt)
-    {
-        var order = await _context.Orders
-            .Include(o => o.Items)
-                .ThenInclude(i => i.Product)
-            .Include(o => o.Buyer)
-            .FirstOrDefaultAsync(o => o.Id == evt.OrderId);
-
-        if (order != null && order.Status == OrderStatus.Paid) return true;
-
-        if (order == null || order.Status != OrderStatus.Pending)
-            return false;
-
-        order.Status = OrderStatus.Paid;
-        order.UpdatedAt = DateTime.UtcNow;
-        order.StripeSessionId = evt.StripeSessionId;
-        order.StripePaymentIntentId = evt.PaymentIntentId;
-
-        foreach (var item in order.Items)
-        {
-            if (item.Product.StockQuantity >= item.Quantity)
+            if (role == "Seller")
             {
-                item.Product.StockQuantity -= item.Quantity;
+                // Verifica se o vendedor é dono de algum item no pedido
+                bool isMyOrder = order.Items.Any(i => i.Product.SellerId == userId);
+                if (!isMyOrder) throw new UnauthorizedAccessException("Este pedido não contém seus produtos.");
+
+                order.TrackingCodes[userId] = trackingCode;
+            }
+            else if (role == "Admin")
+            {
+                // Admin: Se quiser ser específico, o DTO deveria ter o SellerId alvo.
+                // Fallback: pega o primeiro vendedor encontrado
+                var targetSellerId = order.Items.First().Product.SellerId;
+                order.TrackingCodes[targetSellerId] = trackingCode;
             }
             else
             {
-                item.Product.StockQuantity = 0;
+                throw new UnauthorizedAccessException("Apenas Vendedores ou Admins podem atualizar rastreio.");
             }
+
+            // Regra de Negócio Simplificada: Se já foi pago e adicionou rastreio, muda para Enviado
+            if (order.Status == OrderStatus.Paid)
+            {
+                order.Status = OrderStatus.Sent;
+            }
+
+            // Truque para o EF Core detectar mudança no JSON/Dictionary
+            order.TrackingCodes = new Dictionary<Guid, string>(order.TrackingCodes);
+
+            await _context.SaveChangesAsync();
         }
-
-        await _context.SaveChangesAsync();
-
-        await _publishEndpoint.Publish(new OrderPaidEvent
-        {
-            OrderId = order.Id,
-            Total = order.TotalAmount,
-            SellerCommissions = order.SellerCommissions,
-
-            BuyerEmail = order.Buyer.Email, 
-            BuyerName = order.Buyer.Name    
-        });
-
-        return true;
-    }
-
-    public async Task<OrderDto?> GetByIdAsync(Guid orderId, Guid userId)
-    {
-        var order = await _context.Orders
-            .Include(o => o.Items)
-            .Include(o => o.Buyer) 
-            .FirstOrDefaultAsync(o => o.Id == orderId);
-
-        if (order == null) return null;
-
-        var isCustomer = order.BuyerId == userId;
-        var isSeller = order.Items.Any(i => i.SellerId == userId);
-   
-        // .Include(o => o.Items).ThenInclude(i => i.Product)
-
-        if (!isCustomer && !isSeller  )
-            throw new UnauthorizedAccessException("Acesso negado ao pedido.");
-
-        return _mapper.Map<OrderDto>(order);
-    }
-
-    public async Task<IEnumerable<OrderDto>> GetByCustomerAsync(Guid customerId)
-    {
-        var orders = await _context.Orders
-            .Where(o => o.BuyerId == customerId)
-            .Include(o => o.Items) 
-            .OrderByDescending(o => o.CreatedAt)
-            .ToListAsync();
-
-        return _mapper.Map<List<OrderDto>>(orders);
-    }
-
-    public async Task<IEnumerable<OrderDto>> GetBySellerAsync(Guid sellerId)
-    {
-        var orders = await _context.Orders
-            .Include(o => o.Items)
-            .ThenInclude(i => i.Product)
-            .Where(o => o.Items.Any(i => i.Product.SellerId == sellerId))
-            .OrderByDescending(o => o.CreatedAt)
-            .ToListAsync();
-
-        return _mapper.Map<List<OrderDto>>(orders);
     }
 }

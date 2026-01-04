@@ -57,19 +57,28 @@ namespace MarketplaceArtesanato.Services.Services
 
         }
 
-        public async Task<List<Seller>> GetPendingSellersAsync()
+        public async Task<List<PendingSellerDto>> GetPendingSellersAsync()
         {
             return await _context.Sellers
-                .Include(s => s.User)    
-                .Include(s => s.Address)
-                .Where(s => !s.IsApproved && !s.IsDeleted) 
+                .AsNoTracking()
+                .Include(s => s.User)
+                .Where(s => s.IsApproved == false && (s.IsDeleted == false || s.IsDeleted == null))
                 .OrderByDescending(s => s.CreatedAt)
+                .Select(s => new PendingSellerDto
+                {
+                    Id = s.Id,
+                    Name = s.StoreName ?? s.User.Name,
+                    Email = s.User.Email,
+                    Bio = s.Bio,
+                    CreatedAt = s.CreatedAt
+                })
                 .ToListAsync();
         }
 
         public async Task ApproveSellerAsync(Guid sellerId)
         {
             var seller = await _context.Sellers
+                .AsNoTracking()
                 .Include(s => s.User) 
                 .FirstOrDefaultAsync(s => s.Id == sellerId);
 

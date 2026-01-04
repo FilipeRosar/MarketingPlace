@@ -10,8 +10,10 @@ namespace MarketplaceArtesanato.Core.Interfaces
 {
     public interface IAuthService
     {
-        Task<AuthResponseDto> LoginAsync(LoginDto request);
-        Task<AuthResponseDto> RegisterCustomerAsync(RegisterCostumerDto request);
-        Task<AuthResponseDto> RegisterSellerAsync(RegisterSellerDto request);
+        Task<AuthResponseDto> RegisterCustomerAsync(RegisterCostumerDto dto);
+        Task<AuthResponseDto> RegisterSellerAsync(RegisterSellerDto dto);
+        Task<AuthResponseDto> LoginAsync(LoginDto dto);
+        Task<AuthResponseDto> ForgotPasswordAsync(ForgotPasswordDto dto);
+        Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordDto dto);
     }
 }

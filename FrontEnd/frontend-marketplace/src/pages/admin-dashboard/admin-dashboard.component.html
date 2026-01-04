@@ -1,0 +1,389 @@
+<div class="min-h-screen bg-surface relative overflow-x-hidden font-sans text-gray-800">
+
+  <div class="relative container mx-auto px-4 py-8 max-w-7xl">
+
+    <div class="flex flex-col md:flex-row justify-between items-end mb-8 border-b border-stone-200 pb-6">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-primary">
+            <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
+          </svg>
+          Painel Administrativo
+        </h1>
+        <p class="text-sm text-gray-500 font-medium mt-2">Gerencie usuários, aprove lojas e acompanhe o crescimento.</p>
+      </div>
+
+      <div class="hidden md:block text-right">
+        <div class="flex items-center gap-2 justify-end bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          </span>
+          <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Sistema Online</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex flex-wrap gap-2 mb-10 p-1.5 bg-white rounded-xl shadow-sm border border-stone-200 overflow-x-auto">
+
+      <button (click)="setActiveTab('overview')"
+        [class]="activeTab === 'overview' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+        class="flex-1 min-w-[140px] py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" /></svg>
+        Visão Geral
+      </button>
+
+      <button (click)="setActiveTab('customers')"
+        [class]="activeTab === 'customers' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+        class="flex-1 min-w-[140px] py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+        Clientes
+      </button>
+
+      <button (click)="setActiveTab('pending')"
+        [class]="activeTab === 'pending' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+        class="flex-1 min-w-[140px] py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap relative">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        Aprovações
+        @if (stats().pendingApprovals > 0) {
+          <span class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white ring-2 ring-white animate-pulse">
+            {{ stats().pendingApprovals }}
+          </span>
+        }
+      </button>
+
+      <button (click)="setActiveTab('commissions')"
+        [class]="activeTab === 'commissions' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+        class="flex-1 min-w-[140px] py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        Financeiro
+      </button>
+
+      <button (click)="setActiveTab('settings')"
+        [class]="activeTab === 'settings' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+        class="flex-1 min-w-[140px] py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        Ajustes
+      </button>
+    </nav>
+
+    <main class="min-h-[500px]">
+
+      @if (activeTab === 'overview') {
+        <div class="animate-fade-in space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">GMV Total</p>
+                  <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats().totalGMV | currencyBr }}</p>
+                </div>
+                <div class="p-2 bg-orange-50 rounded-lg text-orange-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500">Valor bruto de vendas</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pedidos</p>
+                  <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats().totalOrders }}</p>
+                </div>
+                <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3.251l4.135-4.135a2.25 2.25 0 013.182 0l2.9 2.9a2.25 2.25 0 010 3.182l-4.135 4.135m-6.264-12.264l4.135 4.135a2.25 2.25 0 003.182 0l2.9-2.9a2.25 2.25 0 000-3.182L15.75 1.125" /></svg>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500">Pedidos finalizados</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Novos Usuários</p>
+                  <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats().newUsersLastMonth }}</p>
+                </div>
+                <div class="p-2 bg-purple-50 rounded-lg text-purple-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500">No último mês</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Receita Líquida</p>
+                  <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats().platformRevenue | currencyBr }}</p>
+                </div>
+                <div class="p-2 bg-green-50 rounded-lg text-green-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500">Comissões + Taxas</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 h-80">
+              <h3 class="text-lg font-bold text-gray-900 mb-4">Vendas por Mês</h3>
+              <div class="h-64">
+                <canvas baseChart [data]="salesChartData" [type]="'line'" [options]="chartOptions"></canvas>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 h-80">
+              <h3 class="text-lg font-bold text-gray-900 mb-4">Receita vs Comissões (Top 5)</h3>
+              <div class="h-64">
+                <canvas baseChart [data]="commissionChartData" [type]="'bar'" [options]="chartOptions"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (activeTab === 'customers') {
+        <div class="animate-fade-in bg-white rounded-2xl shadow-sm p-8 border border-gray-100 min-h-[600px]">
+          <div class="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+            <h2 class="text-2xl font-bold text-gray-900">Base de Clientes</h2>
+            <div class="relative w-full md:w-96">
+              <input type="text" [(ngModel)]="customerSearch" placeholder="Buscar por nome ou email..."
+                     class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors bg-gray-50 text-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            @for (customer of filteredCustomers(); track customer.id) {
+              <div class="group bg-white rounded-xl p-5 border border-gray-200 hover:border-primary hover:shadow-md transition-all">
+                <div class="flex items-center gap-4 mb-4">
+                  @if (customer.profileImageUrl) {
+                    <img [src]="customer.profileImageUrl" alt="{{ customer.name }}" class="w-12 h-12 rounded-full object-cover border border-gray-200">
+                  } @else {
+                    <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+                      {{ customer.name?.charAt(0) || 'U' }}
+                    </div>
+                  }
+                  <div class="overflow-hidden">
+                    <h3 class="font-bold text-gray-900 truncate text-sm">{{ customer.name }}</h3>
+                    <p class="text-xs text-gray-500 truncate">{{ customer.email }}</p>
+                  </div>
+                </div>
+
+                <div class="space-y-2 text-xs bg-gray-50 p-3 rounded-lg mb-4">
+                   <div class="flex justify-between">
+                     <span class="text-gray-500">Gasto Total</span>
+                     <span class="font-bold text-green-600">{{ customer.totalSpent | currencyBr }}</span>
+                   </div>
+                   <div class="flex justify-between">
+                     <span class="text-gray-500">Desde</span>
+                     <span class="font-medium">{{ customer.createdAt | date:'dd/MM/yy' }}</span>
+                   </div>
+                </div>
+
+                <button class="w-full py-2 rounded-lg text-xs font-bold text-primary bg-primary/5 hover:bg-primary hover:text-white transition-colors">
+                  Ver Detalhes
+                </button>
+              </div>
+            }
+            @if (filteredCustomers().length === 0) {
+              <div class="col-span-full text-center py-20 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <p>Nenhum cliente encontrado.</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (activeTab === 'pending') {
+        <div class="animate-fade-in space-y-6">
+          <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 min-h-[400px]">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-gray-900">Solicitações de Venda</h2>
+              <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-semibold text-xs border border-yellow-200">
+                {{ pendingSellers().length }} pendentes
+              </span>
+            </div>
+
+            @if (pendingSellers().length === 0) {
+              <div class="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Tudo limpo!</h3>
+                <p class="text-gray-500 text-sm">Não há novos vendedores para analisar no momento.</p>
+              </div>
+            } @else {
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                @for (seller of pendingSellers(); track seller.id) {
+                  <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row gap-5">
+
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-lg bg-gradient-to-br from-primary to-orange-400 text-white flex items-center justify-center text-2xl font-bold shadow-sm">
+                      {{ seller.name?.charAt(0)?.toUpperCase() || 'S' }}
+                    </div>
+
+                    <div class="flex-1 flex flex-col">
+                      <div class="flex justify-between items-start">
+                        <div>
+                          <h3 class="text-lg font-bold text-gray-900 leading-tight">{{ seller.name }}</h3>
+                          <p class="text-xs text-gray-500">{{ seller.email }}</p>
+                        </div>
+                        <span class="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded border border-gray-200">
+                          {{ seller.createdAt | date:'dd/MM' }}
+                        </span>
+                      </div>
+
+                      <div class="my-3 bg-gray-50 p-3 rounded-lg border border-gray-100 flex-grow">
+                        <p class="text-gray-600 text-xs italic line-clamp-2">"{{ seller.bio || 'Sem biografia...' }}"</p>
+                      </div>
+
+                      <div class="flex gap-3 mt-auto">
+                        <button (click)="approveSeller(seller.id)" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                          </svg>
+                          Aprovar
+                        </button>
+                        <button (click)="rejectSeller(seller.id)" class="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                          </svg>
+                          Rejeitar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (activeTab === 'commissions') {
+        <div class="animate-fade-in bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Relatório de Comissões por Vendedor</h2>
+
+          <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Artesão</th>
+                  <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Vendas Totais</th>
+                  <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Taxa (%)</th>
+                  <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Lucro Plataforma</th>
+                  <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 bg-white">
+                @for (commission of commissionReport(); track commission.sellerId) {
+                  <tr class="hover:bg-gray-50 transition-colors group">
+                    <td class="py-3 px-4 text-sm font-medium text-gray-900">{{ commission.sellerName }}</td>
+                    <td class="py-3 px-4 text-sm text-right text-gray-600 font-mono">{{ commission.totalSales | currencyBr }}</td>
+
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <input type="number"
+                                   [(ngModel)]="commission.rate"
+                                   class="w-16 text-center border border-gray-300 rounded-md px-1 py-1 text-sm font-bold text-blue-700 bg-blue-50 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                                   min="0" max="100">
+                            <span class="text-gray-500 text-xs">%</span>
+                        </div>
+                    </td>
+
+                    <td class="py-3 px-4 text-sm text-right font-bold text-green-600 font-mono">{{ commission.commissionEarned | currencyBr }}</td>
+
+                    <td class="py-3 px-4 text-center">
+                      <button (click)="updateSellerCommission(commission)"
+                              class="text-gray-400 hover:text-green-600 transition-colors p-2 rounded-full hover:bg-green-50 group-hover:text-gray-500"
+                              title="Salvar nova taxa">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                }
+                @if (commissionReport().length === 0) {
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-gray-400">Nenhum dado de venda encontrado.</td>
+                    </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      @if (activeTab === 'settings') {
+        <div class="animate-fade-in max-w-3xl mx-auto">
+          <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Configurações Globais</h2>
+            <p class="text-sm text-gray-500 mb-8">Defina as regras de negócio da plataforma.</p>
+
+            <div class="space-y-6">
+
+              <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between p-5 bg-gray-50 rounded-xl border border-gray-200">
+                <div class="flex-1">
+                  <label class="block text-base font-bold text-gray-900 mb-1">Comissão sobre Vendas</label>
+                  <p class="text-xs text-gray-500">Porcentagem retida automaticamente de cada venda.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <input type="number" [(ngModel)]="commissionRate" min="0" max="100" step="0.5"
+                           class="w-24 pl-3 pr-8 py-2 rounded-lg border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none text-lg font-bold text-center text-gray-900">
+                    <span class="absolute right-3 top-2.5 text-gray-400 font-bold text-sm">%</span>
+                  </div>
+                  <button (click)="updateCommission()"
+                          class="bg-primary hover:bg-primary-dark text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-all text-sm">
+                    Salvar
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between p-5 bg-gray-50 rounded-xl border border-gray-200">
+                <div class="flex-1">
+                  <label class="block text-base font-bold text-gray-900 mb-1">Taxa de Serviço (Fixa)</label>
+                  <p class="text-xs text-gray-500">Valor fixo cobrado do cliente final por pedido.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-gray-400 font-bold text-sm">R$</span>
+                    <input type="number" [(ngModel)]="serviceFee" min="0" step="0.01"
+                           class="w-24 pl-8 pr-3 py-2 rounded-lg border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none text-lg font-bold text-center text-gray-900">
+                  </div>
+                  <button (click)="updateServiceFee()"
+                          class="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-all text-sm">
+                    Salvar
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      }
+
+    </main>
+  </div>
+
+  <div class="fixed bottom-6 right-6 space-y-3 z-[9999] pointer-events-none">
+    @for (notif of notifications(); track notif.id) {
+      <div class="pointer-events-auto bg-white shadow-lg rounded-xl p-4 border-l-4 border-primary max-w-sm animate-bounceIn flex items-start gap-3">
+        <div class="text-xl mt-0.5" [innerHTML]="notif.icon"></div>
+        <div>
+          <p class="font-bold text-gray-900 text-sm">{{ notif.title }}</p>
+          <p class="text-xs text-gray-500 mt-0.5 leading-snug">{{ notif.message }}</p>
+        </div>
+      </div>
+    }
+  </div>
+
+</div>

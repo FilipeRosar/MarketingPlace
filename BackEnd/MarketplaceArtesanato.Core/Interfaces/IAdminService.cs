@@ -13,7 +13,7 @@ namespace MarketplaceArtesanato.Core.Interfaces
     {
         Task<List<UserDto>> GetAllUsersAsync();
         Task DeleteUserAsync(Guid userId);
-        Task<List<Seller>> GetPendingSellersAsync();
+        Task<List<PendingSellerDto>> GetPendingSellersAsync();
         Task ApproveSellerAsync(Guid sellerId);
         Task RejectSellerAsync(Guid sellerId);
         Task<DashboardStatsResponse> GetDashboardStatsAsync();
