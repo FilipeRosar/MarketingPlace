@@ -31,17 +31,22 @@ jobs:
         with:
           node-version: 20.x
           cache: 'npm'
+          # Caminho ajustado para a pasta real do repositório
           cache-dependency-path: FrontEnd/frontend-marketplace/package-lock.json 
           
       - name: Install Dependencies
-        run: npm ci 
+        # Mudamos de 'npm ci' para 'npm install' com legacy-peer-deps para ignorar o conflito do ng2-charts
+        run: npm install --legacy-peer-deps 
         working-directory: ./FrontEnd/frontend-marketplace/
+
       - name: Build Angular Application
-        run: npm run build -- --output-path=docs --base-href=/MarketingPlace/
+        # Removido --output-path=docs pois o novo builder do Angular 18+ gerencia isso via angular.json
+        run: npm run build -- --base-href=/MarketingPlace/
         working-directory: ./FrontEnd/frontend-marketplace/
 
       - name: Create .nojekyll file
-        run: touch FrontEnd/frontend-marketplace/docs/browser/.nojekyll
+        # O caminho de saída segue o nome definido no seu angular.json: "frontend-marktplace"
+        run: touch FrontEnd/frontend-marketplace/dist/frontend-marktplace/browser/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -49,7 +54,8 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'FrontEnd/frontend-marketplace/docs/browser' 
+          # Caminho corrigido para onde o Angular realmente gera os ficheiros
+          path: 'FrontEnd/frontend-marketplace/dist/frontend-marktplace/browser' 
           
       - name: Deploy to GitHub Pages
         id: deployment
