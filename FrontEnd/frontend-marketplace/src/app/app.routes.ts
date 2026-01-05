@@ -67,6 +67,15 @@ export const routes: Routes = [
     component: SellerDashboardComponent,
     canActivate: [sellerGuard]
   },
+  {
+    path: 'seller-profile/:id',
+    component: SellerProfileComponent,
+    canActivate: [sellerGuard]
+  },
+  {
+  path: 'seller-profile/by-user/:id',
+  component: SellerProfileComponent
+  },
   { path: 'favorites', component: FavoritesComponent },
   { path: '**', redirectTo: '' }
 ];

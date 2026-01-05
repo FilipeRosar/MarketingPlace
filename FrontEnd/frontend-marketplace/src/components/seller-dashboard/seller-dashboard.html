@@ -82,46 +82,31 @@
           </div>
 
           <!-- Gráfico de Vendas (Scroll Horizontal na Tabela/Gráfico se necessário) -->
-          <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 overflow-hidden">
+          <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
             <h3 class="text-lg font-bold text-gray-900 mb-6">Desempenho de Vendas</h3>
+
             <div class="overflow-x-auto pb-4">
-              <div class="flex items-end space-x-4 sm:space-x-6 h-64 pb-2 border-b border-stone-200 min-w-[600px]">
-                <!-- Barras do Gráfico (Simulação) -->
-                <div class="flex-1 flex flex-col items-center group">
-                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 40%">
-                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">R$ 400</span>
+              <div class="flex items-end space-x-6 h-64 pb-2 border-b border-stone-200 min-w-[600px]">
+
+                @for (item of stats.dailyRevenue; track item; let i = $index) {
+                  <div class="flex-1 flex flex-col items-center group">
+                    <div class="w-full bg-primary/30 hover:bg-primary/50 transition-all rounded-t-md relative"
+                        [style.height.%]="getBarHeight(i)">
+                      <span
+                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100">
+                        {{ item.revenue | currencyBr }}
+                      </span>
+                    </div>
+
+                    <span class="text-xs text-gray-500 mt-2">
+                      {{ chartDays[i] }}
+                    </span>
                   </div>
-                  <span class="text-xs text-gray-500 mt-2">Seg</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center group">
-                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 70%"></div>
-                  <span class="text-xs text-gray-500 mt-2">Ter</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center group">
-                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 55%"></div>
-                  <span class="text-xs text-gray-500 mt-2">Qua</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center group">
-                  <div class="w-full bg-primary/80 hover:bg-primary transition-all rounded-t-md relative" style="height: 90%">
-                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">R$ 900 (Hoje)</span>
-                  </div>
-                  <span class="text-xs text-gray-500 mt-2 font-bold text-primary">Qui</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center group">
-                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 30%"></div>
-                  <span class="text-xs text-gray-500 mt-2">Sex</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center group">
-                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 60%"></div>
-                  <span class="text-xs text-gray-500 mt-2">Sab</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center group">
-                  <div class="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative" style="height: 45%"></div>
-                  <span class="text-xs text-gray-500 mt-2">Dom</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      }
+
+    </div>
+  </div>
+</div>
         </div>
       }
 
@@ -195,7 +180,7 @@
           <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-gray-900">Gerenciamento de Pedidos</h3>
             <!-- Contador (opcional) -->
-            <!-- <span class="text-xs bg-stone-100 text-stone-600 py-1 px-2 rounded-full">{{ recentOrders.length }} Pedidos</span> -->
+            <span class="text-xs bg-stone-100 text-stone-600 py-1 px-2 rounded-full">{{ recentOrders.length }} Pedidos</span>
           </div>
 
           <div class="overflow-x-auto">
@@ -221,9 +206,10 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                       <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                             [ngClass]="{
-                              'bg-yellow-100 text-yellow-800': order.status === 'Pendente',
+                              'bg-yellow-100 text-yellow-800': order.status === 'Pendente' || order.status === 'Processando',
                               'bg-green-100 text-green-800': order.status === 'Pago' || order.status === 'Entregue',
-                              'bg-blue-100 text-blue-800': order.status === 'Enviado' || order.status === 'Shipped'
+                              'bg-blue-100 text-blue-800': order.status === 'Enviado',
+                              'bg-red-100 text-red-800': order.status === 'Cancelado' || order.status === 'Reembolsado'
                             }">
                         {{ order.status }}
                       </span>

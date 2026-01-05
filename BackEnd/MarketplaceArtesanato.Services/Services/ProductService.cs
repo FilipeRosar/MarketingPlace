@@ -93,10 +93,9 @@ namespace MarketplaceArtesanato.Services.Services
 
         public async Task<ProductResponseDto> CreateAsync(Guid sellerId, CreateProductDto dto)
         {
-            var seller = await _context.Sellers.FindAsync(sellerId);
+            var seller = await _context.Sellers.FirstOrDefaultAsync(s => s.UserId == sellerId);
             if (seller == null) throw new KeyNotFoundException("Vendedor não encontrado.");
 
-            // Check if seller is approved before allowing product creation
             if (!seller.IsApproved)
                 throw new UnauthorizedAccessException("Sua loja ainda está em análise. Aguarde a aprovação para publicar produtos.");
 
@@ -116,14 +115,15 @@ namespace MarketplaceArtesanato.Services.Services
 
             var product = _mapper.Map<Product>(dto);
             product.Id = Guid.NewGuid();
-            product.SellerId = sellerId;
+            product.SellerId = seller.Id;
             // product.Seller = seller; // Redundant if SellerId is set, but harmless.
 
             product.Images = imageUrls.Select(url => new ProductImage
             {
                 Id = Guid.NewGuid(),
                 Url = url,
-                ProductId = product.Id
+                ProductId = product.Id,
+                IsMain = imageUrls.First() == url
             }).ToList();
 
             product.CreatedAt = DateTime.UtcNow;

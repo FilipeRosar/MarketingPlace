@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { MomentResponseDto } from '../../models/moment/moment.model';
 
 @Injectable({
   providedIn: 'root'
@@ -14,12 +15,33 @@ export class SellerService {
   getSellerById(id: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/${id}`);
   }
-
+  getSellerByUserId(userId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/by-user/${userId}`);
+  }
   searchSellers(query: string): Observable<any[]> {
     const params = new HttpParams().set('search', query);
     return this.http.get<any[]>(this.apiUrl, { params });
   }
+  uploadMomentVideo(sellerId: string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('video', file);
+    return this.http.post(`${this.apiUrl}/${sellerId}/moments/upload-video`, formData);
+  }
 
+  uploadMomentThumb(sellerId: string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('thumb', file);
+    return this.http.post(`${this.apiUrl}/${sellerId}/moments/upload-thumb`, formData);
+  }
+  getMoments(sellerId: string): Observable<MomentResponseDto[]> {
+    return this.http.get<MomentResponseDto[]>(`${this.apiUrl}/${sellerId}/moments`);
+  }
+  getDashboardData() {
+  return this.http.get<any>(`${this.apiUrl}/dashboard`);
+  }
+  createMoment(sellerId: string, dto: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${sellerId}/moments`, dto);
+  }
   updateProfile(data: any): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/profile`, data);
   }

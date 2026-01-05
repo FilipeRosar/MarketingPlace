@@ -123,7 +123,6 @@ namespace MarketplaceArtesanato.Services.Services
                 Role = UserRole.Seller,
                 Phone = dto.Phone,
                 CPF = dto.CPF,
-                IsApproved = true,
                 CreatedAt = DateTime.UtcNow,
                 Address = address,
                 AddressId = address.Id
@@ -186,12 +185,15 @@ namespace MarketplaceArtesanato.Services.Services
                 .Include(u => u.SellerProfile)
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                return new AuthResponseDto { Success = false, Message = "Credenciais inválidas." };
+            if (user == null)
+                return new AuthResponseDto { Success = false, Message = "E-mail ou senha inválidos." };
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+                return new AuthResponseDto { Success = false, Message = "E-mail ou senha inválidos." };
 
             if (user.Role == UserRole.Seller && user.SellerProfile != null && !user.SellerProfile.IsApproved)
             {
-                return new AuthResponseDto { Success = false, Message = "Sua loja ainda está em análise." };
+                return new AuthResponseDto { Success = false, Message = "Sua loja ainda está em análise. Aguarde aprovação do administrador." };
             }
 
             var token = GenerateJwtToken(user);

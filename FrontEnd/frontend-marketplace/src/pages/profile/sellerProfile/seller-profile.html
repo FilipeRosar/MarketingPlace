@@ -4,239 +4,378 @@
     <app-loading-spinner></app-loading-spinner>
   } @else if (seller) {
 
+    <!-- Banner -->
     <div class="relative bg-white shadow-sm pb-8">
       <div class="h-48 md:h-64 w-full bg-stone-200 relative overflow-hidden group">
-         @if (seller.bannerImageUrl) {
-            <img [src]="seller.bannerImageUrl" class="w-full h-full object-cover">
-         } @else {
-            <div class="w-full h-full bg-gradient-to-r from-stone-800 to-stone-600 flex items-center justify-center">
-                <span class="text-stone-500 text-6xl opacity-20 font-serif font-bold">Trama.</span>
-            </div>
-         }
-         @if (isOwner) {
-            <label class="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full cursor-pointer backdrop-blur-sm text-sm font-medium transition-all opacity-0 group-hover:opacity-100">
-                📷 Alterar Capa
-                <input type="file" class="hidden" (change)="onBannerSelected($event)" accept="image/*">
-            </label>
-         }
+        @if (seller.bannerImageUrl) {
+          <img [src]="seller.bannerImageUrl" class="w-full h-full object-cover">
+        } @else {
+          <div class="w-full h-full bg-gradient-to-r from-stone-800 to-stone-600 flex items-center justify-center">
+            <span class="text-stone-500 text-6xl opacity-20 font-serif font-bold">Trama.</span>
+          </div>
+        }
+        @if (isOwner) {
+          <label class="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full cursor-pointer backdrop-blur-sm text-sm font-medium transition-all opacity-0 group-hover:opacity-100">
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Alterar Capa
+            <input type="file" class="hidden" (change)="onBannerSelected($event)" accept="image/*">
+          </label>
+        }
       </div>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div class="flex flex-col md:flex-row items-center md:items-end -mt-12 md:-mt-16 gap-6">
 
-            <div class="relative group">
-                <div class="h-32 w-32 md:h-40 md:w-40 rounded-full bg-white p-1 shadow-lg">
-                    <div class="w-full h-full rounded-full bg-stone-100 overflow-hidden relative">
-                         @if (seller.profileImageUrl) {
-                            <img [src]="seller.profileImageUrl" class="w-full h-full object-cover">
-                         } @else {
-                            <div class="w-full h-full flex items-center justify-center text-4xl font-bold text-primary bg-orange-50">
-                                {{ seller.name.charAt(0).toUpperCase() }}
-                            </div>
-                         }
-                    </div>
+          <!-- Avatar -->
+          <div class="relative group">
+            <div class="h-32 w-32 md:h-40 md:w-40 rounded-full bg-white p-1 shadow-lg">
+              <div class="w-full h-full rounded-full bg-stone-100 overflow-hidden relative">
+                @if (seller.profileImageUrl) {
+                  <img [src]="seller.profileImageUrl" class="w-full h-full object-cover">
+                } @else {
+                  <div class="w-full h-full flex items-center justify-center text-4xl font-bold text-primary bg-orange-50">
+                    {{ seller.name.charAt(0).toUpperCase() }}
+                  </div>
+                }
+              </div>
+            </div>
+            @if (isOwner) {
+              <label class="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-primary-dark transition-colors" title="Alterar Logo">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <input type="file" class="hidden" (change)="onAvatarSelected($event)" accept="image/*">
+              </label>
+            }
+          </div>
+
+          <!-- Informações da Loja -->
+          <div class="flex-1 text-center md:text-left mb-2 w-full md:w-auto">
+            @if (isEditingBio) {
+              <div class="flex flex-col gap-3 max-w-lg bg-gray-50 p-4 rounded-xl border border-gray-200 mt-12 md:mt-0">
+                <input [(ngModel)]="editData.name" class="text-xl font-bold border rounded p-2" placeholder="Nome da Loja">
+                <textarea [(ngModel)]="editData.bio" class="text-sm border rounded p-2 w-full" rows="3" placeholder="Bio..."></textarea>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="flex items-center gap-2 border rounded p-1 bg-white">
+                    <svg class="w-5 h-5 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                    <input [(ngModel)]="editData.instagram" placeholder="@instagram" class="text-sm w-full outline-none">
+                  </div>
+                  <div class="flex items-center gap-2 border rounded p-1 bg-white">
+                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+                    </svg>
+                    <input [(ngModel)]="editData.facebook" placeholder="/facebook" class="text-sm w-full outline-none">
+                  </div>
+                  <div class="flex items-center gap-2 border rounded p-1 bg-white">
+                    <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.46-.54 2.94-1.34 4.14-1.32 1.97-3.54 3.07-5.93 2.94-2.39-.12-4.52-1.69-5.41-4.01-1-2.61-.17-5.69 2.05-7.38 1.49-1.12 3.4-1.46 5.21-1.07V15.7c-1.16-.62-2.66-.5-3.69.41-1.05.92-1.17 2.66-.27 3.73.91 1.09 2.61 1.17 3.63.2.77-.73 1.18-1.78 1.15-2.83.02-3.82.01-7.65.01-11.47.01-1.84.01-3.68 0-5.52.01-.07.01-.13 0-.2z"/>
+                    </svg>
+                    <input [(ngModel)]="editData.tiktok" placeholder="@tiktok" class="text-sm w-full outline-none">
+                  </div>
+                  <div class="flex items-center gap-2 border rounded p-1 bg-white">
+                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                    </svg>
+                    <input [(ngModel)]="editData.youtube" placeholder="Canal YouTube" class="text-sm w-full outline-none">
+                  </div>
                 </div>
-                 @if (isOwner) {
-                    <label class="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-primary-dark transition-colors" title="Alterar Logo">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <input type="file" class="hidden" (change)="onAvatarSelected($event)" accept="image/*">
-                    </label>
-                }
-            </div>
 
-            <div class="flex-1 text-center md:text-left mb-2 w-full md:w-auto">
-                @if (isEditingBio) {
-                    <div class="flex flex-col gap-3 max-w-lg bg-gray-50 p-4 rounded-xl border border-gray-200 mt-12 md:mt-0">
-                        <input [(ngModel)]="editData.name" class="text-xl font-bold border rounded p-2" placeholder="Nome da Loja">
-                        <textarea [(ngModel)]="editData.bio" class="text-sm border rounded p-2 w-full" rows="3" placeholder="Bio..."></textarea>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="flex items-center gap-2 border rounded p-1 bg-white">
-                                <span class="text-pink-600 text-lg">📷</span>
-                                <input [(ngModel)]="editData.instagram" placeholder="@instagram" class="text-sm w-full outline-none">
-                            </div>
-                            <div class="flex items-center gap-2 border rounded p-1 bg-white">
-                                <span class="text-blue-600 text-lg">📘</span>
-                                <input [(ngModel)]="editData.facebook" placeholder="/facebook" class="text-sm w-full outline-none">
-                            </div>
-                            <div class="flex items-center gap-2 border rounded p-1 bg-white">
-                                <span class="text-black text-lg">🎵</span>
-                                <input [(ngModel)]="editData.tiktok" placeholder="@tiktok" class="text-sm w-full outline-none">
-                            </div>
-                            <div class="flex items-center gap-2 border rounded p-1 bg-white">
-                                <span class="text-red-600 text-lg">▶️</span>
-                                <input [(ngModel)]="editData.youtube" placeholder="Canal YouTube" class="text-sm w-full outline-none">
-                            </div>
-                        </div>
-
-                        <div class="flex gap-2 justify-end mt-2">
-                            <button (click)="isEditingBio = false" class="text-gray-500 hover:text-gray-700 text-sm font-medium px-3">Cancelar</button>
-                            <button (click)="saveBio()" class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-primary-dark">Salvar Alterações</button>
-                        </div>
-                    </div>
-                } @else {
-                    <h1 class="text-3xl font-bold text-gray-900 flex items-center justify-center md:justify-start gap-2">
-                        {{ seller.name }}
-                        @if (isOwner) {
-                            <button (click)="startEditBio()" class="text-stone-400 hover:text-primary p-1 rounded-full hover:bg-stone-100 transition-colors" title="Editar Perfil">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                            </button>
-                        }
-                    </h1>
-
-                    <div class="flex items-center justify-center md:justify-start gap-4 text-sm text-stone-500 mt-1">
-                        <span><i class="mr-1">📍</i> {{ seller.address?.city }}, {{ seller.address?.state }}</span>
-                        <span><i class="mr-1">📦</i> {{ products.length }} Produtos</span>
-                    </div>
-
-                    <p class="text-gray-600 mt-3 max-w-2xl mx-auto md:mx-0 leading-relaxed">
-                        {{ seller.bio || 'Bem-vindo à nossa loja! Aqui você encontra produtos feitos com alma.' }}
-                    </p>
-
-                    <div class="flex items-center justify-center md:justify-start gap-3 mt-4">
-                        @if (seller.instagram) {
-                            <a [href]="'https://instagram.com/' + seller.instagram.replace('@','')" target="_blank" class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-pink-600 hover:bg-pink-100 hover:scale-110 transition-all shadow-sm" title="Instagram">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                            </a>
-                        }
-                        @if (seller.facebook) {
-                            <a [href]="seller.facebook" target="_blank" class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all shadow-sm" title="Facebook">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-                            </a>
-                        }
-                        @if (seller.tiktok) {
-                            <a [href]="'https://tiktok.com/' + seller.tiktok" target="_blank" class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-black hover:bg-gray-200 hover:scale-110 transition-all shadow-sm" title="TikTok">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.46-.54 2.94-1.34 4.14-1.32 1.97-3.54 3.07-5.93 2.94-2.39-.12-4.52-1.69-5.41-4.01-1-2.61-.17-5.69 2.05-7.38 1.49-1.12 3.4-1.46 5.21-1.07V15.7c-1.16-.62-2.66-.5-3.69.41-1.05.92-1.17 2.66-.27 3.73.91 1.09 2.61 1.17 3.63.2.77-.73 1.18-1.78 1.15-2.83.02-3.82.01-7.65.01-11.47.01-1.84.01-3.68 0-5.52.01-.07.01-.13 0-.2z"/></svg>
-                            </a>
-                        }
-                        @if (seller.youtube) {
-                            <a [href]="seller.youtube" target="_blank" class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-red-600 hover:bg-red-100 hover:scale-110 transition-all shadow-sm" title="YouTube">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-                            </a>
-                        }
-                    </div>
-                }
-            </div>
-
-            <div class="flex flex-col gap-2 mb-2 w-full md:w-auto">
+                <div class="flex gap-2 justify-end mt-2">
+                  <button (click)="isEditingBio = false" class="text-gray-500 hover:text-gray-700 text-sm font-medium px-3">Cancelar</button>
+                  <button (click)="saveBio()" class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-primary-dark">Salvar Alterações</button>
+                </div>
+              </div>
+            } @else {
+              <h1 class="text-3xl font-bold text-gray-900 flex items-center justify-center md:justify-start gap-2">
+                {{ seller.name }}
                 @if (isOwner) {
-                    <a routerLink="/seller-dashboard" class="bg-stone-900 text-white px-6 py-3 rounded-full font-medium hover:bg-stone-700 transition shadow-sm flex items-center justify-center gap-2">
-                        <span>⚙️</span> Gerenciar Loja
-                    </a>
-                } @else {
-                    <button class="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition shadow-sm flex items-center justify-center shadow-orange-200">
-                        💬 Falar com Vendedor
-                    </button>
+                  <button (click)="startEditBio()" class="text-stone-400 hover:text-primary p-1 rounded-full hover:bg-stone-100 transition-colors" title="Editar Perfil">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
                 }
-            </div>
+              </h1>
+
+              <div class="flex items-center justify-center md:justify-start gap-6 text-sm text-stone-500 mt-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  {{ seller.address?.city }}, {{ seller.address?.state }}
+                </span>
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                  </svg>
+                  {{ products.length }} Produtos
+                </span>
+              </div>
+
+              <p class="text-gray-600 mt-3 max-w-2xl mx-auto md:mx-0 leading-relaxed">
+                {{ seller.bio || 'Bem-vindo à nossa loja! Aqui você encontra produtos feitos com alma.' }}
+              </p>
+
+              <!-- Redes Sociais -->
+              <div class="flex items-center justify-center md:justify-start gap-4 mt-5">
+                @if (seller.instagram) {
+                  <a [href]="'https://instagram.com/' + seller.instagram.replace('@','')" target="_blank" class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-pink-600 hover:bg-pink-100 hover:scale-110 transition-all shadow-sm">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                  </a>
+                }
+                @if (seller.facebook) {
+                  <a [href]="seller.facebook" target="_blank" class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all shadow-sm">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+                    </svg>
+                  </a>
+                }
+                @if (seller.tiktok) {
+                  <a [href]="'https://tiktok.com/' + seller.tiktok" target="_blank" class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-black hover:bg-gray-200 hover:scale-110 transition-all shadow-sm">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.46-.54 2.94-1.34 4.14-1.32 1.97-3.54 3.07-5.93 2.94-2.39-.12-4.52-1.69-5.41-4.01-1-2.61-.17-5.69 2.05-7.38 1.49-1.12 3.4-1.46 5.21-1.07V15.7c-1.16-.62-2.66-.5-3.69.41-1.05.92-1.17 2.66-.27 3.73.91 1.09 2.61 1.17 3.63.2.77-.73 1.18-1.78 1.15-2.83.02-3.82.01-7.65.01-11.47.01-1.84.01-3.68 0-5.52.01-.07.01-.13 0-.2z"/>
+                    </svg>
+                  </a>
+                }
+                @if (seller.youtube) {
+                  <a [href]="seller.youtube" target="_blank" class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-red-600 hover:bg-red-100 hover:scale-110 transition-all shadow-sm">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                    </svg>
+                  </a>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Botão de Ação -->
+          <div class="flex flex-col gap-2 mb-2 w-full md:w-auto">
+            @if (isOwner) {
+              <a routerLink="/seller-dashboard" class="bg-stone-900 text-white px-6 py-3 rounded-full font-medium hover:bg-stone-700 transition shadow-sm flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Gerenciar Loja
+              </a>
+            } @else {
+              <button class="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition shadow-sm flex items-center justify-center gap-2 shadow-orange-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                Falar com Vendedor
+              </button>
+            }
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Abas -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div class="flex border-b border-stone-200 mb-8 overflow-x-auto">
+        <button (click)="setActiveTab('products')"
+                [class.border-primary]="activeTab === 'products'"
+                [class.text-primary]="activeTab === 'products'"
+                [class.font-bold]="activeTab === 'products'"
+                class="px-6 py-3 border-b-2 border-transparent text-stone-500 hover:text-stone-700 whitespace-nowrap transition-colors flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+          </svg>
+          Todos os Produtos
+        </button>
 
-        <div class="flex border-b border-stone-200 mb-8 overflow-x-auto">
-            <button (click)="setActiveTab('products')"
-                    [class.border-primary]="activeTab === 'products'"
-                    [class.text-primary]="activeTab === 'products'"
-                    [class.font-bold]="activeTab === 'products'"
-                    class="px-6 py-3 border-b-2 border-transparent text-stone-500 hover:text-stone-700 whitespace-nowrap transition-colors">
-                🛍️ Todos os Produtos
-            </button>
+        <button (click)="setActiveTab('moments')"
+                [class.border-primary]="activeTab === 'moments'"
+                [class.text-primary]="activeTab === 'moments'"
+                [class.font-bold]="activeTab === 'moments'"
+                class="px-6 py-3 border-b-2 border-transparent text-stone-500 hover:text-stone-700 whitespace-nowrap transition-colors flex items-center gap-2">
+          <span class="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-[10px] px-1.5 rounded-md font-bold">NOVO</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Momentos Trama
+        </button>
 
-            <button (click)="setActiveTab('moments')"
-                    [class.border-primary]="activeTab === 'moments'"
-                    [class.text-primary]="activeTab === 'moments'"
-                    [class.font-bold]="activeTab === 'moments'"
-                    class="px-6 py-3 border-b-2 border-transparent text-stone-500 hover:text-stone-700 whitespace-nowrap transition-colors flex items-center gap-2">
-                <span class="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-[10px] px-1.5 rounded-md font-bold">NOVO</span>
-                📹 Momentos Trama
-            </button>
+        <button (click)="setActiveTab('about')"
+                [class.border-primary]="activeTab === 'about'"
+                [class.text-primary]="activeTab === 'about'"
+                [class.font-bold]="activeTab === 'about'"
+                class="px-6 py-3 border-b-2 border-transparent text-stone-500 hover:text-stone-700 whitespace-nowrap transition-colors flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Sobre a Loja
+        </button>
+      </div>
 
-            <button (click)="setActiveTab('about')"
-                    [class.border-primary]="activeTab === 'about'"
-                    [class.text-primary]="activeTab === 'about'"
-                    [class.font-bold]="activeTab === 'about'"
-                    class="px-6 py-3 border-b-2 border-transparent text-stone-500 hover:text-stone-700 whitespace-nowrap transition-colors">
-                📜 Sobre a Loja
-            </button>
-        </div>
-
-        @if (activeTab === 'products') {
-            @if (products.length === 0) {
-                <div class="text-center py-20 text-gray-400">
-                    Nenhum produto disponível no momento.
-                </div>
-            } @else {
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    @for (product of products; track product.id) {
-                        <app-product-card [product]="product"></app-product-card>
-                    }
-                </div>
+      <!-- Conteúdo das Abas -->
+      @if (activeTab === 'products') {
+        @if (products.length === 0) {
+          <div class="text-center py-20 text-gray-400">
+            <svg class="w-24 h-24 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            Nenhum produto disponível no momento.
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            @for (product of products; track product.id) {
+              <app-product-card [product]="product"></app-product-card>
             }
+          </div>
         }
+      }
 
-        @if (activeTab === 'moments') {
-            <div class="animate-fade-in">
-                @if (moments.length === 0 && !isOwner) {
-                    <div class="text-center py-20">
-                        <div class="text-6xl mb-4">🎬</div>
-                        <h3 class="text-xl font-bold text-gray-800">Sem momentos ainda</h3>
-                        <p class="text-gray-500">O artesão ainda não compartilhou vídeos do processo criativo.</p>
-                    </div>
+      @if (activeTab === 'moments') {
+  <div class="animate-fade-in">
+
+    <!-- Botão para adicionar novo momento (apenas dono) -->
+    @if (isOwner) {
+      <div class="mb-8">
+        @if (!isAddingMoment) {
+          <button (click)="startAddMoment()" class="w-full p-8 border-2 border-dashed border-primary/40 rounded-2xl bg-primary/5 hover:bg-primary/10 transition-all group flex flex-col items-center justify-center">
+            <svg class="w-16 h-16 text-primary mb-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span class="text-lg font-bold text-primary">Publicar Novo Momento</span>
+            <span class="text-sm text-gray-600 mt-1">Compartilhe um vídeo curto do seu processo criativo</span>
+          </button>
+        } @else {
+          <div class="bg-white rounded-2xl shadow-lg border border-stone-200 p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Novo Momento Trama</h3>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                  Vídeo (obrigatório - máx 100MB)
+                </label>
+                <input type="file" accept="video/*" (change)="onVideoSelected($event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+                @if (newMoment.videoFile) {
+                  <p class="text-sm text-green-600 mt-2">✓ {{ newMoment.videoFile.name }}</p>
                 }
+              </div>
 
-                @if (isOwner) {
-                    <div class="mb-8 p-6 border-2 border-dashed border-primary/30 rounded-xl bg-primary/5 text-center hover:bg-primary/10 transition-colors cursor-pointer group">
-                        <div class="text-4xl group-hover:scale-110 transition-transform">📹</div>
-                        <h3 class="font-bold text-primary mt-2">Compartilhar Novo Momento</h3>
-                        <p class="text-sm text-gray-600">Mostre os bastidores ou o processo de criação de uma peça!</p>
-                    </div>
-                }
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  Thumbnail (opcional)
+                </label>
+                <input type="file" accept="image/*" (change)="onThumbSelected($event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+              </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    @for (moment of moments; track moment.id) {
-                        <div class="aspect-[9/16] rounded-2xl overflow-hidden relative group cursor-pointer shadow-md hover:shadow-xl transition-all">
-                            <img [src]="moment.thumb || 'assets/images/placeholder-vertical.jpg'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Descrição
+                </label>
+                <textarea [(ngModel)]="newMoment.description" rows="3" placeholder="Conte um pouco sobre esse momento..." class="w-full border border-stone-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+              </div>
 
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90"></div>
-
-                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                </div>
-                            </div>
-
-                            <div class="absolute bottom-0 left-0 w-full p-4 text-white">
-                                <p class="text-sm font-bold line-clamp-2 leading-tight">{{ moment.desc }}</p>
-                                <p class="text-xs opacity-70 mt-1">Há 2 dias</p>
-                            </div>
-                        </div>
-                    }
-                </div>
+              <div class="flex justify-end gap-3 pt-4">
+                <button (click)="cancelAddMoment()" class="px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
+                  Cancelar
+                </button>
+                <button (click)="saveMoment()" [disabled]="isUploadingMoment" class="px-6 py-2 bg-primary text-white rounded-full hover:bg-primary-dark transition-colors disabled:opacity-70 flex items-center gap-2">
+                  @if (isUploadingMoment) {
+                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Publicando...
+                  } @else {
+                    Publicar Momento
+                  }
+                </button>
+              </div>
             </div>
+          </div>
         }
+      </div>
+    }
 
-        @if (activeTab === 'about') {
-            <div class="animate-fade-in max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-stone-100">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">Sobre a {{ seller.name }}</h2>
-                <div class="prose prose-stone text-gray-600">
-                    <p>{{ seller.bio || 'Sem descrição disponível.' }}</p>
-                    <p>Membro da Trama desde {{ seller.createdAt | date:'yyyy' }}</p>
-                </div>
+    <!-- Lista de Momentos -->
+    @if (moments.length === 0 && !isOwner && !isAddingMoment) {
+      <div class="text-center py-20">
+        <svg class="w-24 h-24 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        <h3 class="text-xl font-bold text-gray-800">Sem momentos ainda</h3>
+        <p class="text-gray-500 mt-2">O artesão ainda não compartilhou vídeos do processo criativo.</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        @for (moment of moments; track moment.id) {
+          <div class="aspect-[9/16] rounded-2xl overflow-hidden relative group cursor-pointer shadow-md hover:shadow-xl transition-all bg-gray-900">
+            <!-- Thumbnail ou placeholder -->
+            @if (moment.thumbUrl) {
+              <img [src]="moment.thumbUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            } @else {
+              <!-- Placeholder gradiente com ícone de play quando não tem thumbnail -->
+              <div class="w-full h-full bg-gradient-to-b from-gray-800 to-black flex items-center justify-center">
+                <svg class="w-16 h-16 text-white/70" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            }
 
-                <div class="mt-8 border-t border-stone-100 pt-6">
-                    <h3 class="font-bold text-gray-900 mb-4">Política de Venda</h3>
-                    <ul class="list-disc list-inside text-sm text-gray-600 space-y-2">
-                        <li>Envio em até 3 dias úteis após confirmação.</li>
-                        <li>Produtos artesanais podem apresentar pequenas variações.</li>
-                        <li>Garantia de 30 dias para defeitos de fabricação.</li>
-                    </ul>
-                </div>
+            <!-- Overlay gradiente -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90"></div>
+
+            <!-- Botão play central (sempre visível no hover) -->
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
+                <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
             </div>
+
+            <!-- Descrição -->
+            <div class="absolute bottom-0 left-0 w-full p-4 text-white">
+              <p class="text-sm font-bold line-clamp-2 leading-tight">{{ moment.description }}</p>
+              <p class="text-xs opacity-70 mt-1">Há pouco tempo</p>
+            </div>
+          </div>
         }
+      </div>
+    }
+  </div>
+}
+
+      @if (activeTab === 'about') {
+        <div class="animate-fade-in max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-stone-100">
+          <h2 class="text-2xl font-bold text-gray-900 mb-4">Sobre a {{ seller.name }}</h2>
+          <div class="prose prose-stone text-gray-600">
+            <p>{{ seller.bio || 'Sem descrição disponível.' }}</p>
+            <p>Membro da Trama desde {{ seller.createdAt | date:'yyyy' }}</p>
+          </div>
+
+          <div class="mt-8 border-t border-stone-100 pt-6">
+            <h3 class="font-bold text-gray-900 mb-4">Política de Venda</h3>
+            <ul class="list-disc list-inside text-sm text-gray-600 space-y-2">
+              <li>Envio em até 3 dias úteis após confirmação.</li>
+              <li>Produtos artesanais podem apresentar pequenas variações.</li>
+              <li>Garantia de 30 dias para defeitos de fabricação.</li>
+            </ul>
+          </div>
+        </div>
+      }
 
     </div>
-
   }
 </div>

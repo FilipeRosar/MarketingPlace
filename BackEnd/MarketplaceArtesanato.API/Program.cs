@@ -72,6 +72,7 @@ builder.Services.AddControllers()
     });
 
 // Injeção de Dependência dos Serviços
+builder.Services.AddScoped<ISellerService, SellerService>();
 builder.Services.AddScoped<IStorageService, BlobService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICartService, CartService>();
@@ -143,7 +144,7 @@ builder.Services.AddMassTransit(x =>
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        var rabbitHost = builder.Configuration.GetConnectionString("RabbitMQ") ?? "rabbitmq";
+        var rabbitHost = builder.Configuration.GetConnectionString("RabbitMQ") ?? "localhost";
 
         cfg.Host(rabbitHost, "/", h => {
             h.Username("guest"); 

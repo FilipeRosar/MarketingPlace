@@ -26,7 +26,7 @@ public class ArtesianDbContext : DbContext
     public DbSet<Banner> Banners => Set<Banner>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<UserFavorite> UserFavorites => Set<UserFavorite>();
-
+    public DbSet<Moment> Moments { get; set; } = null!;
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
@@ -104,7 +104,17 @@ public class ArtesianDbContext : DbContext
             .HasForeignKey(r => r.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        
+        modelBuilder.Entity<Moment>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+            entity.Property(m => m.Description).IsRequired().HasMaxLength(500);
+            entity.Property(m => m.VideoUrl).IsRequired();
+            entity.HasOne(m => m.Seller)
+                  .WithMany(s => s.Moments)
+                  .HasForeignKey(m => m.SellerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<Seller>().Property(p => p.CommissionRate).HasPrecision(18, 2);
         modelBuilder.Entity<Seller>().Property(p => p.RatingAverage).HasPrecision(2, 1); 
 

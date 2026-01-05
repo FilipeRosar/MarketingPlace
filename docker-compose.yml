@@ -1,31 +1,49 @@
-version: '3.4'
-
 services:
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:management
     container_name: mitrama_rabbitmq
     ports:
-      - "5672:5672"   
-      - "15672:15672" 
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "5672:5672"
+      - "15672:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
-
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmqctl status"]  # Comando nativo do RabbitMQ, sempre disponível
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+  redis:
+    image: redis:7-alpine
+    container_name: mitrama_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - redisdata:/data
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: mitrama_db
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=SenhaForte!123 
+      - MSSQL_SA_PASSWORD=SenhaForte!123
     ports:
       - "1433:1433"
     volumes:
       - sqlvolume:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P SenhaForte!123 -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s  
 
   backend:
     image: mitrama-api
@@ -37,20 +55,20 @@ services:
       - "5253:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      # Conexão com a DB (serviço "db")
       - ConnectionStrings__DefaultConnection=Server=db;Database=TramaDb;User Id=sa;Password=SenhaForte!123;TrustServerCertificate=True;
-      # Conexão com RabbitMQ (serviço "rabbitmq")
-      - ConnectionStrings__RabbitMQ=rabbitmq
+      - ConnectionStrings__RabbitMQ=rabbitmq://rabbitmq:5672/
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   frontend:
     image: mitrama-web
     build:
-      context: ./FrontEnd/frontend-marketplace 
+      context: ./FrontEnd/frontend-marketplace
       dockerfile: Dockerfile
     container_name: mitrama_frontend
     ports:
@@ -60,3 +78,4 @@ services:
 
 volumes:
   sqlvolume:
+  redisdata:

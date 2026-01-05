@@ -30,7 +30,6 @@ public class PaymentConsumer : IConsumer<PaymentProcessedEvent>
 
         try
         {
-            // 1. BUSCA POR StripeSessionId
             var order = await _context.Orders
                 .Include(o => o.Items)
                     .ThenInclude(i => i.Product)
@@ -43,14 +42,12 @@ public class PaymentConsumer : IConsumer<PaymentProcessedEvent>
                 return;
             }
 
-            // 2. IDEMPOTÊNCIA
             if (order.Status == OrderStatus.Paid)
             {
                 _logger.LogInformation("Pagamento já processado para pedido {OrderId}", order.Id);
                 return;
             }
 
-            // 3. VALIDA ESTOQUE
             foreach (var item in order.Items)
             {
                 if (item.Product == null)
@@ -62,7 +59,6 @@ public class PaymentConsumer : IConsumer<PaymentProcessedEvent>
                 if (item.Product.StockQuantity < item.Quantity)
                 {
                     _logger.LogError("Estoque insuficiente para {ProductName} (Pedido {OrderId})", item.Product.Name, order.Id);
-                    // OPCIONAL: Publicar evento de falha
                     await _publishEndpoint.Publish(new PaymentFailedEvent
                     {
                         OrderId = order.Id,

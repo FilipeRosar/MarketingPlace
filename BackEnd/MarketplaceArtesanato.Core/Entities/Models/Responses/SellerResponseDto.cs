@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using MarketplaceArtesanato.Core.Entities.Models.Responses;
+using System.Text.Json.Serialization;
 
 namespace MarketplaceArtesanato.API.Models.Responses
 {
@@ -12,6 +13,8 @@ namespace MarketplaceArtesanato.API.Models.Responses
         public string? CNPJ { get; set; }
         public string? Bio { get; set; } 
         public string? BannerImageUrl { get; set; }
+        public string? ProfileImageUrl { get; set; }
+        public List<MomentResponseDto> Moments { get; set; } = new List<MomentResponseDto>();
         public AddressResponseDto Address { get; set; } = new();
 
     }

@@ -19,7 +19,7 @@ RUN rm -rf ./*
 
 # Copia os arquivos gerados pelo Angular (dist) para o Nginx
 # OBS: Verifique no seu angular.json se a pasta de saída é "dist/marketplace-artesanato" ou apenas "dist"
-COPY --from=build /app/dist/frontend-marktplace/browser .
+COPY --from=build /app/dist/frontend-marketplace/browser .
 
 # Configuração necessária para o roteamento do Angular funcionar no Nginx
 RUN echo 'server { \

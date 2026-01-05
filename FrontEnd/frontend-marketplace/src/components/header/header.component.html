@@ -139,7 +139,7 @@
                   <a routerLink="/profile" (click)="closeMenus()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Meu Perfil</a>
                   <a routerLink="/admin" (click)="closeMenus()" class="block px-4 py-2 text-sm text-red-600 font-bold hover:bg-red-50 cursor-pointer">Painel Admin</a>
                 } @else if (user.role === 'Seller') {
-                  <a [routerLink]="['/sellers', user.id]" (click)="closeMenus()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Minha Vitrine</a>
+                  <a [routerLink]="['/seller-profile/by-user', user.id]" (click)="closeMenus()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Minha Vitrine</a>
                   <a routerLink="/seller-dashboard" (click)="closeMenus()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer font-medium">Painel Vendedor</a>
                   <a routerLink="/profile" (click)="closeMenus()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Meus Dados</a>
                 } @else {
@@ -268,7 +268,7 @@
                 <a routerLink="/profile" (click)="closeMenus()" class="block px-4 py-2 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Meu Perfil</a>
                 <a routerLink="/admin" (click)="closeMenus()" class="block px-4 py-2 text-base font-bold text-red-600 hover:bg-red-50 cursor-pointer rounded-lg">Painel Admin</a>
             } @else if (user.role === 'Seller') {
-              <a [routerLink]="['/sellers', user.id]" (click)="closeMenus()" class="block px-4 py-2 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Minha Vitrine</a>
+              <a [routerLink]="['/seller-profile', user.id]" (click)="closeMenus()" class="block px-4 py-2 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Minha Vitrine</a>
               <a routerLink="/seller-dashboard" (click)="closeMenus()" class="block px-4 py-2 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Painel Vendedor</a>
             } @else {
               <a routerLink="/profile" (click)="closeMenus()" class="block px-4 py-2 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Meu Perfil</a>
