@@ -2,26 +2,26 @@
 FROM node:20 AS build
 WORKDIR /app
 
-# Copia package.json e instala dependências
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
-# Copia o código fonte e gera o build de produção
 COPY . .
 RUN npm run build --configuration=production
 
-# Etapa 2: Servidor Nginx para rodar o site
+# Etapa 2: Servidor Nginx
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
 
-# Remove arquivos padrão do nginx
 RUN rm -rf ./*
 
-# Copia os arquivos gerados pelo Angular (dist) para o Nginx
-# OBS: Verifique no seu angular.json se a pasta de saída é "dist/marketplace-artesanato" ou apenas "dist"
+# Copia os arquivos gerados
 COPY --from=build /app/dist/frontend-marketplace/browser .
 
-# Configuração necessária para o roteamento do Angular funcionar no Nginx
+# --- CORREÇÃO AQUI ---
+# Renomeia o index.csr.html para index.html caso o Angular tenha gerado com esse nome
+RUN if [ -f index.csr.html ]; then mv index.csr.html index.html; fi
+
+# Configuração do Nginx atualizada para garantir que ele encontre o arquivo correto
 RUN echo 'server { \
     listen 80; \
     location / { \

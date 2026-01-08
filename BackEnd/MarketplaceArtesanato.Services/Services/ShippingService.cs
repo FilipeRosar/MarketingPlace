@@ -55,7 +55,7 @@ namespace MarketplaceArtesanato.Services.Services
                     height = (int)i.Height,
                     length = (int)i.Length,
                     weight = i.Weight,
-                    insurance_value = 10.0, 
+                    insurance_value = 10.0,
                     quantity = i.Quantity
                 }).ToArray()
             };
@@ -87,140 +87,313 @@ namespace MarketplaceArtesanato.Services.Services
 
         public async Task<string> GenerateLabelAsync(GenerateLabelRequest request)
         {
-            var order = await _context.Orders
-                .Include(o => o.Items).ThenInclude(i => i.Product)
-                .Include(o => o.Buyer).ThenInclude(u => u.Address) 
-                .FirstOrDefaultAsync(o => o.Id == request.OrderId);
-
-            if (order == null) throw new Exception("Pedido não encontrado.");
-
-            var sellerId = order.Items.First().Product.SellerId;
-
-            var seller = await _context.Sellers
-                .Include(s => s.User)
-                .Include(s => s.Address)
-                .FirstOrDefaultAsync(s => s.Id == sellerId);
-
-            if (seller == null) throw new Exception("Vendedor não encontrado.");
-
-            var fromData = new
+            try
             {
-                name = seller.User.Name, 
-                phone = seller.User.Phone,
-                email = seller.User.Email,
-                document = seller.User.CPF, 
-                address = seller.Address.Street,
-                number = seller.Address.Number,
-                complement = "",
-                district = "Centro",
-                city = seller.Address.City,
-                country_id = "BR",
-                postal_code = seller.Address.ZipCode,
-                note = $"Pedido {order.Id}"
-            };
+                var order = await _context.Orders
+                    .Include(o => o.Items)
+                        .ThenInclude(i => i.Product)
+                    .Include(o => o.Buyer)
+                        .ThenInclude(b => b.Address)
+                    .FirstOrDefaultAsync(o => o.Id == request.OrderId);
 
-            if (order.Buyer.Address == null) throw new Exception("Endereço do comprador não encontrado.");
+                if (order == null)
+                    throw new InvalidOperationException("Pedido não encontrado.");
 
-            var toData = new
-            {
-                name = order.Buyer.Name,
-                phone = order.Buyer.Phone,
-                email = order.Buyer.Email,
-                document = order.Buyer.CPF,
-                address = order.Buyer.Address.Street,
-                number = order.Buyer.Address.Number,
-                complement = "",
-                district = "Centro",
-                city = order.Buyer.Address.City,
-                state_abbr = order.Buyer.Address.State,
-                country_id = "BR",
-                postal_code = order.Buyer.Address.ZipCode,
-                note = ""
-            };
+                if (order.Items == null || !order.Items.Any())
+                    throw new InvalidOperationException("Pedido nao possui itens.");
 
-            var cartPayload = new
-            {
-                service = request.ServiceId,
-                from = fromData,
-                to = toData,
-                products = order.Items.Select(i => new
+                var sellerId = order.Items.First().Product.SellerId;
+
+                var seller = await _context.Sellers
+                    .Include(s => s.User)
+                    .Include(s => s.Address)
+                    .FirstOrDefaultAsync(s => s.Id == sellerId);
+
+                if (seller == null)
+                    throw new InvalidOperationException("Vendedor nao encontrado.");
+
+                var missingFields = new List<string>();
+
+                var buyerZip = NormalizeZip(order.Buyer?.Address?.ZipCode);
+                var sellerZip = NormalizeZip(seller.Address?.ZipCode);
+                var buyerZipMasked = FormatZip(buyerZip);
+                var sellerZipMasked = FormatZip(sellerZip);
+                // Sandbox do Melhor Envio aceita apenas CEPs de teste.
+                var isSandbox = _httpClient.BaseAddress != null &&
+                                _httpClient.BaseAddress.Host.Contains("sandbox", StringComparison.OrdinalIgnoreCase);
+                if (isSandbox)
                 {
-                    name = i.Product.Name,
-                    quantity = i.Quantity,
-                    unitary_value = (double)i.UnitPrice,
-                    weight = 1.0,
-                    width = 10,
-                    height = 10,
-                    length = 10
-                }).ToList(),
-                volumes = new[]
-                {
-                    new { height = 10, width = 10, length = 10, weight = 1.0 }
-                },
-                options = new
-                {
-                    insurance_value = (double)order.TotalAmount,
-                    receipt = false,
-                    own_hand = false,
-                    reverse = false,
-                    non_commercial = true
+                    var sandboxFrom = NormalizeZip(_configuration["MelhorEnvio:SandboxZipFrom"]);
+                    var sandboxTo = NormalizeZip(_configuration["MelhorEnvio:SandboxZipTo"]);
+
+                    if (!string.IsNullOrWhiteSpace(sandboxFrom))
+                        sellerZip = sandboxFrom;
+                    if (!string.IsNullOrWhiteSpace(sandboxTo))
+                        buyerZip = sandboxTo;
+
+                    sellerZipMasked = FormatZip(sellerZip);
+                    buyerZipMasked = FormatZip(buyerZip);
                 }
-            };
+                if (sellerZip == "00000000")
+                    missingFields.Add("CEP do vendedor (valor 00000000)");
+                if (buyerZip == "00000000")
+                    missingFields.Add("CEP do comprador (valor 00000000)");
 
-            var cartRes = await _httpClient.PostAsync("/api/v2/me/cart",
-                new StringContent(JsonSerializer.Serialize(cartPayload), Encoding.UTF8, "application/json"));
+                if (order.Buyer == null)
+                    missingFields.Add("Comprador");
 
-            if (!cartRes.IsSuccessStatusCode)
-            {
-                var errorMsg = await cartRes.Content.ReadAsStringAsync();
-                throw new Exception($"Erro ao adicionar ao carrinho ME: {errorMsg}");
+                if (order.Buyer?.Address == null)
+                {
+                    missingFields.Add("Endereco do comprador");
+                }
+                else
+                {
+                    if (buyerZip.Length != 8)
+                        missingFields.Add("CEP do comprador");
+                    if (string.IsNullOrWhiteSpace(order.Buyer.Address.Street))
+                        missingFields.Add("Rua do comprador");
+                    if (string.IsNullOrWhiteSpace(order.Buyer.Address.Number))
+                        missingFields.Add("Numero do comprador");
+                    if (string.IsNullOrWhiteSpace(order.Buyer.Address.City))
+                        missingFields.Add("Cidade do comprador");
+                    if (string.IsNullOrWhiteSpace(order.Buyer.Address.State))
+                        missingFields.Add("Estado do comprador");
+                }
+
+                if (seller.User == null)
+                    missingFields.Add("Dados do vendedor");
+
+                if (seller.Address == null)
+                {
+                    missingFields.Add("Endereco do vendedor");
+                }
+                else
+                {
+                    if (sellerZip.Length != 8)
+                        missingFields.Add("CEP do vendedor");
+                    if (string.IsNullOrWhiteSpace(seller.Address.Street))
+                        missingFields.Add("Rua do vendedor");
+                    if (string.IsNullOrWhiteSpace(seller.Address.Number))
+                        missingFields.Add("Numero do vendedor");
+                    if (string.IsNullOrWhiteSpace(seller.Address.City))
+                        missingFields.Add("Cidade do vendedor");
+                    if (string.IsNullOrWhiteSpace(seller.Address.State))
+                        missingFields.Add("Estado do vendedor");
+                }
+
+                if (string.IsNullOrWhiteSpace(order.Buyer?.Name))
+                    missingFields.Add("Nome do comprador");
+                if (string.IsNullOrWhiteSpace(order.Buyer?.Email))
+                    missingFields.Add("Email do comprador");
+                if (string.IsNullOrWhiteSpace(order.Buyer?.CPF))
+                    missingFields.Add("CPF do comprador");
+
+                if (string.IsNullOrWhiteSpace(seller.User?.Name))
+                    missingFields.Add("Nome do vendedor");
+                if (string.IsNullOrWhiteSpace(seller.User?.Email))
+                    missingFields.Add("Email do vendedor");
+                if (string.IsNullOrWhiteSpace(seller.User?.CPF))
+                    missingFields.Add("CPF do vendedor");
+
+                if (missingFields.Count > 0)
+                    throw new InvalidOperationException("Campos obrigatorios faltando: " + string.Join(", ", missingFields));
+
+                var from = new
+                {
+                    name = seller.User.Name?.Trim() ?? "Vendedor Trama",
+                    phone = seller.User.Phone ?? "11999999999",
+                    email = seller.User.Email ?? "contato@trama.com.br",
+                    document = seller.User.CPF ?? "00000000000",
+                    address = seller.Address.Street ?? "Rua Desconhecida",
+                    number = seller.Address.Number ?? "S/N",
+                    complement = seller.Address.Complement ?? "",
+                    district = seller.Address.District ?? "Centro",
+                    city = seller.Address.City ?? "Cidade",
+                    state_abbr = seller.Address.State ?? "SP",
+                    country_id = "BR",
+                    postal_code = sellerZip,
+                    note = $"Pedido Mitrama #{order.Id.ToString().Substring(0, 8).ToUpper()}"
+                };
+
+                var to = new
+                {
+                    name = order.Buyer.Name?.Trim() ?? "Cliente Trama",
+                    phone = order.Buyer.Phone ?? "11999999999",
+                    email = order.Buyer.Email ?? "cliente@trama.com.br",
+                    document = order.Buyer.CPF ?? "00000000000",
+                    address = order.Buyer.Address.Street ?? "Rua Desconhecida",
+                    number = order.Buyer.Address.Number ?? "S/N",
+                    complement = order.Buyer.Address.Complement ?? "",
+                    district = order.Buyer.Address.District ?? "Centro",
+                    city = order.Buyer.Address.City ?? "Cidade",
+                    state_abbr = order.Buyer.Address.State ?? "SP",
+                    country_id = "BR",
+                    postal_code = buyerZip,
+                    note = "Entregar com cuidado - Produto artesanal"
+                };
+
+                var serviceId = request.ServiceId;
+                if (string.IsNullOrWhiteSpace(serviceId))
+                {
+                    var calculatePayload = new
+                    {
+                        from = new { postal_code = sellerZip },
+                        to = new { postal_code = buyerZip },
+                        products = order.Items.Select(i => new
+                        {
+                            id = "x",
+                            width = (int)(i.Product.Width > 0 ? i.Product.Width : 11),
+                            height = (int)(i.Product.Height > 0 ? i.Product.Height : 2),
+                            length = (int)(i.Product.Length > 0 ? i.Product.Length : 16),
+                            weight = (double)(i.Product.Weight > 0 ? i.Product.Weight : 0.3m),
+                            insurance_value = (double)order.TotalAmount,
+                            quantity = i.Quantity
+                        }).ToArray()
+                    };
+
+                    var calcContent = new StringContent(JsonSerializer.Serialize(calculatePayload), Encoding.UTF8, "application/json");
+                    var calcResponse = await _httpClient.PostAsync("/api/v2/me/shipment/calculate", calcContent);
+                    var calcBody = await calcResponse.Content.ReadAsStringAsync();
+
+                    if (!calcResponse.IsSuccessStatusCode)
+                        throw new InvalidOperationException($"Erro ao calcular frete: {calcResponse.StatusCode} - {calcBody}");
+
+                    var options = JsonSerializer.Deserialize<List<MelhorEnvioOption>>(calcBody);
+                    var firstValid = options?.FirstOrDefault(o => string.IsNullOrEmpty(o.Error));
+                    serviceId = firstValid?.Id.ToString();
+                }
+
+                if (string.IsNullOrWhiteSpace(serviceId))
+                    throw new InvalidOperationException("Serviço de frete não definido ou indisponível.");
+
+                var cartPayload = new
+                {
+                    service = serviceId,
+                    agency = string.IsNullOrWhiteSpace(request.AgencyId) ? null : request.AgencyId,
+                    from,
+                    to,
+                    products = order.Items.Select(i => new
+                    {
+                        name = i.Product.Name.Length > 50 ? i.Product.Name.Substring(0, 47) + "..." : i.Product.Name,
+                        quantity = i.Quantity,
+                        unitary_value = (double)i.UnitPrice,
+                        weight = i.Product.Weight > 0 ? i.Product.Weight : 0.3m,
+                        width = i.Product.Width > 0 ? i.Product.Width : 11,
+                        height = i.Product.Height > 0 ? i.Product.Height : 2,
+                        length = i.Product.Length > 0 ? i.Product.Length : 16
+                    }).ToList(),
+                    volumes = new[]
+                    {
+                new
+                {
+                    height = 10,
+                    width = 15,
+                    length = 20,
+                    weight = order.Items.Sum(i => i.Product.Weight * i.Quantity) > 0
+                        ? order.Items.Sum(i => i.Product.Weight * i.Quantity)
+                        : 0.5m
+                }
+            },
+                    options = new
+                    {
+                        insurance_value = (double)order.TotalAmount,
+                        receipt = false,
+                        own_hand = false,
+                        reverse = false,
+                        non_commercial = true,
+                        platform = "Mitra.ma"
+                    }
+                };
+
+                var jsonContent = new StringContent(
+                    JsonSerializer.Serialize(cartPayload, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    }),
+                    Encoding.UTF8,
+                    "application/json");
+
+                // 7. Adiciona ao carrinho
+                var cartResponse = await _httpClient.PostAsync("/api/v2/me/cart", jsonContent);
+                var cartContent = await cartResponse.Content.ReadAsStringAsync();
+
+                if (!cartResponse.IsSuccessStatusCode)
+                    throw new InvalidOperationException($"Erro ao adicionar ao carrinho: {cartResponse.StatusCode} - {cartContent} | CEP origem: {sellerZipMasked} | CEP destino: {buyerZipMasked}");
+
+                var cartJson = JsonDocument.Parse(cartContent);
+                var orderIdME = cartJson.RootElement.GetProperty("id").GetString()
+                    ?? throw new InvalidOperationException("ID do pedido no Melhor Envio não retornado.");
+
+                // 8. Checkout
+                var checkoutPayload = new { orders = new[] { orderIdME } };
+                var checkoutResponse = await _httpClient.PostAsync("/api/v2/me/shipment/checkout",
+                    new StringContent(JsonSerializer.Serialize(checkoutPayload), Encoding.UTF8, "application/json"));
+
+                if (!checkoutResponse.IsSuccessStatusCode)
+                    throw new InvalidOperationException($"Erro no checkout: {await checkoutResponse.Content.ReadAsStringAsync()}");
+
+                // 9. Gera etiqueta
+                var printPayload = new { mode = "public", orders = new[] { orderIdME } };
+                var printResponse = await _httpClient.PostAsync("/api/v2/me/shipment/print",
+                    new StringContent(JsonSerializer.Serialize(printPayload), Encoding.UTF8, "application/json"));
+
+                if (!printResponse.IsSuccessStatusCode)
+                    throw new InvalidOperationException($"Erro ao gerar etiqueta: {await printResponse.Content.ReadAsStringAsync()}");
+
+                var printContent = await printResponse.Content.ReadAsStringAsync();
+                var printJson = JsonDocument.Parse(printContent);
+                var url = printJson.RootElement.GetProperty("url").GetString();
+
+                if (string.IsNullOrEmpty(url))
+                    throw new InvalidOperationException("URL da etiqueta não foi gerada.");
+
+                return url;
             }
-
-            var cartJson = JsonDocument.Parse(await cartRes.Content.ReadAsStringAsync());
-            var orderIdME = cartJson.RootElement.GetProperty("id").GetString();
-
-            var checkoutPayload = new { orders = new[] { orderIdME } };
-            var checkoutRes = await _httpClient.PostAsync("/api/v2/me/shipment/checkout",
-                new StringContent(JsonSerializer.Serialize(checkoutPayload), Encoding.UTF8, "application/json"));
-
-            if (!checkoutRes.IsSuccessStatusCode)
+            catch (Exception ex)
             {
-                throw new Exception("Erro no checkout do Melhor Envio.");
+                // Log detalhado (use ILogger em produção)
+                Console.WriteLine($"[ERRO GERAR ETIQUETA] {ex.Message}\n{ex.StackTrace}");
+                throw new InvalidOperationException($"Falha ao gerar etiqueta: {ex.Message}");
             }
+        }
 
-            var printPayload = new { mode = "public", orders = new[] { orderIdME } };
-            var printRes = await _httpClient.PostAsync("/api/v2/me/shipment/print",
-                new StringContent(JsonSerializer.Serialize(printPayload), Encoding.UTF8, "application/json"));
+        private static string NormalizeZip(string? zip)
+        {
+            if (string.IsNullOrWhiteSpace(zip)) return string.Empty;
+            var digits = new string(zip.Where(char.IsDigit).ToArray());
+            return digits;
+        }
 
-            printRes.EnsureSuccessStatusCode();
+        private static string FormatZip(string? zip)
+        {
+            var digits = NormalizeZip(zip);
+            if (digits.Length != 8) return digits;
+            return $"{digits.Substring(0, 5)}-{digits.Substring(5, 3)}";
+        }
 
-            var printJson = JsonDocument.Parse(await printRes.Content.ReadAsStringAsync());
-            var url = printJson.RootElement.GetProperty("url").GetString();
+        public class MelhorEnvioOption
+        {
+            [JsonPropertyName("id")] public int Id { get; set; }
+            [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
+            [JsonPropertyName("price")] public string Price { get; set; } = "0";
+            [JsonPropertyName("delivery_range")] public DeliveryRange DeliveryRange { get; set; } = new();
+            [JsonPropertyName("company")] public Company Company { get; set; } = new();
+            [JsonPropertyName("error")] public string? Error { get; set; }
+        }
 
-            return url ?? throw new Exception("URL da etiqueta não gerada.");
+        public class DeliveryRange
+        {
+            [JsonPropertyName("min")] public int Min { get; set; }
+            [JsonPropertyName("max")] public int Max { get; set; }
+        }
+
+        public class Company
+        {
+            [JsonPropertyName("id")] public int Id { get; set; }
+            [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
+            [JsonPropertyName("picture")] public string Picture { get; set; } = string.Empty;
         }
     }
-
-    public class MelhorEnvioOption
-    {
-        [JsonPropertyName("id")] public int Id { get; set; }
-        [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
-        [JsonPropertyName("price")] public string Price { get; set; } = "0";
-        [JsonPropertyName("delivery_range")] public DeliveryRange DeliveryRange { get; set; } = new();
-        [JsonPropertyName("company")] public Company Company { get; set; } = new();
-        [JsonPropertyName("error")] public string? Error { get; set; }
-    }
-
-    public class DeliveryRange
-    {
-        [JsonPropertyName("min")] public int Min { get; set; }
-        [JsonPropertyName("max")] public int Max { get; set; }
-    }
-
-    public class Company
-    {
-        [JsonPropertyName("id")] public int Id { get; set; }
-        [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
-        [JsonPropertyName("picture")] public string Picture { get; set; } = string.Empty;
-    }
 }
+

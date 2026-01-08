@@ -50,7 +50,9 @@ namespace MarketplaceArtesanato.Services.Services
                 City = dto.Address.City,
                 State = dto.Address.State,
                 ZipCode = dto.Address.ZipCode,
-                Country = dto.Address.Country ?? "Brasil"
+                Country = dto.Address.Country ?? "Brasil",
+                Complement = dto.Address.Complement,
+                District = dto.Address.District
             };
 
             var user = new User
@@ -111,7 +113,9 @@ namespace MarketplaceArtesanato.Services.Services
                 City = dto.Address.City,
                 State = dto.Address.State,
                 ZipCode = dto.Address.ZipCode,
-                Country = dto.Address.Country ?? "Brasil"
+                Country = dto.Address.Country ?? "Brasil",
+                Complement = dto.Address.Complement,
+                District = dto.Address.District
             };
 
             var user = new User
@@ -215,7 +219,20 @@ namespace MarketplaceArtesanato.Services.Services
                 Name = user.Name,
                 Email = user.Email,
                 Role = user.Role,
+                ProfileImageUrl = user.ProfileImageUrl,
                 Phone = user.Phone,
+                CPF = user.CPF,
+                Address = user.Address == null ? null : new AddressDto
+                {
+                    Street = user.Address.Street,
+                    Number = user.Address.Number,
+                    City = user.Address.City,
+                    State = user.Address.State,
+                    ZipCode = user.Address.ZipCode,
+                    Country = user.Address.Country ?? "Brasil",
+                    Complement = user.Address.Complement,
+                    District = user.Address.District
+                },
                 IsApproved = user.IsApproved, 
                 StoreApproved = user.SellerProfile?.IsApproved ?? true 
             };
@@ -305,6 +322,17 @@ namespace MarketplaceArtesanato.Services.Services
                 ProfileImageUrl = user.ProfileImageUrl,
                 Phone = user.Phone,
                 CPF = user.CPF,
+                Address = user.Address == null ? null : new AddressDto
+                {
+                    Street = user.Address.Street,
+                    Number = user.Address.Number,
+                    City = user.Address.City,
+                    State = user.Address.State,
+                    ZipCode = user.Address.ZipCode,
+                    Country = user.Address.Country ?? "Brasil",
+                    Complement = user.Address.Complement,
+                    District = user.Address.District
+                },
                 IsApproved = user.IsApproved,
                 StoreApproved = user.SellerProfile?.IsApproved
             };

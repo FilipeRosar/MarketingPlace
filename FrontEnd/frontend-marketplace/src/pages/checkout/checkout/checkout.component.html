@@ -60,6 +60,70 @@
                   <dd class="text-sm font-medium text-gray-900">{{ subtotal() | currencyBr }}</dd>
                 </div>
 
+                <!-- Calculo de Frete -->
+                <div class="rounded-xl border border-stone-100 bg-stone-50 p-4">
+                  <p class="text-sm font-medium text-gray-800 mb-3">Calcular frete</p>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs text-gray-500 mb-1">CEP de origem</label>
+                      <input
+                        type="text"
+                        maxlength="9"
+                        [(ngModel)]="zipCodeFrom"
+                        placeholder="00000-000"
+                        class="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-gray-500 mb-1">CEP de destino</label>
+                      <input
+                        type="text"
+                        maxlength="9"
+                        [(ngModel)]="zipCodeTo"
+                        placeholder="00000-000"
+                        class="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="calculateShipping()"
+                    [disabled]="isCalculatingShipping"
+                    class="mt-3 w-full rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-stone-100 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <span *ngIf="!isCalculatingShipping">Calcular frete</span>
+                    <span *ngIf="isCalculatingShipping">Calculando...</span>
+                  </button>
+
+                  @if (shippingError) {
+                    <p class="mt-2 text-xs text-red-500">{{ shippingError }}</p>
+                  }
+                  @if (shippingNotice) {
+                    <p class="mt-2 text-xs text-amber-600">{{ shippingNotice }}</p>
+                  }
+
+                  @if (shippingOptions().length > 0) {
+                    <div class="mt-4 space-y-2">
+                      @for (option of shippingOptions(); track $index) {
+                        <label class="flex items-start gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm cursor-pointer">
+                          <input
+                            type="radio"
+                            name="shippingOption"
+                            class="mt-1"
+                            [checked]="selectedShipping()?.name === option.name && selectedShipping()?.price === option.price"
+                            (change)="selectShipping(option)">
+                          <div class="flex-1">
+                            <div class="flex items-center justify-between gap-2">
+                              <span class="font-medium text-gray-800">{{ option.name }}</span>
+                              <span class="font-semibold text-gray-900">{{ option.price | currencyBr }}</span>
+                            </div>
+                            <p class="text-xs text-gray-500">Entrega em ate {{ option.deliveryTime || 0 }} dias</p>
+                          </div>
+                        </label>
+                      }
+                    </div>
+                  }
+                </div>
+
                 <!-- Frete -->
                 <div class="flex items-center justify-between">
                   <dt class="text-sm text-gray-600">Frete</dt>
@@ -72,7 +136,7 @@
                     Taxa de Serviço
                     <span class="text-gray-400 cursor-help" title="Taxa fixa de manutenção da plataforma">ⓘ</span>
                   </dt>
-                  <dd class="text-sm font-medium text-gray-900">{{ serviceFee | currencyBr }}</dd>
+                  <dd class="text-sm font-medium text-gray-900">{{ serviceFee() | currencyBr }}</dd>
                 </div>
 
                 <!-- Total Final -->

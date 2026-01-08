@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace MarketplaceArtesanato.Core.Entities
 {
     [Table("Addresses")]
-    public class Address
+    public class Address 
     {
         public Guid Id { get; set; }
         [Required]
@@ -26,6 +26,8 @@ namespace MarketplaceArtesanato.Core.Entities
         public string ZipCode { get; set; } = string.Empty;
         [Required]
         public string Country { get; set; } = "Brasil";
+        public string? Complement { get; set; } 
+        public string? District { get; set; }
 
     }
 }

@@ -1,10 +1,12 @@
 ﻿using MarketplaceArtesanato.API.Extensions;
 using MarketplaceArtesanato.API.Models.Requests;
 using MarketplaceArtesanato.API.Models.Responses;
+using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
 using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Interfaces;
+using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Services.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +24,18 @@ namespace MarketplaceArtesanato.API.Controllers
         {
             _sellerService = sellerService;
             _storageService = storageService;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<SellerResponseDto>>> SearchSellers([FromQuery] string? search = null, [FromQuery] int limit = 6)
+        {
+            if (string.IsNullOrWhiteSpace(search))
+                return Ok(new List<SellerResponseDto>());
+
+            if (limit <= 0) limit = 6;
+
+            var sellers = await _sellerService.SearchAsync(search, limit);
+            return Ok(sellers);
         }
 
         [HttpGet("{id}")]
@@ -131,6 +145,38 @@ namespace MarketplaceArtesanato.API.Controllers
                return Ok(dashboard);
             
         }
+        [HttpGet("sales")]
+        [Authorize(Roles = "Seller")]
+        public async Task<ActionResult<List<SellerSaleResponseDto>>> GetSales()
+        {
+            var userId = User.GetUserId();
 
+            if (userId == Guid.Empty)
+                return Unauthorized("Usuário não autenticado.");
+
+            var sales = await _sellerService.GetSalesAsync(userId);
+
+            if (!sales.Any())
+                return Ok(new List<SellerSaleResponseDto>()); 
+
+            return Ok(sales);
+        }
+
+        [HttpPut("profile")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateSellerProfileDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var userId = User.GetUserId();
+            if (userId == Guid.Empty)
+                return Unauthorized("Usuário não autenticado.");
+
+            var updated = await _sellerService.UpdateProfileAsync(userId, dto);
+            if (!updated)
+                return NotFound("Perfil de vendedor não encontrado.");
+
+            return NoContent();
+        }
     }
 }

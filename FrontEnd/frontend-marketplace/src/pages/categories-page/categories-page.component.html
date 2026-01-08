@@ -1,5 +1,4 @@
-<div class="min-h-screen bg-stone-50">
-  <!-- Header da página -->
+﻿<div class="min-h-screen bg-stone-50">
   <section class="bg-white border-b border-stone-200 py-8">
     <div class="max-w-7xl mx-auto px-6">
 
@@ -13,13 +12,13 @@
         <span class="text-gray-900 font-medium truncate">Explorar</span>
       </nav>
 
-      <!-- TÍTULO DINÂMICO (Signal) -->
       <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">{{ pageTitle() }}</h1>
 
-      <!-- Subtítulo dinâmico opcional -->
-      <p class="text-lg text-gray-600 mt-2">
+        <p class="text-lg text-gray-600 mt-2">
         @if (filters().search) {
-          Buscando por "{{ filters().search }}" em todo o catálogo
+          Buscando por "{{ filters().search }}" em todo o catÃ¡logo
+        } @else if (filters().subcategory) {
+          Subcategoria: "{{ filters().subcategory }}"
         } @else if (filters().category) {
           Explore nossa seleção exclusiva
         } @else {
@@ -58,7 +57,7 @@
           <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Categoria</label>
           <div class="space-y-1 max-h-60 overflow-y-auto custom-scrollbar pr-2">
             @for (cat of categories; track cat.value) {
-              <button (click)="updateUrl({category: cat.value})"
+              <button (click)="updateUrl({category: cat.value, subcategory: ''})"
                       class="flex items-center w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors"
                       [ngClass]="filters().category === cat.value ? 'bg-orange-50 text-primary font-medium' : 'text-gray-600 hover:bg-stone-50'">
                  <span [class.opacity-100]="filters().category === cat.value" class="w-1.5 h-1.5 rounded-full bg-primary mr-2 opacity-0 transition-opacity"></span>
@@ -67,6 +66,21 @@
             }
           </div>
         </div>
+
+        <!-- Subcategoria -->
+        @if (subcategoryOptions().length > 0) {
+          <div class="mb-6">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Subcategoria</label>
+            <select [ngModel]="filters().subcategory"
+                    (ngModelChange)="updateUrl({ subcategory: $event })"
+                    class="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+              <option value="">Todas</option>
+              @for (sub of subcategoryOptions(); track sub) {
+                <option [value]="sub">{{ sub }}</option>
+              }
+            </select>
+          </div>
+        }
 
         <!-- Cor -->
         <div class="mb-6">
@@ -90,7 +104,6 @@
           </div>
         </div>
 
-        <!-- Preço -->
         <div class="mb-6">
           <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Preço</label>
           <div class="flex items-center gap-2 mb-2">
@@ -121,6 +134,27 @@
 
     <!-- GRID DE PRODUTOS -->
     <div class="lg:col-span-3">
+      @if (filters().search) {
+        <div class="mb-10">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-gray-900">Lojas encontradas</h2>
+            @if (isSellerLoading()) {
+              <span class="text-xs text-gray-500">Carregando...</span>
+            }
+          </div>
+
+          @if (!isSellerLoading() && sellers().length === 0) {
+            <p class="text-sm text-gray-500">Nenhuma loja encontrada para esse termo.</p>
+          } @else {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @for (seller of sellers(); track seller.id) {
+                <app-seller-card [seller]="seller"></app-seller-card>
+              }
+            </div>
+          }
+        </div>
+      }
+
       @if (isLoading()) {
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           @for (i of [].constructor(6); track i) {
@@ -169,3 +203,4 @@
     </div>
   </div>
 </div>
+

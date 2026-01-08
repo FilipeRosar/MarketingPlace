@@ -45,6 +45,8 @@ namespace MarketplaceArtesanato.Services.Services
                 user.Address.State = dto.Address.State;
                 user.Address.ZipCode = dto.Address.ZipCode;
                 user.Address.Country = dto.Address.Country ?? "Brasil";
+                user.Address.Complement = dto.Address.Complement;
+                user.Address.District = dto.Address.District;
             }
             else
             {
@@ -56,10 +58,51 @@ namespace MarketplaceArtesanato.Services.Services
                     City = dto.Address.City,
                     State = dto.Address.State,
                     ZipCode = dto.Address.ZipCode,
-                    Country = dto.Address.Country ?? "Brasil"
+                    Country = dto.Address.Country ?? "Brasil",
+                    Complement = dto.Address.Complement,
+                    District = dto.Address.District
                 };
                 user.Address = newAddress;
                 _context.Addresses.Add(newAddress);
+            }
+
+            if (role == "Seller")
+            {
+                var seller = await _context.Sellers
+                    .Include(s => s.Address)
+                    .FirstOrDefaultAsync(s => s.UserId == userId);
+
+                if (seller != null)
+                {
+                    if (seller.Address != null)
+                    {
+                        seller.Address.Street = dto.Address.Street;
+                        seller.Address.Number = dto.Address.Number;
+                        seller.Address.City = dto.Address.City;
+                        seller.Address.State = dto.Address.State;
+                        seller.Address.ZipCode = dto.Address.ZipCode;
+                        seller.Address.Country = dto.Address.Country ?? "Brasil";
+                        seller.Address.Complement = dto.Address.Complement;
+                        seller.Address.District = dto.Address.District;
+                    }
+                    else
+                    {
+                        var sellerAddress = new Address
+                        {
+                            Id = Guid.NewGuid(),
+                            Street = dto.Address.Street,
+                            Number = dto.Address.Number,
+                            City = dto.Address.City,
+                            State = dto.Address.State,
+                            ZipCode = dto.Address.ZipCode,
+                            Country = dto.Address.Country ?? "Brasil",
+                            Complement = dto.Address.Complement,
+                            District = dto.Address.District
+                        };
+                        seller.Address = sellerAddress;
+                        _context.Addresses.Add(sellerAddress);
+                    }
+                }
             }
 
             try

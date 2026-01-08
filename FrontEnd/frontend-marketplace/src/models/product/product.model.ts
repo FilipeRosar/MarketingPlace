@@ -7,6 +7,10 @@ export interface Product {
   tags: string[];
   imageUrl: string;
   images: string[];
+  weight?: number;
+  width?: number;
+  height?: number;
+  length?: number;
 
   category: string;
   status?: string;

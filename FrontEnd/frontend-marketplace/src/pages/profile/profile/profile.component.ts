@@ -7,6 +7,7 @@ import { UserService } from '../../../services/user/user.service';
 import { User } from '../../../models/user/user.model';
 import { HttpClient } from '@angular/common/http';
 import { debounceTime, filter, switchMap } from 'rxjs';
+import { NotificationService } from '../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-profile',
@@ -21,7 +22,7 @@ export class ProfileComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private http = inject(HttpClient);
-
+  private notification = inject(NotificationService);
   currentUser: User | null = null;
   profileForm: FormGroup;
   isEditing = false;
@@ -38,11 +39,16 @@ export class ProfileComponent implements OnInit {
         zipCode: ['', [Validators.required, Validators.minLength(8)]],
         street: ['', Validators.required],
         number: ['', Validators.required],
+        district: ['', Validators.required],
+        complement: [''],
         city: ['', Validators.required],
         state: ['', Validators.required],
         country: ['Brasil', Validators.required]
       })
     });
+
+    // Inicia com tudo desabilitado
+    this.profileForm.disable();
   }
 
   ngOnInit() {
@@ -58,66 +64,68 @@ export class ProfileComponent implements OnInit {
     this.setupCepAutofill();
   }
 
-  setupCepAutofill() {
-    const cepControl = this.profileForm.get('address.zipCode');
-
-    cepControl?.valueChanges.pipe(
-      debounceTime(400),
-      filter(cep => cep && cep.length === 8 && !this.isUploadingPhoto),
-      switchMap(cep => this.http.get(`https://viacep.com.br/ws/${cep}/json/`))
-    ).subscribe((data: any) => {
-      if (data && !data.erro) {
-        const addressGroup = this.profileForm.get('address') as FormGroup;
-        addressGroup.patchValue({
-          street: data.logradouro,
-          city: data.localidade,
-          state: data.uf
-        }, { emitEvent: false });
+  private patchForm(user: any) {
+    this.profileForm.patchValue({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      cpf: user.cpf || '',
+      address: {
+        zipCode: user.address?.zipCode || '',
+        street: user.address?.street || '',
+        number: user.address?.number || '',
+        district: user.address?.district || '',
+        complement: user.address?.complement || '',
+        city: user.address?.city || '',
+        state: user.address?.state || '',
+        country: user.address?.country || 'Brasil'
       }
     });
   }
 
-  patchForm(user: any) {
-    this.profileForm.patchValue({
-      name: user.name,
-      email: user.email,
-      phone: user.phone || '',
-      cpf: user.cpf || '',
-      address: user.address || {}
-    });
-  }
+  setupCepAutofill() {
+    const cepControl = this.profileForm.get('address.zipCode');
 
-  onPhotoSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.isUploadingPhoto = true;
-      this.userService.uploadProfilePhoto(file).subscribe({
-        next: (res) => {
-          if (this.currentUser) {
-            this.currentUser = { ...this.currentUser, profileImageUrl: res.imageUrl };
-            this.authService.updateCurrentUser(this.currentUser);
-          }
-          this.isUploadingPhoto = false;
-          alert('Foto de perfil atualizada com sucesso!');
-        },
-        error: (err) => {
-          console.error('Erro no upload', err);
-          this.isUploadingPhoto = false;
-          alert('Erro ao enviar foto.');
+    cepControl?.valueChanges
+      .pipe(
+        debounceTime(600),
+        filter(() => this.isEditing), // Só busca se estiver editando
+        filter(cep => cep && this.normalizeZip(cep).length === 8),
+        switchMap(cep => this.http.get(`https://viacep.com.br/ws/${this.normalizeZip(cep)}/json/`))
+      )
+      .subscribe((data: any) => {
+        if (data && !data.erro) {
+          const addressGroup = this.profileForm.get('address') as FormGroup;
+          addressGroup.patchValue({
+            street: data.logradouro,
+            district: data.bairro,
+            city: data.localidade,
+            state: data.uf
+          });
         }
       });
-    }
   }
 
   toggleEdit() {
     this.isEditing = !this.isEditing;
+
     if (this.isEditing) {
-      this.profileForm.enable();
+      // Habilita todos os campos editáveis
+      this.profileForm.get('name')?.enable();
+      this.profileForm.get('phone')?.enable();
+      this.profileForm.get('address')?.enable();
+
+      // Mantém email e CPF desabilitados
       this.profileForm.get('email')?.disable();
       this.profileForm.get('cpf')?.disable();
     } else {
+      // Volta ao estado bloqueado
       this.profileForm.disable();
-      if (this.currentUser) this.patchForm(this.currentUser);
+
+      // Recarrega os dados originais se cancelou
+      if (this.currentUser) {
+        this.patchForm(this.currentUser);
+      }
     }
   }
 
@@ -132,14 +140,16 @@ export class ProfileComponent implements OnInit {
     const formValue = this.profileForm.getRawValue();
 
     const updateData = {
-      name: formValue.name,
-      phone: formValue.phone,
+      name: formValue.name.trim(),
+      phone: this.normalizePhone(formValue.phone),
       address: {
-        zipCode: formValue.address.zipCode,
-        street: formValue.address.street,
-        number: formValue.address.number,
-        city: formValue.address.city,
-        state: formValue.address.state,
+        zipCode: this.normalizeZip(formValue.address.zipCode),
+        street: formValue.address.street.trim(),
+        number: formValue.address.number.trim(),
+        district: formValue.address.district.trim(),
+        complement: formValue.address.complement?.trim() || null,
+        city: formValue.address.city.trim(),
+        state: formValue.address.state.trim(),
         country: formValue.address.country
       }
     };
@@ -158,23 +168,38 @@ export class ProfileComponent implements OnInit {
             address: updateData.address
           };
           this.authService.updateCurrentUser(updatedUser);
+          this.currentUser = updatedUser;
         }
 
-        alert('Perfil atualizado com sucesso!');
+        this.notification.success('Perfil atualizado com sucesso!');
       },
       error: (err) => {
-        console.error('Erro ao atualizar perfil:', err);
         this.isLoading = false;
+        console.error('Erro ao atualizar perfil:', err);
+        this.notification.error('Não foi possível salvar as alterações. Tente novamente.');
+      }
+    });
+  }
 
-        if (err.status === 401) {
-          alert('Sua sessão expirou. Por favor, faça login novamente para salvar as alterações.');
-          this.authService.logout();
-          this.router.navigate(['/login']);
-        } else if (err.status === 400) {
-          alert('Dados inválidos. Verifique os campos e tente novamente.');
-        } else {
-          alert('Não foi possível atualizar seus dados. Tente novamente mais tarde.');
+  onPhotoSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    this.isUploadingPhoto = true;
+
+    this.userService.uploadProfilePhoto(file).subscribe({
+      next: (res) => {
+        if (this.currentUser) {
+          const updatedUser = { ...this.currentUser, profileImageUrl: res.imageUrl };
+          this.currentUser = updatedUser;
+          this.authService.updateCurrentUser(updatedUser);
         }
+        this.isUploadingPhoto = false;
+        this.notification.success('Foto atualizada com sucesso!');
+      },
+      error: () => {
+        this.isUploadingPhoto = false;
+        this.notification.error('Erro ao enviar foto.');
       }
     });
   }
@@ -182,5 +207,37 @@ export class ProfileComponent implements OnInit {
   logout() {
     this.authService.logout();
     this.router.navigate(['/']);
+  }
+
+  // Máscaras apenas quando está editando
+  onZipInput() {
+    if (!this.isEditing) return;
+    const control = this.profileForm.get('address.zipCode');
+    if (!control) return;
+    const digits = this.normalizeZip(control.value);
+    const masked = digits.length >= 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+    control.setValue(masked, { emitEvent: false });
+  }
+
+  onPhoneInput() {
+    if (!this.isEditing) return;
+    const control = this.profileForm.get('phone');
+    if (!control) return;
+    const digits = this.normalizePhone(control.value);
+    let masked = '';
+    if (digits.length <= 10) {
+      masked = digits.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+    } else {
+      masked = digits.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+    }
+    control.setValue(masked, { emitEvent: false });
+  }
+
+  private normalizeZip(value: string): string {
+    return (value || '').replace(/\D/g, '').slice(0, 8);
+  }
+
+  private normalizePhone(value: string): string {
+    return (value || '').replace(/\D/g, '').slice(0, 11);
   }
 }

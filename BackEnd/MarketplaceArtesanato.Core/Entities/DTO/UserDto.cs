@@ -16,6 +16,7 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         public string? ProfileImageUrl { get; set; }
         public string CPF { get; set; }
         public string? Phone { get; set; }
+        public AddressDto? Address { get; set; }
         public bool IsApproved { get; set; } 
         public bool? StoreApproved { get; set; }
 

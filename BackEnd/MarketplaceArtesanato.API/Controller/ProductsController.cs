@@ -23,6 +23,7 @@ namespace MarketplaceArtesanato.API.Controllers
         [HttpGet]
         public async Task<ActionResult> GetProducts(
             [FromQuery] string? search = null,
+            [FromQuery] string? subcategory = null,
             [FromQuery] int? category = null,
             [FromQuery] decimal? minPrice = null,
             [FromQuery] decimal? maxPrice = null,
@@ -30,7 +31,7 @@ namespace MarketplaceArtesanato.API.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            var result = await _productService.GetAllAsync(page, pageSize, search, category, minPrice, maxPrice, sellerId);
+            var result = await _productService.GetAllAsync(page, pageSize, search, subcategory, category, minPrice, maxPrice, sellerId);
             return Ok(result);
         }
 

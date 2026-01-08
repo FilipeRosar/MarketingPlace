@@ -115,11 +115,12 @@ export class SellerDashboardComponent implements OnInit {
 
   private loadSellerContent(sellerId: string) {
     forkJoin({
-      products: this.productService.getAllProducts().pipe(catchError(() => of([]))),
+      products: this.productService.getAllProducts(1, 100, '', undefined, undefined, undefined, undefined, sellerId)
+        .pipe(catchError(() => of([]))),
       orders: this.orderService.getMyOrders().pipe(catchError(() => of([])))
     }).subscribe({
       next: ({ products, orders }) => {
-        const allProducts = Array.isArray(products) ? products : (products?.items || []);
+        const allProducts = Array.isArray(products) ? products : (products?.data || products?.items || []);
         this.products = allProducts.filter((p: any) => p.sellerId === sellerId);
 
         this.recentOrders = this.processOrders(orders, sellerId);
@@ -134,35 +135,49 @@ export class SellerDashboardComponent implements OnInit {
   private processOrders(allOrders: any[], sellerId: string): any[] {
     if (!allOrders?.length) return [];
 
-    return allOrders
-      .filter(o =>
-        o.items?.some((i: any) =>
-          i.product?.sellerId === sellerId || i.sellerId === sellerId
+    const hasSellerInfo = allOrders.some(o =>
+      o.items?.some((i: any) => i?.product?.sellerId || i?.sellerId)
+    );
+
+    const filtered = hasSellerInfo
+      ? allOrders.filter(o =>
+          o.items?.some((i: any) =>
+            i.product?.sellerId === sellerId || i.sellerId === sellerId
+          )
         )
-      )
-      .map(o => ({
-        id: o.id,
-        displayId: '#' + o.id.slice(0, 8).toUpperCase(),
-        customer: o.customerName || 'Cliente',
-        date: new Date(o.createdAt).toLocaleDateString('pt-BR'),
-        total: o.totalAmount,
-        status: this.translateStatus(o.status),
-        trackingCode: o.trackingCode,
-        carrier: o.carrier,
-        items: o.items
-      }));
+      : allOrders;
+
+    return filtered.map(o => ({
+      id: o.id,
+      displayId: '#' + o.id.slice(0, 8).toUpperCase(),
+      customer: o.customerName || 'Cliente',
+      date: new Date(o.createdAt).toLocaleDateString('pt-BR'),
+      total: o.totalAmount,
+      status: this.translateStatus(o.status),
+      trackingCode: o.trackingCode,
+      carrier: o.carrier,
+      items: o.items,
+      primaryItemName: o.items?.[0]?.productName || 'Produto',
+      primaryItemImage: o.items?.[0]?.productImage || '',
+      itemsCount: o.items?.length || 0
+    }));
   }
 
   private translateStatus(status: any): string {
     const map: any = {
       0: 'Pendente',
-      1: 'Pago',
-      2: 'Enviado',
-      3: 'Entregue',
-      4: 'Cancelado',
-      'Paid': 'Pago',
+      1: 'Confirmado',
+      2: 'Processando',
+      3: 'Enviado',
+      4: 'Entregue',
+      5: 'Cancelado',
+      6: 'Reembolsado',
+      'Paid': 'Confirmado',
+      'Confirmed': 'Confirmado',
+      'Processing': 'Processando',
       'Sent': 'Enviado',
-      'Delivered': 'Entregue'
+      'Delivered': 'Entregue',
+      'Refunded': 'Reembolsado'
     };
     return map[status] || 'Desconhecido';
   }
@@ -224,9 +239,10 @@ export class SellerDashboardComponent implements OnInit {
         window.open(res.labelUrl, '_blank');
         this.loadDashboardData();
       },
-      error: () => {
+      error: (err) => {
         this.isLoading = false;
-        alert('Erro ao gerar etiqueta.');
+        const msg = err?.error?.message || 'Erro ao gerar etiqueta. Verifique o endereço/CEP e a configuração do Melhor Envio.';
+        alert(msg);
       }
     });
   }

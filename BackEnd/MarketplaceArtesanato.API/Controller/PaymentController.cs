@@ -1,28 +1,17 @@
-﻿using MarketplaceArtesanato.Core.Events;
-using MarketplaceArtesanato.Data.Data;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Stripe;
-using Stripe.Checkout;
 using MarketplaceArtesanato.Core.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using Stripe;
 
 namespace MarketplaceArtesanato.API.Controllers
 {
     [Route("api/webhook")]
     [ApiController]
-    public class WebhookController : ControllerBase
+    public class PaymentController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        private readonly ArtesianDbContext _context;
         private readonly IStripePaymentService _stripeService;
 
-        public WebhookController(
-            IConfiguration config,
-            ArtesianDbContext context,
-            IStripePaymentService stripePayment)
+        public PaymentController(IStripePaymentService stripePayment)
         {
-            _config = config;
-            _context = context;
             _stripeService = stripePayment;
         }
 
@@ -30,13 +19,11 @@ namespace MarketplaceArtesanato.API.Controllers
         public async Task<IActionResult> StripeWebhook()
         {
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-
             var signature = Request.Headers["Stripe-Signature"];
 
             try
             {
                 await _stripeService.HandleWebhookAsync(json, signature);
-
                 return Ok();
             }
             catch (StripeException e)

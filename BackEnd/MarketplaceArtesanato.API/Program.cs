@@ -124,9 +124,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:4200",  // Angular HTTP
-                "https://localhost:4200", // Angular HTTPS
-                "http://localhost:3000"   // React/Next (caso use)
+                "http://localhost:4200",  
+                "https://localhost:4200", 
+                "http://localhost:3000"   
                )
               .AllowAnyMethod()
               .AllowAnyHeader()

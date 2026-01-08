@@ -11,6 +11,7 @@ import { ProductCardComponent } from '../../../components/product-card/product-c
 import { LoadingSpinnerComponent } from '../../../components/loading-spinner.component/loading-spinner.component';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MomentResponseDto } from '../../../models/moment/moment.model';
+import { NotificationService } from '../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-seller-profile',
@@ -33,6 +34,7 @@ export class SellerProfileComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
   private userService = inject(UserService);
   private location = inject(Location);
+  private notification = inject(NotificationService);
 
   seller: any | null = null;
   products: Product[] = [];
@@ -104,7 +106,7 @@ export class SellerProfileComponent implements OnInit {
   });
 }
   loadSellerProducts(sellerId: string) {
-    this.productService.getAllProducts(1, 100, '', '', undefined, undefined, sellerId).subscribe({
+    this.productService.getAllProducts(1, 100, '', '', undefined, undefined, undefined, sellerId).subscribe({
       next: (response: any) => {
         const all = Array.isArray(response) ? response : (response.data || response.items || []);
         this.products = all.filter((p: any) => p.sellerId === sellerId);
@@ -177,7 +179,7 @@ onAvatarSelected(event: any) {
         // Opcional: recarrega o seller da API para garantir sincronia
         // this.loadSellerData(this.seller.id);
       },
-      error: () => alert('Erro ao enviar foto.')
+      error: () => this.notification.error('Erro ao enviar foto.')
     });
   }
 }
@@ -191,7 +193,7 @@ onBannerSelected(event: any) {
           this.seller.bannerImageUrl = res.imageUrl;
         }
       },
-      error: () => alert('Erro ao enviar banner.')
+      error: () => this.notification.error('Erro ao enviar banner.')
     });
   }
 }
@@ -217,7 +219,7 @@ onVideoSelected(event: any) {
   if (file && file.type.startsWith('video/') && file.size <= 100 * 1024 * 1024) { // máx 100MB
     this.newMoment.videoFile = file;
   } else {
-    alert('Por favor, selecione um vídeo válido (máx 100MB).');
+    this.notification.info('Por favor, selecione um vídeo válido (máx 100MB).');
   }
 }
 
@@ -226,13 +228,13 @@ onThumbSelected(event: any) {
   if (file && file.type.startsWith('image/')) {
     this.newMoment.thumbFile = file;
   } else {
-    alert('Por favor, selecione uma imagem válida para a thumbnail.');
+    this.notification.info('Por favor, selecione uma imagem válida para a thumbnail.');
   }
 }
 
 saveMoment() {
   if (!this.newMoment.videoFile || !this.newMoment.description.trim()) {
-    alert('Vídeo e descrição são obrigatórios.');
+    this.notification.warning('Vídeo e descrição são obrigatórios.');
     return;
   }
 
@@ -258,7 +260,7 @@ saveMoment() {
     },
     error: (err) => {
       console.error('Erro no upload do vídeo', err);
-      alert('Erro ao enviar vídeo. Verifique o tamanho e formato.');
+      this.notification.error('Erro ao enviar vídeo. Verifique o tamanho e formato.');
       this.isUploadingMoment = false;
     }
   });
@@ -277,10 +279,10 @@ private createMoment(videoUrl: string, thumbUrl: string) {
       this.moments.unshift(created);
       this.isAddingMoment = false;
       this.isUploadingMoment = false;
-      alert('Momento publicado com sucesso!');
+      this.notification.success('Momento publicado com sucesso!');
     },
     error: () => {
-      alert('Erro ao salvar o momento.');
+      this.notification.error('Erro ao salvar o momento.');
       this.isUploadingMoment = false;
     }
   });
@@ -305,11 +307,11 @@ private finalizeMoment(videoUrl: string, thumbUrl: string) {
       });
       this.isAddingMoment = false;
       this.isUploadingMoment = false;
-      alert('Momento publicado com sucesso!');
+      this.notification.success('Momento publicado com sucesso!');
     },
     error: (err) => {
       console.error('Erro ao criar momento', err);
-      alert('Erro ao salvar o momento. Tente novamente.');
+      this.notification.error('Erro ao salvar o momento. Tente novamente.');
       this.isUploadingMoment = false;
     }
   });

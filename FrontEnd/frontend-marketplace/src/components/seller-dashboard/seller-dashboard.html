@@ -190,6 +190,8 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pedido</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Cliente</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Data</th>
+
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produtos</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Rastreio / Envio</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ações</th>
@@ -198,7 +200,22 @@
               <tbody class="bg-white divide-y divide-gray-200">
                 @for (order of recentOrders; track order.id) {
                   <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{{ order.displayId || order.id }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
+                      <div class="flex items-center gap-3">
+                        @if (order.primaryItemImage) {
+                          <img [src]="order.primaryItemImage" alt="{{ order.primaryItemName }}" class="h-10 w-10 rounded-md object-cover border border-stone-200 bg-stone-100">
+                        } @else {
+                          <div class="h-10 w-10 rounded-md border border-stone-200 bg-stone-100 flex items-center justify-center text-[10px] text-stone-400">Sem foto</div>
+                        }
+                        <div class="flex flex-col">
+                          <span class="text-gray-900">{{ order.primaryItemName }}</span>
+                          @if (order.itemsCount > 1) {
+                            <span class="text-xs text-gray-400">+{{ order.itemsCount - 1 }} item(s)</span>
+                          }
+                          <span class="text-[10px] text-stone-400 font-mono">{{ order.displayId || order.id }}</span>
+                        </div>
+                      </div>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.customer }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.date }}</td>
 
@@ -207,7 +224,7 @@
                       <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                             [ngClass]="{
                               'bg-yellow-100 text-yellow-800': order.status === 'Pendente' || order.status === 'Processando',
-                              'bg-green-100 text-green-800': order.status === 'Pago' || order.status === 'Entregue',
+                              'bg-green-100 text-green-800': order.status === 'Confirmado' || order.status === 'Entregue',
                               'bg-blue-100 text-blue-800': order.status === 'Enviado',
                               'bg-red-100 text-red-800': order.status === 'Cancelado' || order.status === 'Reembolsado'
                             }">
@@ -224,7 +241,7 @@
                            </a>
                            <span class="text-xs text-gray-400">{{ order.carrier || 'Transportadora' }}</span>
                         </div>
-                      } @else if (order.status === 'Pago' || order.status === 'Paid') {
+                      } @else if (order.status === 'Confirmado' || order.status === 'Confirmed') {
                         <span class="text-orange-500 text-xs font-medium">Aguardando envio</span>
                       } @else {
                         <span class="text-stone-300 text-xs">—</span>
@@ -233,7 +250,7 @@
 
                     <!-- Ações de Envio -->
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      @if ((order.status === 'Pago' || order.status === 'Paid') && !order.trackingCode) {
+                      @if ((order.status === 'Confirmado' || order.status === 'Confirmed') && !order.trackingCode) {
                           <button (click)="generateLabel(order)" class="text-white bg-primary hover:bg-primary-dark px-3 py-1 rounded text-xs shadow-sm mr-2 transition-colors" title="Gerar com Melhor Envio">
                             Gerar Etiqueta
                           </button>

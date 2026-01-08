@@ -17,9 +17,11 @@ namespace MarketplaceArtesanato.API.Mapping
                     src.Product != null ? src.Product.Name : "Produto Removido"))
 
                 .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src =>
-                    src.Product != null && src.Product.Images != null && src.Product.Images.Any()
-                    ? src.Product.Images.FirstOrDefault()
-                    : null));
+                    !string.IsNullOrWhiteSpace(src.ProductImage)
+                    ? src.ProductImage
+                    : (src.Product != null && src.Product.Images != null && src.Product.Images.Any()
+                        ? src.Product.Images.FirstOrDefault()!.Url
+                        : null)));
         }
     }
 }

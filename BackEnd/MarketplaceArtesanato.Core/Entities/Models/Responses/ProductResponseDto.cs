@@ -18,6 +18,10 @@ namespace MarketplaceArtesanato.API.Models.Responses
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
+        public decimal Weight { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int Length { get; set; }
         [Required]
         public List<string> Tags { get; set; } = new();
 

@@ -17,6 +17,7 @@ namespace MarketplaceArtesanato.Core.Interfaces
         Task ApproveSellerAsync(Guid sellerId);
         Task RejectSellerAsync(Guid sellerId);
         Task<DashboardStatsResponse> GetDashboardStatsAsync();
+        Task<List<CommissionReportItemResponse>> GetCommissionReportAsync();
         Task UpdateCommissionRateAsync(decimal rate);
         Task UpdateServiceFeeAsync(decimal fee);
         Task SetSellerCommissionAsync(Guid sellerId, decimal? rate);

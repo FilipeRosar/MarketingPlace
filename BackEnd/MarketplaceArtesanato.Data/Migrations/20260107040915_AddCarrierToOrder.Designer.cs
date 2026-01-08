@@ -4,6 +4,7 @@ using MarketplaceArtesanato.Data.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MarketplaceArtesanato.Data.Migrations
 {
     [DbContext(typeof(ArtesianDbContext))]
-    partial class ArtesianDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260107040915_AddCarrierToOrder")]
+    partial class AddCarrierToOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -32,14 +35,8 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Complement")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Country")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("District")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Number")
@@ -392,14 +389,8 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int>("Height")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<int>("Length")
-                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -429,12 +420,6 @@ namespace MarketplaceArtesanato.Data.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal>("Weight")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("Width")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -532,9 +517,6 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FacebookUrl")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("InstagramUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -571,9 +553,6 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Property<string>("StripeAccountId")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("TiktokUrl")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("TotalSales")
                         .HasColumnType("int");
 
@@ -582,9 +561,6 @@ namespace MarketplaceArtesanato.Data.Migrations
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("YoutubeUrl")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

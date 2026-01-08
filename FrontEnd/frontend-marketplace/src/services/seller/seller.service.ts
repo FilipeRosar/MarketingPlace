@@ -18,8 +18,9 @@ export class SellerService {
   getSellerByUserId(userId: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/by-user/${userId}`);
   }
-  searchSellers(query: string): Observable<any[]> {
-    const params = new HttpParams().set('search', query);
+  searchSellers(query: string, limit: number = 6): Observable<any[]> {
+    let params = new HttpParams().set('search', query);
+    if (limit) params = params.set('limit', limit.toString());
     return this.http.get<any[]>(this.apiUrl, { params });
   }
   uploadMomentVideo(sellerId: string, file: File): Observable<any> {

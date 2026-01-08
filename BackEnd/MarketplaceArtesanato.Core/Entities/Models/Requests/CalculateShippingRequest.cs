@@ -39,5 +39,6 @@ namespace MarketplaceArtesanato.Core.Entities.Models.Requests
     {
         public Guid OrderId { get; set; }
         public string ServiceId { get; set; } = string.Empty; 
+        public string AgencyId { get; set; } = string.Empty;
     }
 }

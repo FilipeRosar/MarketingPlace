@@ -104,6 +104,18 @@
               </div>
             </div>
 
+            <!-- Subcategoria -->
+            <div class="sm:col-span-4">
+              <label class="block text-sm font-medium text-gray-700">Subcategoria</label>
+              <div class="mt-1">
+                <select formControlName="subcategory" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border bg-white" [disabled]="subcategoryOptions.length === 0">
+                  <option value="">Selecione</option>
+                  <option *ngFor="let sub of subcategoryOptions" [value]="sub">{{ sub }}</option>
+                </select>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">A subcategoria será adicionada automaticamente às tags.</p>
+            </div>
+
             <!-- Tags (Input com Chips) -->
             <div class="sm:col-span-6">
               <label class="block text-sm font-medium text-gray-700 mb-2">Tags (Palavras-chave)</label>
@@ -152,7 +164,57 @@
               </div>
             </div>
 
-            <!-- Estoque -->
+                        <!-- Dimensoes para envio -->
+            <div class="sm:col-span-6">
+              <p class="text-sm font-medium text-gray-700">Dimensoes para envio (Melhor Envio) <span class="text-red-500">*</span></p>
+              <p class="text-xs text-gray-500 mt-1">Use cm e kg. Essas medidas sao usadas no calculo do frete.</p>
+            </div>
+
+            <!-- Peso -->
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">Peso (kg) <span class="text-red-500">*</span></label>
+              <div class="mt-1">
+                <input type="number" formControlName="weight" min="0.01" step="0.01" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border" placeholder="0.20">
+              </div>
+              <div *ngIf="productForm.get('weight')?.invalid && productForm.get('weight')?.touched" class="text-red-500 text-xs mt-1">
+                Peso invalido (min 0.01).
+              </div>
+            </div>
+
+            <!-- Largura -->
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">Largura (cm) <span class="text-red-500">*</span></label>
+              <div class="mt-1">
+                <input type="number" formControlName="width" min="1" step="1" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border" placeholder="10">
+              </div>
+              <div *ngIf="productForm.get('width')?.invalid && productForm.get('width')?.touched" class="text-red-500 text-xs mt-1">
+                Largura invalida (min 1).
+              </div>
+            </div>
+
+            <!-- Altura -->
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">Altura (cm) <span class="text-red-500">*</span></label>
+              <div class="mt-1">
+                <input type="number" formControlName="height" min="1" step="1" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border" placeholder="5">
+              </div>
+              <div *ngIf="productForm.get('height')?.invalid && productForm.get('height')?.touched" class="text-red-500 text-xs mt-1">
+                Altura invalida (min 1).
+              </div>
+            </div>
+
+            <!-- Comprimento -->
+            <div class="sm:col-span-3">
+              <label class="block text-sm font-medium text-gray-700">Comprimento (cm) <span class="text-red-500">*</span></label>
+              <div class="mt-1">
+                <input type="number" formControlName="length" min="1" step="1" class="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md p-3 border" placeholder="15">
+              </div>
+              <div *ngIf="productForm.get('length')?.invalid && productForm.get('length')?.touched" class="text-red-500 text-xs mt-1">
+                Comprimento invalido (min 1).
+              </div>
+            </div>
+
+<!-- Estoque -->
             <div class="sm:col-span-3">
               <label class="block text-sm font-medium text-gray-700">Estoque <span class="text-red-500">*</span></label>
               <div class="mt-1">

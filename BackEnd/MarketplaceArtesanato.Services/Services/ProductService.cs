@@ -19,6 +19,7 @@ namespace MarketplaceArtesanato.Services.Services
         private readonly ArtesianDbContext _context;
         private readonly IMapper _mapper;
         private readonly IStorageService _storage;
+        private const string AccentInsensitiveCollation = "Latin1_General_CI_AI";
 
         public ProductService(ArtesianDbContext context, IMapper mapper, IStorageService storage)
         {
@@ -27,7 +28,7 @@ namespace MarketplaceArtesanato.Services.Services
             _storage = storage;
         }
 
-        public async Task<PaginatedResult<ProductResponseDto>> GetAllAsync(int page, int pageSize, string? search, int? category, decimal? minPrice, decimal? maxPrice, Guid? sellerId)
+        public async Task<PaginatedResult<ProductResponseDto>> GetAllAsync(int page, int pageSize, string? search, string? subcategory, int? category, decimal? minPrice, decimal? maxPrice, Guid? sellerId)
         {
             var query = _context.Products
                 .Include(p => p.Seller!).ThenInclude(s => s.Address)
@@ -42,11 +43,20 @@ namespace MarketplaceArtesanato.Services.Services
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var lowerSearch = search.Trim().ToLower();
+                var term = search.Trim();
                 query = query.Where(p =>
-                    p.Name.ToLower().Contains(lowerSearch) ||
-                    (p.Description != null && p.Description.ToLower().Contains(lowerSearch)) ||
-                    p.Seller!.StoreName.ToLower().Contains(lowerSearch));
+                    EF.Functions.Like(EF.Functions.Collate(p.Name, AccentInsensitiveCollation), $"%{term}%") ||
+                    (p.Description != null && EF.Functions.Like(EF.Functions.Collate(p.Description, AccentInsensitiveCollation), $"%{term}%")) ||
+                    EF.Functions.Like(EF.Functions.Collate(p.Seller!.StoreName, AccentInsensitiveCollation), $"%{term}%") ||
+                    (!string.IsNullOrEmpty(p.Tags) && EF.Functions.Like(EF.Functions.Collate(p.Tags, AccentInsensitiveCollation), $"%{term}%")));
+            }
+
+            if (!string.IsNullOrWhiteSpace(subcategory))
+            {
+                var sub = subcategory.Trim();
+                query = query.Where(p =>
+                    !string.IsNullOrEmpty(p.Tags) &&
+                    EF.Functions.Like(EF.Functions.Collate(p.Tags, AccentInsensitiveCollation), $"%{sub}%"));
             }
 
             if (category.HasValue)
@@ -149,9 +159,16 @@ namespace MarketplaceArtesanato.Services.Services
             var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
             if (product == null) return false; // Not Found
 
-            // Verificação de permissão
-            if (product.SellerId != userId && userRole != "Admin")
-                throw new UnauthorizedAccessException("Sem permissão para editar este produto.");
+            // Verifica permissao: sellerId do produto vs sellerId do usuario
+            if (userRole != "Admin")
+            {
+                var seller = await _context.Sellers
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.UserId == userId);
+
+                if (seller == null || product.SellerId != seller.Id)
+                    throw new UnauthorizedAccessException("Sem permissao para editar este produto.");
+            }
 
             _mapper.Map(dto, product);
             product.SalePrice = dto.SalePrice;
@@ -169,8 +186,15 @@ namespace MarketplaceArtesanato.Services.Services
 
             if (product == null) return false;
 
-            if (product.SellerId != userId && userRole != "Admin")
-                throw new UnauthorizedAccessException("Sem permissão para deletar este produto.");
+            if (userRole != "Admin")
+            {
+                var seller = await _context.Sellers
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.UserId == userId);
+
+                if (seller == null || product.SellerId != seller.Id)
+                    throw new UnauthorizedAccessException("Sem permissao para deletar este produto.");
+            }
 
             // Remove imagens do storage
             foreach (var image in product.Images)

@@ -14,6 +14,7 @@ namespace MarketplaceArtesanato.Core.Interfaces
         Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role);
         Task<CheckoutResponseResult> CreateOrderAsync(Guid buyerId, CheckoutRequestDto dto);
         Task UpdateTrackingAsync(Guid orderId, Guid userId, string role, string trackingCode);
+        Task CancelOrderAsync(Guid orderId, Guid userId, string role);
     }
 
     public class CheckoutResponseResult

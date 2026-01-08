@@ -12,6 +12,10 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         public string ProductName { get; set; } = string.Empty;
         public string? ProductImage { get; set; }
         public decimal Price { get; set; }
+        public decimal Weight { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int Length { get; set; }
         public int Quantity { get; set; }
         public Guid SellerId { get; set; }
         public decimal Subtotal => Price * Quantity;

@@ -1,16 +1,19 @@
-import { Component, inject, OnInit, OnDestroy, signal, effect, computed } from '@angular/core'; // Adicionado 'computed'
+﻿import { Component, inject, OnInit, OnDestroy, signal, effect, computed } from '@angular/core'; // Adicionado 'computed'
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 
 import { ProductService } from '../../services/product/product.service';
+import { SellerService } from '../../services/seller/seller.service';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
+import { SellerCardComponent } from '../../components/seller-card/seller-card/seller-card.component';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
 import { SeoService } from '../../services/SEO/seo.service';
 
 interface FilterState {
   search: string;
+  subcategory: string;
   category: string;
   color: string;
   priceMin: number;
@@ -27,6 +30,7 @@ interface FilterState {
     FormsModule,
     RouterLink,
     ProductCardComponent,
+    SellerCardComponent,
     LoadingSpinnerComponent
   ],
   templateUrl: './categories-page.component.html',
@@ -34,6 +38,7 @@ interface FilterState {
 })
 export class CategoriesPageComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
+  private sellerService = inject(SellerService);
   private seoService = inject(SeoService); // Injetar SeoService
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -41,8 +46,10 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
 
   // Dados
   products = signal<any[]>([]);
+  sellers = signal<any[]>([]);
   filteredProducts = signal<any[]>([]);
   isLoading = signal(true);
+  isSellerLoading = signal(false);
   totalItems = signal(0);
   currentPage = signal(1);
   pageSize = 24;
@@ -50,6 +57,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
   // Filtros
   filters = signal<FilterState>({
     search: '',
+    subcategory: '',
     category: '',
     color: '',
     priceMin: 0,
@@ -58,45 +66,188 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     sortBy: 'relevance'
   });
 
-  // Opções dos filtros (Mapeamento para label)
+  // OpÃ§Ãµes dos filtros (Mapeamento para label)
   categories = [
     { value: '', label: 'Todas as categorias' },
-    { value: '0', label: 'Decoração' },
+    { value: '0', label: 'DecoraÃ§Ã£o' },
     { value: '1', label: 'Joias' },
     { value: '2', label: 'Roupas' },
     { value: '3', label: 'Arte' },
     { value: '4', label: 'Brinquedos' },
-    { value: '5', label: 'Acessórios' },
-    { value: '6', label: 'Móveis' },
+    { value: '5', label: 'AcessÃ³rios' },
+    { value: '6', label: 'MÃ³veis' },
     { value: '7', label: 'Cozinha' },
     { value: '8', label: 'Papelaria' },
     { value: '9', label: 'Outros' }
   ];
 
+  subcategoriesByCategory: Record<string, string[]> = {
+    '0': [
+      'Quadros e Placas',
+      'Velas artesanais',
+      'Vasos e Cachepos',
+      'Macrame',
+      'Objetos de mesa',
+      'Esculturas decorativas',
+      'Iluminacao artesanal',
+      'Almofadas e Texteis',
+      'Decoracao infantil',
+      'Decoracao religiosa'
+    ],
+    '1': [
+      'Aneis',
+      'Colares',
+      'Pulseiras',
+      'Brincos',
+      'Pingentes',
+      'Joias em prata',
+      'Joias em ouro',
+      'Pedras naturais',
+      'Joias personalizadas',
+      'Joias minimalistas'
+    ],
+    '2': [
+      'Camisetas',
+      'Vestidos',
+      'Moda feminina',
+      'Moda masculina',
+      'Moda infantil',
+      'Roupas personalizadas',
+      'Bordados',
+      'Croche e Trico',
+      'Moda sustentavel',
+      'Fantasias'
+    ],
+    '3': [
+      'Pinturas',
+      'Ilustracoes',
+      'Gravuras',
+      'Arte digital',
+      'Esculturas',
+      'Arte abstrata',
+      'Arte realista',
+      'Arte contemporanea',
+      'Posters artisticos',
+      'Artes autorais'
+    ],
+    '4': [
+      'Brinquedos educativos',
+      'Brinquedos de madeira',
+      'Bonecas artesanais',
+      'Amigurumi',
+      'Jogos pedagogicos',
+      'Quebra-cabecas',
+      'Brinquedos sensoriais',
+      'Brinquedos infantis',
+      'Brinquedos personalizados'
+    ],
+    '5': [
+      'Bolsas',
+      'Carteiras',
+      'Mochilas',
+      'Cintos',
+      'Lencos',
+      'Chapeus',
+      'Oculos artesanais',
+      'Capas (celular, notebook)',
+      'Bijuterias',
+      'Acessorios personalizados'
+    ],
+    '6': [
+      'Mesas',
+      'Cadeiras',
+      'Bancos',
+      'Estantes',
+      'Prateleiras',
+      'Criados-mudos',
+      'Moveis rusticos',
+      'Moveis planejados',
+      'Moveis infantis',
+      'Moveis sustentaveis'
+    ],
+    '7': [
+      'Utensilios de madeira',
+      'Tabuas de corte',
+      'Canecas artesanais',
+      'Pratos e Loucas',
+      'Copos e Tacas',
+      'Panos de prato',
+      'Organizadores',
+      'Kits de cozinha',
+      'Itens personalizados',
+      'Decoracao de cozinha'
+    ],
+    '8': [
+      'Cadernos artesanais',
+      'Agendas & planners',
+      'Blocos de notas',
+      'Marcadores de pagina',
+      'Cartoes personalizados',
+      'Convites (casamento, aniversario, eventos)',
+      'Papelaria para casamento',
+      'Papelaria infantil',
+      'Papelaria escolar',
+      'Scrapbook',
+      'Adesivos & stickers',
+      'Selos & carimbos artesanais',
+      'Caixas & embalagens personalizadas',
+      'Papelaria corporativa artesanal',
+      'Papelaria ecologica'
+    ],
+    '9': [
+      'Produtos personalizados',
+      'Kits presente',
+      'Datas comemorativas (Natal, Pascoa, Dia das Maes, etc.)',
+      'Lembrancinhas',
+      'Produtos sob encomenda',
+      'Artesanato regional',
+      'Produtos sustentaveis',
+      'Itens religiosos',
+      'Itens misticos / esotericos',
+      'Decoracao sazonal',
+      'Produtos exclusivos',
+      'Colecionaveis',
+      'Itens experimentais / novos produtos'
+    ]
+  };
+
+  subcategoryOptions = computed(() => {
+    const category = this.filters().category;
+    return this.subcategoriesByCategory[category] || [];
+  });
+
   colors = [
     { name: 'Terracota', hex: '#b45309' },
-    { name: 'Sálvia', hex: '#84a98c' },
+    { name: 'SÃ¡lvia', hex: '#84a98c' },
     { name: 'Areia', hex: '#d6ccc2' },
-    { name: 'Carvão', hex: '#264653' },
+    { name: 'CarvÃ£o', hex: '#264653' },
     { name: 'Mostarda', hex: '#e9c46a' },
     { name: 'Lavanda', hex: '#cdb4db' }
   ];
 
-  regions = ['Todas as regiões', 'Nordeste', 'Sudeste', 'Sul', 'Norte', 'Centro-Oeste'];
+  regions = ['Todas as regiÃµes', 'Nordeste', 'Sudeste', 'Sul', 'Norte', 'Centro-Oeste'];
   sortOptions = [
     { value: 'relevance', label: 'Mais relevantes' },
     { value: 'newest', label: 'Mais recentes' },
-    { value: 'price-low', label: 'Menor preço' },
-    { value: 'price-high', label: 'Maior preço' },
+    { value: 'price-low', label: 'Menor preÃ§o' },
+    { value: 'price-high', label: 'Maior preÃ§o' },
     { value: 'bestsellers', label: 'Mais vendidos' }
   ];
 
-  // Título Dinâmico (Computed Signal)
+  // TÃ­tulo DinÃ¢mico (Computed Signal)
   pageTitle = computed(() => {
     const f = this.filters();
 
     if (f.search) {
       return `Resultados para "${f.search}"`;
+    }
+
+    if (f.subcategory) {
+      if (f.category) {
+        const cat = this.categories.find(c => c.value === f.category);
+        return cat ? `${cat.label} - ${f.subcategory}` : f.subcategory;
+      }
+      return `Subcategoria: ${f.subcategory}`;
     }
 
     if (f.category) {
@@ -119,6 +270,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
       this.filters.update(f => ({
         ...f,
         search: params['search'] || '', // Ajustado para 'search' (era 'q' no exemplo anterior, mas header usa 'search')
+        subcategory: params['subcategory'] || '',
         category: params['category'] || '',
         color: params['color'] || '',
         region: params['region'] || '',
@@ -140,7 +292,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     effect(() => {
       this.applyFilters();
 
-      // Atualiza título da aba do navegador
+      // Atualiza tÃ­tulo da aba do navegador
       this.seoService.updateSeoData({
         title: this.pageTitle(),
         description: `Encontre o melhor de ${this.pageTitle()} no Trama.`,
@@ -162,18 +314,39 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
       this.currentPage(),
       this.pageSize,
       f.search,
-      f.category
+      f.category,
+      f.subcategory
     ).subscribe({
       next: (res: any) => {
         const items = Array.isArray(res) ? res : (res.items || res.data || []);
         this.products.set(items);
         this.totalItems.set(res.total || items.length);
-        this.applyFilters(); // Reaplica filtros locais se houver (cor, preço)
+        this.applyFilters(); // Reaplica filtros locais se houver (cor, preÃ§o)
         this.isLoading.set(false);
       },
       error: () => {
         this.products.set([]);
         this.isLoading.set(false);
+      }
+    });
+
+    if (f.search && f.search.trim().length >= 2) {
+      this.loadSellers(f.search.trim());
+    } else {
+      this.sellers.set([]);
+    }
+  }
+
+  private loadSellers(term: string) {
+    this.isSellerLoading.set(true);
+    this.sellerService.searchSellers(term, 8).subscribe({
+      next: (data) => {
+        this.sellers.set(Array.isArray(data) ? data : []);
+        this.isSellerLoading.set(false);
+      },
+      error: () => {
+        this.sellers.set([]);
+        this.isSellerLoading.set(false);
       }
     });
   }
@@ -182,9 +355,9 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     const f = this.filters();
     let filtered = [...this.products()];
 
-    // Filtros locais (que o backend talvez não suporte ainda ou para refinamento)
+    // Filtros locais (que o backend talvez nÃ£o suporte ainda ou para refinamento)
     if (f.color) {
-      // Simulação: filtra se a tag contém a cor
+      // SimulaÃ§Ã£o: filtra se a tag contÃ©m a cor
       filtered = filtered.filter(p => p.tags?.some((t: string) => t.toLowerCase().includes(f.color.toLowerCase())));
     }
 
@@ -192,7 +365,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(p => p.price >= f.priceMin && p.price <= f.priceMax);
     }
 
-    // Ordenação local (se o backend não ordenar)
+    // OrdenaÃ§Ã£o local (se o backend nÃ£o ordenar)
     filtered.sort((a, b) => {
       switch (f.sortBy) {
         case 'price-low': return a.price - b.price;
@@ -214,6 +387,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     // Limpeza de objetos vazios para a URL ficar bonita
     const queryParams: any = {
         search: updated.search || null,
+        subcategory: updated.subcategory || null,
         category: updated.category || null,
         color: updated.color || null,
         region: updated.region || null,
@@ -240,3 +414,5 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     window.scrollTo(0, 0);
   }
 }
+
+

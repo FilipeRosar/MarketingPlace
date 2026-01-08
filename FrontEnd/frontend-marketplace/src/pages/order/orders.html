@@ -46,6 +46,12 @@
                       [ngClass]="getStatusInfo(order.status).classes">
                   {{ getStatusInfo(order.status).label }}
                 </span>
+                @if (isCancelable(order)) {
+                  <button (click)="cancelOrder(order.id)"
+                          class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 hover:underline transition-colors">
+                    Cancelar pedido
+                  </button>
+                }
               </div>
               <div class="sm:text-right">
                 <p class="text-xs text-gray-400 font-mono">ID: #{{ order.id | slice:0:8 }}</p>
@@ -91,7 +97,12 @@
                       </div>
                       <div class="flex justify-between items-center mt-1">
                         <p class="text-sm text-gray-500">Qtd: {{ item.quantity }}</p>
-                        <button class="text-xs text-primary hover:underline">Comprar Novamente</button>
+                        <button
+                          (click)="buyAgain(item)"
+                          [disabled]="addingProductIds.has(item.productId)"
+                          class="text-xs text-primary hover:underline disabled:text-stone-300 disabled:no-underline">
+                          Comprar Novamente
+                        </button>
                       </div>
                     </div>
                   </li>

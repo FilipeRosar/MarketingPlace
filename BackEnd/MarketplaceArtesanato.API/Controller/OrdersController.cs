@@ -84,5 +84,22 @@ namespace MarketplaceArtesanato.API.Controllers
             catch (KeyNotFoundException) { return NotFound(); }
             catch (UnauthorizedAccessException ex) { return Forbid(ex.Message); }
         }
+
+        [HttpPut("{id}/cancel")]
+        [Authorize]
+        public async Task<IActionResult> CancelOrder(Guid id)
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Customer";
+
+                await _orderService.CancelOrderAsync(id, userId, role);
+                return Ok(new { message = "Pedido cancelado com sucesso." });
+            }
+            catch (KeyNotFoundException) { return NotFound(); }
+            catch (UnauthorizedAccessException ex) { return Forbid(ex.Message); }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+        }
     }
 }

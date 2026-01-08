@@ -15,7 +15,7 @@ export class CheckoutService {
   constructor() { }
 
 
-  createCheckoutSession(items: any[]): Observable<{ sessionId: string; url: string }> {
+  createCheckoutSession(items: any[], shippingFee: number = 0, shippingName: string = 'Frete'): Observable<{ sessionId: string; url: string }> {
   const itemsList = items.map(item => ({
     productId: item.product.id,           // OK (Guid como string funciona)
     quantity: item.quantity
@@ -23,6 +23,8 @@ export class CheckoutService {
 
   const payload = {
     items: itemsList,
+    shippingFee,
+    shippingName,
     successUrl: window.location.origin + '/#/orders',   // ← IMPORTANTE: #/orders
     cancelUrl:  window.location.origin + '/#/cart'      // ← IMPORTANTE: #/cart
   };

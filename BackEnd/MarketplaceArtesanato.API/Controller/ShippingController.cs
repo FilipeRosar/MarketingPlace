@@ -28,8 +28,20 @@ namespace MarketplaceArtesanato.API.Controller
         [HttpPost("generate-label")]
         public async Task<IActionResult> GenerateLabel([FromBody] GenerateLabelRequest request)
         {
-            var url = await _shippingService.GenerateLabelAsync(request);
-            return Ok(new { labelUrl = url });
+            try
+            {
+                var url = await _shippingService.GenerateLabelAsync(request);
+                return Ok(new { labelUrl = url });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERRO GERAR ETIQUETA] {ex.Message}");
+                return StatusCode(500, new { message = "Erro interno ao gerar etiqueta." });
+            }
         }
     }
 }

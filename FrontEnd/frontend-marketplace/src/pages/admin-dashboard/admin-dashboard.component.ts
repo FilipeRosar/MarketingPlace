@@ -52,6 +52,15 @@ export class AdminDashboardComponent implements OnInit {
   commissionRate = 15;
   serviceFee = 2.99;
 
+  // Filtro de periodo (Visao Geral)
+  salesStartDate = '';
+  salesEndDate = '';
+  salesRangeLabel = '';
+
+  // Paginacao de clientes
+  customerPage = signal(1);
+  customerPageSize = 8;
+
   // --- CHART CONFIG ---
   salesChartData: ChartData<'line'> = { labels: [], datasets: [] };
   commissionChartData: ChartData<'bar'> = { labels: [], datasets: [] };
@@ -78,6 +87,16 @@ export class AdminDashboardComponent implements OnInit {
     );
   });
 
+  pagedCustomers = computed(() => {
+    const start = (this.customerPage() - 1) * this.customerPageSize;
+    return this.filteredCustomers().slice(start, start + this.customerPageSize);
+  });
+
+  totalCustomerPages = computed(() => {
+    const total = this.filteredCustomers().length;
+    return Math.max(1, Math.ceil(total / this.customerPageSize));
+  });
+
   ngOnInit() {
     this.loadAllData();
   }
@@ -92,8 +111,8 @@ export class AdminDashboardComponent implements OnInit {
     this.loadSalesChart();
     this.loadCommissionReport();
     this.loadCustomers();
-    // Carregar configs globais se tiver endpoint (simulado aqui)
     this.adminService.getServiceFee().subscribe(res => this.serviceFee = res.fee);
+    this.adminService.getCommissionRate().subscribe(res => this.commissionRate = res.rate);
   }
 
   // --- LOADERS (CONECTADOS AO BACKEND) ---
@@ -114,7 +133,10 @@ export class AdminDashboardComponent implements OnInit {
 
   loadCustomers() {
     this.adminService.getCustomers().subscribe({
-      next: (data) => this.customers.set(data),
+      next: (data) => {
+        this.customers.set(data);
+        this.customerPage.set(1);
+      },
       error: () => this.notification.error('Erro ao carregar clientes')
     });
   }
@@ -130,8 +152,9 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   loadSalesChart() {
-    this.adminService.getSalesByMonth().subscribe({
+    this.adminService.getSalesByMonth(this.salesStartDate, this.salesEndDate).subscribe({
       next: (data) => {
+        this.salesRangeLabel = this.formatRangeLabel(this.salesStartDate, this.salesEndDate);
         this.salesChartData = {
           labels: data.map(d => d.month),
           datasets: [{
@@ -240,6 +263,52 @@ export class AdminDashboardComponent implements OnInit {
       },
       error: () => this.notification.error('Erro ao atualizar taxa individual')
     });
+  }
+
+  applySalesRange() {
+    this.loadSalesChart();
+  }
+
+  clearSalesRange() {
+    this.salesStartDate = '';
+    this.salesEndDate = '';
+    this.loadSalesChart();
+  }
+
+  applyQuickRange(months: number) {
+    const end = new Date();
+    const start = new Date();
+    start.setMonth(start.getMonth() - months);
+    this.salesStartDate = this.toDateInput(start);
+    this.salesEndDate = this.toDateInput(end);
+    this.loadSalesChart();
+  }
+
+  private toDateInput(date: Date): string {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private formatRangeLabel(start?: string, end?: string): string {
+    if (!start && !end) return 'Todos os periodos';
+    if (start && !end) return `De ${start} em diante`;
+    if (!start && end) return `Ate ${end}`;
+    return `${start} a ${end}`;
+  }
+
+  goToCustomerPage(page: number) {
+    const target = Math.min(Math.max(1, page), this.totalCustomerPages());
+    this.customerPage.set(target);
+  }
+
+  nextCustomerPage() {
+    this.goToCustomerPage(this.customerPage() + 1);
+  }
+
+  prevCustomerPage() {
+    this.goToCustomerPage(this.customerPage() - 1);
   }
 
   // Sistema simples de Toast Notifications

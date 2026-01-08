@@ -17,7 +17,7 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
 
     public class DailyRevenueDto
     {
-        public string Date { get; set; }
+        public DateTime Date { get; set; }
         public decimal Revenue { get; set; }
     }
 }

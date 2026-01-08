@@ -20,11 +20,9 @@ namespace MarketplaceArtesanato.API.Controllers
         private readonly IPublishEndpoint _publishEndpoint;
         private readonly IConfiguration _config;
 
-        // 1. COMISSÃO: 15% retido do valor do produto (cobrado do vendedor)
         private const decimal PLATFORM_COMMISSION_RATE = 0.15m;
 
-        // 2. TAXA DE SERVIÇO: Valor fixo cobrado do comprador (ex: R$ 2,99)
-        private const long SERVICE_FEE_CENTS = 299; // R$ 2,99
+        private const long SERVICE_FEE_CENTS = 299; 
 
         public CheckoutController(
             ArtesianDbContext context,
@@ -56,6 +54,8 @@ namespace MarketplaceArtesanato.API.Controllers
 
             var lineItems = new List<SessionLineItemOptions>();
             decimal totalProductAmount = 0;
+            var shippingFee = request.ShippingFee;
+            var shippingName = string.IsNullOrWhiteSpace(request.ShippingName) ? "Frete" : request.ShippingName.Trim();
             // Lista para o evento
             var eventItems = new List<CheckoutItemEvent>();
 
@@ -126,7 +126,24 @@ namespace MarketplaceArtesanato.API.Controllers
                 Quantity = 1
             });
 
-            order.TotalAmount = totalProductAmount + (SERVICE_FEE_CENTS / 100m);
+            if (shippingFee > 0)
+            {
+                lineItems.Add(new SessionLineItemOptions
+                {
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        Currency = "brl",
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = shippingName
+                        },
+                        UnitAmount = (long)(shippingFee * 100)
+                    },
+                    Quantity = 1
+                });
+            }
+
+            order.TotalAmount = totalProductAmount + (SERVICE_FEE_CENTS / 100m) + shippingFee;
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -140,6 +157,10 @@ namespace MarketplaceArtesanato.API.Controllers
                 CancelUrl = $"{domain}/#/cart",
                 BillingAddressCollection = "required",
                 ShippingAddressCollection = new SessionShippingAddressCollectionOptions { AllowedCountries = new List<string> { "BR" } },
+                PaymentIntentData = new SessionPaymentIntentDataOptions
+                {
+                    TransferGroup = order.Id.ToString()
+                },
                 Metadata = new Dictionary<string, string>
                 {
                     { "OrderId", order.Id.ToString() },

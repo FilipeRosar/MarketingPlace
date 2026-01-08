@@ -27,6 +27,7 @@ export class ProductService {
     pageSize: number = 10,
     search: string = '',
     category?: string,
+    subcategory?: string,
     minPrice?: number,
     maxPrice?: number,
     sellerId?: string
@@ -37,6 +38,7 @@ export class ProductService {
 
     if (search) params = params.set('search', search);
     if (category) params = params.set('category', category);
+    if (subcategory) params = params.set('subcategory', subcategory);
     if (sellerId) params = params.set('sellerId', sellerId);
     if (minPrice) params = params.set('minPrice', minPrice.toString());
     if (maxPrice) params = params.set('maxPrice', maxPrice.toString());

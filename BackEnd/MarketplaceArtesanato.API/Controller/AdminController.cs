@@ -40,7 +40,10 @@ namespace MarketplaceArtesanato.API.Controllers
         [HttpGet("customers")]
         public async Task<ActionResult<List<CustomerResponseDto>>> GetCustomers()
         {
+            var paidStatuses = new[] { OrderStatus.Confirmed, OrderStatus.Sent, OrderStatus.Delivered };
+
             var customersData = await _context.Customers
+                .AsNoTracking()
                 .Include(c => c.User)
                 .Where(c => !c.IsDeleted)
                 .Select(c => new
@@ -51,8 +54,15 @@ namespace MarketplaceArtesanato.API.Controllers
                     c.User.Phone,
                     c.User.CPF,
                     ProfileImageUrl = c.User.ProfileImageUrl ?? "/assets/default-avatar.png",
-                    c.CreatedAt,
-                    Orders = c.Orders
+                    CreatedAt = c.CreatedAt,
+                    LastOrderDate = _context.Orders
+                        .Where(o => o.BuyerId == c.UserId)
+                        .OrderByDescending(o => o.CreatedAt)
+                        .Select(o => (DateTime?)o.CreatedAt)
+                        .FirstOrDefault(),
+                    TotalSpent = _context.Orders
+                        .Where(o => o.BuyerId == c.UserId && paidStatuses.Contains(o.Status))
+                        .Sum(o => (decimal?)o.TotalAmount) ?? 0m
                 })
                 .ToListAsync();
 
@@ -64,16 +74,28 @@ namespace MarketplaceArtesanato.API.Controllers
                 Phone = c.Phone,
                 CPF = c.CPF,
                 ProfileImageUrl = c.ProfileImageUrl,
-                CreatedAt = c.CreatedAt.ToString("dd/MM/yyyy"),
-                LastOrderDate = c.Orders.OrderByDescending(o => o.CreatedAt).FirstOrDefault()?.CreatedAt.ToString("dd/MM/yyyy"),
-                TotalSpent = c.Orders
-                    .Where(o => o.Status == OrderStatus.Paid || o.Status == OrderStatus.Delivered)
-                    .Sum(o => o.TotalAmount)
+                CreatedAt = c.CreatedAt.ToString("O"),
+                LastOrderDate = c.LastOrderDate?.ToString("O"),
+                TotalSpent = c.TotalSpent
             })
             .OrderByDescending(x => x.TotalSpent)
             .ToList();
 
             return Ok(customerDtos);
+        }
+
+        [HttpGet("commission-report")]
+        public async Task<ActionResult<List<CommissionReportItemResponse>>> GetCommissionReport()
+        {
+            var report = await _adminService.GetCommissionReportAsync();
+            return Ok(report);
+        }
+
+        [HttpGet("dashboard-stats")]
+        public async Task<ActionResult<DashboardStatsResponse>> GetDashboardStats()
+        {
+            var stats = await _adminService.GetDashboardStatsAsync();
+            return Ok(stats);
         }
 
         [HttpPost("approve-seller/{id}")]
@@ -157,13 +179,24 @@ namespace MarketplaceArtesanato.API.Controllers
             return Ok(new { fee });
         }
 
-        [HttpGet("sales-by-month")]
-        public async Task<ActionResult> GetSalesByMonth()
+        [HttpGet("settings/commission-rate")]
+        public async Task<IActionResult> GetCommissionRate()
         {
+            var rate = await _settingsService.GetCommissionRateAsync();
+            return Ok(new { rate });
+        }
+
+        [HttpGet("sales-by-month")]
+        public async Task<ActionResult> GetSalesByMonth([FromQuery] DateTime? start = null, [FromQuery] DateTime? end = null)
+        {
+            var startDate = start?.Date;
+            var endDate = end.HasValue ? end.Value.Date.AddDays(1).AddTicks(-1) : (DateTime?)null;
             // ETAPA 1: Consulta ao Banco de Dados (SQL Puro)
             // Trazemos apenas os dados numéricos (Ano, Mês e Total)
             var rawData = await _context.Orders
-                .Where(o => o.Status == OrderStatus.Paid || o.Status == OrderStatus.Sent || o.Status == OrderStatus.Delivered)
+                .Where(o => o.Status == OrderStatus.Confirmed || o.Status == OrderStatus.Sent || o.Status == OrderStatus.Delivered)
+                .Where(o => !startDate.HasValue || o.CreatedAt >= startDate.Value)
+                .Where(o => !endDate.HasValue || o.CreatedAt <= endDate.Value)
                 .GroupBy(o => new { o.CreatedAt.Year, o.CreatedAt.Month })
                 .Select(g => new
                 {
@@ -201,3 +234,6 @@ namespace MarketplaceArtesanato.API.Controllers
         public decimal TotalSpent { get; set; }
     }
 }
+
+
+

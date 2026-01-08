@@ -38,6 +38,9 @@ namespace MarketplaceArtesanato.Core.Entities
         public decimal RatingAverage { get; set; } = 0m; 
         public int TotalSales { get; set; } = 0;
         public string? InstagramUrl { get; set; }
+        public string? FacebookUrl { get; set; }
+        public string? TiktokUrl { get; set; }
+        public string? YoutubeUrl { get; set; }
         public ICollection<Moment> Moments { get; set; } = new List<Moment>();
         public List<Product> Products { get; set; } = new();
         public List<Order> OrdersReceived { get; set; } = new();

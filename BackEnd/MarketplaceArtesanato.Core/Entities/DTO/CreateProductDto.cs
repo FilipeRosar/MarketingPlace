@@ -22,6 +22,18 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         public decimal? SalePrice { get; set; }
 
         [Required]
+        public decimal Weight { get; set; }
+
+        [Required]
+        public int Width { get; set; }
+
+        [Required]
+        public int Height { get; set; }
+
+        [Required]
+        public int Length { get; set; }
+
+        [Required]
         public List<string> Tags { get; set; } = new();
 
         [Required]

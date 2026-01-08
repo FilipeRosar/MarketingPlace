@@ -7,6 +7,7 @@ using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
 using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Interfaces;
+using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,7 @@ namespace MarketplaceArtesanato.Services.Services
     {
         private readonly ArtesianDbContext _context;
         private readonly IMapper _mapper;
+        private const string AccentInsensitiveCollation = "Latin1_General_CI_AI";
 
         public SellerService(ArtesianDbContext context, IMapper mapper)
         {
@@ -27,7 +29,7 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var seller = await _context.Sellers
                 .Include(s => s.Address)
-                .Include(s => s.Moments) // Inclui os momentos
+                .Include(s => s.Moments) 
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             return seller == null ? null : _mapper.Map<SellerResponseDto>(seller);
@@ -41,6 +43,28 @@ namespace MarketplaceArtesanato.Services.Services
                 .FirstOrDefaultAsync(s => s.UserId == userId);
 
             return seller == null ? null : _mapper.Map<SellerResponseDto>(seller);
+        }
+
+        public async Task<List<SellerResponseDto>> SearchAsync(string term, int limit)
+        {
+            if (string.IsNullOrWhiteSpace(term))
+                return new List<SellerResponseDto>();
+
+            var normalized = term.Trim();
+
+            var sellers = await _context.Sellers
+                .AsNoTracking()
+                .Include(s => s.Address)
+                .Where(s => s.IsApproved)
+                .Where(s =>
+                    EF.Functions.Like(EF.Functions.Collate(s.StoreName, AccentInsensitiveCollation), $"%{normalized}%") ||
+                    (s.Bio != null && EF.Functions.Like(EF.Functions.Collate(s.Bio, AccentInsensitiveCollation), $"%{normalized}%")))
+                .OrderByDescending(s => s.RatingAverage)
+                .ThenByDescending(s => s.TotalSales)
+                .Take(limit)
+                .ToListAsync();
+
+            return _mapper.Map<List<SellerResponseDto>>(sellers);
         }
 
         public async Task<MomentResponseDto> CreateMomentAsync(Guid sellerId, CreateMomentDto dto)
@@ -88,7 +112,7 @@ namespace MarketplaceArtesanato.Services.Services
                 .Where(i =>
                     i.Product.SellerId == sellerId &&
                     i.Order.CreatedAt.Date >= startDate &&
-                    (i.Order.Status == OrderStatus.Paid ||
+                    (i.Order.Status == OrderStatus.Confirmed ||
                      i.Order.Status == OrderStatus.Sent ||
                      i.Order.Status == OrderStatus.Delivered))
                 .Select(i => new
@@ -121,7 +145,7 @@ namespace MarketplaceArtesanato.Services.Services
 
             return new SellerDashboardDto
             {
-                SellerId = sellerId, // 🔥 FUNDAMENTAL
+                SellerId = sellerId, 
                 TotalRevenue = totalRevenue,
                 TotalSales = totalSales,
                 ActiveProducts = activeProducts,
@@ -129,5 +153,67 @@ namespace MarketplaceArtesanato.Services.Services
             };
         }
 
+        public async Task<List<SellerSaleResponseDto>> GetSalesAsync(Guid userId)
+        {
+            var seller = await _context.Sellers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.UserId == userId);
+
+            if (seller == null)
+                return new List<SellerSaleResponseDto>();
+
+            var sellerId = seller.Id;
+
+            var sales = await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.Buyer)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                .Where(o => o.Items.Any(i => i.Product.SellerId == sellerId))
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => new SellerSaleResponseDto
+                {
+                    OrderId = o.Id,
+                    DisplayOrderId = "#" + o.Id.ToString("N").Substring(0, 8).ToUpper(),
+                    CustomerName = o.Buyer != null ? o.Buyer.Name ?? "Cliente Trama" : "Cliente Trama",
+                    OrderDate = o.CreatedAt,
+                    TotalAmount = o.TotalAmount,
+                    Status = o.Status.ToString(),
+                    TrackingCode = o.TrackingCodes != null && o.TrackingCodes.ContainsKey(sellerId)
+                        ? o.TrackingCodes[sellerId]
+                        : null,
+                    Carrier = o.Carrier,
+                    Items = o.Items.Select(i => new SellerSaleItemDto
+                    {
+                        ProductName = i.Product.Name,
+                        Quantity = i.Quantity,
+                        UnitPrice = i.UnitPrice,
+                        Total = i.UnitPrice * i.Quantity
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return sales;
+        }
+
+        public async Task<bool> UpdateProfileAsync(Guid userId, UpdateSellerProfileDto dto)
+        {
+            var seller = await _context.Sellers
+                .FirstOrDefaultAsync(s => s.UserId == userId);
+
+            if (seller == null)
+                return false;
+
+            seller.StoreName = dto.Name.Trim();
+            seller.Bio = dto.Bio;
+            seller.InstagramUrl = dto.Instagram;
+            seller.FacebookUrl = dto.Facebook;
+            seller.TiktokUrl = dto.Tiktok;
+            seller.YoutubeUrl = dto.Youtube;
+            seller.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

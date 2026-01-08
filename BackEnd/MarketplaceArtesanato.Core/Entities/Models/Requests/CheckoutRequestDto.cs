@@ -13,6 +13,9 @@ namespace MarketplaceArtesanato.Core.Models.Requests
         [Required]
         public List<CheckoutItemDto> Items { get; set; } = new();
 
+        public decimal ShippingFee { get; set; } = 0m;
+        public string? ShippingName { get; set; }
+
         [Required]
         public string SuccessUrl { get; set; } = string.Empty;
 

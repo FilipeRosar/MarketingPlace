@@ -41,6 +41,12 @@ export class OrderService {
     );
   }
 
+  cancelOrder(orderId: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${orderId}/cancel`, {}, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
   getTrackingUrl(trackingCode: string, carrier?: string): string {
     const code = trackingCode.trim().toUpperCase();
 

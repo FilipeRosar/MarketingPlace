@@ -15,5 +15,7 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         [Required] public string State { get; set; } = string.Empty;
         [Required] public string ZipCode { get; set; } = string.Empty;
         [Required] public string Country { get; set; } 
+        public string? Complement { get; set; }
+        public string? District { get; set; }
     }
 }

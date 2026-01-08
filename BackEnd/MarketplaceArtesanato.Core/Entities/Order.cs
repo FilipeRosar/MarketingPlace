@@ -20,7 +20,7 @@ public class Order : BaseEntity
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
-
+    public string Carrier { get; set; } = string.Empty;
     [NotMapped]
     public Dictionary<Guid, decimal> SellerCommissions { get; set; } = new();
 

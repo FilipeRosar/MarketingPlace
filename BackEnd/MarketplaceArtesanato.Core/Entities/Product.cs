@@ -29,6 +29,11 @@ namespace MarketplaceArtesanato.Core.Entities
         public ProductStatus Status { get; set; }
         public List<Rating> Ratings { get; set; } = new List<Rating>();
         public Guid SellerId { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Weight { get; set; } 
+        public int Width { get; set; }  
+        public int Height { get; set; } 
+        public int Length { get; set; }
         public Seller Seller { get; set; }
         public bool IsOnSale => SalePrice.HasValue && SalePrice.Value > 0 && SalePrice.Value < Price;
 

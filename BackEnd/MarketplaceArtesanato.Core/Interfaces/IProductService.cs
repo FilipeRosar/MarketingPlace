@@ -10,7 +10,7 @@ namespace MarketplaceArtesanato.Core.Interfaces
 {
     public interface IProductService
     {
-        Task<PaginatedResult<ProductResponseDto>> GetAllAsync(int page, int pageSize, string? search, int? category, decimal? minPrice, decimal? maxPrice, Guid? sellerId);
+        Task<PaginatedResult<ProductResponseDto>> GetAllAsync(int page, int pageSize, string? search, string? subcategory, int? category, decimal? minPrice, decimal? maxPrice, Guid? sellerId);
         Task<ProductResponseDto?> GetByIdAsync(Guid id);
         Task<ProductResponseDto> CreateAsync(Guid sellerId, CreateProductDto dto);
         Task<bool> UpdateAsync(Guid id, Guid userId, string userRole, UpdateProductDto dto);

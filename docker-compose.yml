@@ -1,4 +1,4 @@
-services:
+﻿services:
   rabbitmq:
     image: rabbitmq:management
     container_name: mitrama_rabbitmq
@@ -6,10 +6,10 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-guest}
     healthcheck:
-      test: ["CMD-SHELL", "rabbitmqctl status"]  # Comando nativo do RabbitMQ, sempre disponível
+      test: ["CMD-SHELL", "rabbitmqctl status"]  # Comando nativo do RabbitMQ, sempre disponivel
       interval: 10s
       timeout: 5s
       retries: 10
@@ -33,17 +33,17 @@ services:
     container_name: mitrama_db
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=SenhaForte!123
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
     ports:
       - "1433:1433"
     volumes:
       - sqlvolume:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P SenhaForte!123 -Q \"SELECT 1\" || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P ${MSSQL_SA_PASSWORD} -C -Q \"SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 60s  
+      start_period: 60s
 
   backend:
     image: mitrama-api
@@ -55,8 +55,29 @@ services:
       - "5253:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db;Database=TramaDb;User Id=sa;Password=SenhaForte!123;TrustServerCertificate=True;
-      - ConnectionStrings__RabbitMQ=rabbitmq://rabbitmq:5672/
+      - ConnectionStrings__DefaultConnection=Server=db;Database=${DB_NAME:-TramaDb};User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;
+      - ConnectionStrings__Redis=${REDIS_CONNECTION:-redis:6379}
+      - ConnectionStrings__RabbitMQ=${RABBITMQ_CONNECTION:-rabbitmq}
+      - Storage__AzureBlob__ConnectionString=${AZURE_BLOB_CONNECTION_STRING}
+      - Storage__AzureBlob__ContainerName=${AZURE_BLOB_CONTAINER:-products}
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER:-MarketplaceArtesanatoAPI}
+      - Jwt__Audience=${JWT_AUDIENCE:-MarketplaceArtesanatoClient}
+      - Stripe__SecretKey=${STRIPE_SECRET_KEY}
+      - Stripe__PublishableKey=${STRIPE_PUBLISHABLE_KEY}
+      - Stripe__WebhookSecret=${STRIPE_WEBHOOK_SECRET}
+      - Stripe__SuccessUrl=${STRIPE_SUCCESS_URL}
+      - Stripe__CancelUrl=${STRIPE_CANCEL_URL}
+      - MelhorEnvio__Token=${MELHORENVIO_TOKEN}
+      - MelhorEnvio__Url=${MELHORENVIO_URL:-https://sandbox.melhorenvio.com.br}
+      - Email__SmtpServer=${SMTP_SERVER:-smtp.gmail.com}
+      - Email__SmtpPort=${SMTP_PORT:-587}
+      - Email__Username=${SMTP_USERNAME}
+      - Email__Password=${SMTP_PASSWORD}
+      - Email__FromName=${SMTP_FROM_NAME:-Marketplace Artesanato}
+      - Email__FromEmail=${SMTP_FROM_EMAIL}
+      - Email__EnableSsl=${SMTP_ENABLE_SSL:-true}
+      - AppUrl=${APP_URL:-http://localhost:4200}
     depends_on:
       db:
         condition: service_healthy
