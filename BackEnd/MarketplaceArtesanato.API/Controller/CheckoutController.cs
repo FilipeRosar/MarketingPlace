@@ -1,6 +1,7 @@
 ﻿using MarketplaceArtesanato.API.Extensions;
 using MarketplaceArtesanato.Core.Events;
 using MarketplaceArtesanato.Core.Models.Requests;
+using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
@@ -19,19 +20,20 @@ namespace MarketplaceArtesanato.API.Controllers
         private readonly ArtesianDbContext _context;
         private readonly IPublishEndpoint _publishEndpoint;
         private readonly IConfiguration _config;
-
-        private const decimal PLATFORM_COMMISSION_RATE = 0.15m;
+        private readonly IPlatformFeeService _platformFeeService;
 
         private const long SERVICE_FEE_CENTS = 299; 
 
         public CheckoutController(
             ArtesianDbContext context,
             IPublishEndpoint publishEndpoint,
-            IConfiguration config)
+            IConfiguration config,
+            IPlatformFeeService platformFeeService)
         {
             _context = context;
             _publishEndpoint = publishEndpoint;
             _config = config;
+            _platformFeeService = platformFeeService;
         }
 
         [HttpPost("create-session")]
@@ -59,24 +61,46 @@ namespace MarketplaceArtesanato.API.Controllers
             // Lista para o evento
             var eventItems = new List<CheckoutItemEvent>();
 
+            var cartItems = new List<(MarketplaceArtesanato.Core.Entities.Product Product, CheckoutItemDto Item, decimal ItemTotal)>();
+            var sellerTotals = new Dictionary<Guid, decimal>();
+
             foreach (var itemDto in items)
             {
                 var product = await _context.Products.FindAsync(itemDto.ProductId);
-                if (product == null) return BadRequest($"Produto {itemDto.ProductId} não encontrado.");
+                if (product == null) return BadRequest($"Produto {itemDto.ProductId} n?o encontrado.");
                 if (product.StockQuantity < itemDto.Quantity) return BadRequest($"Estoque insuficiente: {product.Name}");
 
                 decimal itemTotal = product.Price * itemDto.Quantity;
-                decimal commission = itemTotal * PLATFORM_COMMISSION_RATE;
 
+                cartItems.Add((Product: product, Item: itemDto, ItemTotal: itemTotal));
 
-                decimal sellerAmount = itemTotal - commission;
-
-                if (order.SellerCommissions.ContainsKey(product.SellerId))
-                    order.SellerCommissions[product.SellerId] += sellerAmount;
+                if (sellerTotals.ContainsKey(product.SellerId))
+                    sellerTotals[product.SellerId] += itemTotal;
                 else
-                    order.SellerCommissions[product.SellerId] = sellerAmount;
+                    sellerTotals[product.SellerId] = itemTotal;
 
                 totalProductAmount += itemTotal;
+            }
+
+            var sellerRates = new Dictionary<Guid, decimal>();
+            foreach (var (sellerId, sellerTotal) in sellerTotals)
+            {
+                var rate = await _platformFeeService.GetCommissionRateAsync(sellerId, sellerTotal);
+                sellerRates[sellerId] = rate;
+            }
+
+            foreach (var cartItem in cartItems)
+            {
+                var product = cartItem.Product;
+                var itemDto = cartItem.Item;
+                var itemTotal = cartItem.ItemTotal;
+                var commissionRate = sellerRates[product.SellerId] / 100m;
+                var commission = itemTotal * commissionRate;
+
+                if (order.SellerCommissions.ContainsKey(product.SellerId))
+                    order.SellerCommissions[product.SellerId] += commission;
+                else
+                    order.SellerCommissions[product.SellerId] = commission;
 
                 lineItems.Add(new SessionLineItemOptions
                 {

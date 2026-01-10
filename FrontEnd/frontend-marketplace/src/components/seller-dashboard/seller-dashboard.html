@@ -81,6 +81,28 @@
             </div>
           </div>
 
+          <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 class="text-sm font-medium text-gray-500">Conta Stripe</h3>
+                @if (stripeStatus?.isConnected) {
+                  <p class="text-xs text-green-600 mt-1 font-semibold">Conectada</p>
+                } @else if (stripeStatus?.detailsSubmitted && !stripeStatus?.chargesEnabled) {
+                  <p class="text-xs text-amber-600 mt-1 font-semibold">Em verificacao</p>
+                } @else {
+                  <p class="text-xs text-red-600 mt-1 font-semibold">Nao conectada</p>
+                }
+              </div>
+              <a routerLink="/seller/stripe"
+                 class="inline-flex items-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-all">
+                Gerenciar Stripe
+              </a>
+            </div>
+            @if (!stripeStatus?.isConnected) {
+              <p class="text-xs text-gray-500 mt-4">Complete o cadastro no Stripe para receber pagamentos.</p>
+            }
+          </div>
+
           <!-- Gráfico de Vendas (Scroll Horizontal na Tabela/Gráfico se necessário) -->
           <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
             <h3 class="text-lg font-bold text-gray-900 mb-6">Desempenho de Vendas</h3>
@@ -135,7 +157,9 @@
                         <div class="flex items-center gap-2">
                            <h4 class="text-base font-bold text-gray-900 line-clamp-1">{{ product.name }}</h4>
                            @if (product.salePrice) {
-                              <span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Oferta</span>
+                              <span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
+                                Oferta {{ getDiscountPercent(product) }}%
+                              </span>
                            }
                         </div>
                         <p class="text-sm text-gray-500">Estoque: {{ product.stockQuantity }}</p>
@@ -300,8 +324,13 @@
                         <input type="number" [(ngModel)]="editingProduct.price" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-green-700">Preço Promocional (R$)</label>
-                        <input type="number" [(ngModel)]="editingProduct.salePrice" placeholder="Opcional" class="mt-1 block w-full border-green-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm border p-2 bg-green-50">
+                        <label class="block text-sm font-bold text-green-700">Desconto (%)</label>
+                        <input type="number" [(ngModel)]="editingProduct.discountPercent" min="0" max="90" step="1" placeholder="Opcional" class="mt-1 block w-full border-green-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm border p-2 bg-green-50">
+                        @if (getSalePricePreview() !== null) {
+                          <p class="text-xs text-green-700 mt-1">
+                            Preço final: {{ getSalePricePreview()! | currencyBr }}
+                          </p>
+                        }
                     </div>
                 </div>
 
@@ -309,6 +338,18 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Estoque</label>
                     <input type="number" [(ngModel)]="editingProduct.stockQuantity" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
+                </div>
+
+                <!-- Parcelas -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Máx. de parcelas</label>
+                        <input type="number" [(ngModel)]="editingProduct.maxInstallments" min="1" max="12" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Até X sem juros</label>
+                        <input type="number" [(ngModel)]="editingProduct.maxNoInterestInstallments" min="0" max="12" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
+                    </div>
                 </div>
 
                 <!-- Descrição -->

@@ -18,6 +18,9 @@ namespace MarketplaceArtesanato.API.Models.Responses
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
+        public decimal? SalePrice { get; set; }
+        public int MaxInstallments { get; set; }
+        public int MaxNoInterestInstallments { get; set; }
         public decimal Weight { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
@@ -38,5 +41,12 @@ namespace MarketplaceArtesanato.API.Models.Responses
         public SellerResponseDto Seller { get; set; }
         public string SellerName => Seller?.Name ?? "";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public bool StoryEnabled { get; set; }
+        public string? StoryMaker { get; set; }
+        public string? StoryExperience { get; set; }
+        public string? StoryInspiration { get; set; }
+        public string? StoryMarkdown { get; set; }
+        public List<string> StoryMediaUrls { get; set; } = new();
     }
 }

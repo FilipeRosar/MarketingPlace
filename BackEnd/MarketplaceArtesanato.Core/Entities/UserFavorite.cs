@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 namespace MarketplaceArtesanato.Core.Entities
 {
     [Table("UserFavorites")]
-    [PrimaryKey(nameof(UserId), nameof(ProductId))] 
+    [PrimaryKey(nameof(UserId), nameof(ProductId))]
     public class UserFavorite : BaseEntity
     {
         public Guid UserId { get; set; }
-        public Customer? User { get; set; } 
+        public User? User { get; set; }
 
         public Guid ProductId { get; set; }
         public Product Product { get; set; } = null!;

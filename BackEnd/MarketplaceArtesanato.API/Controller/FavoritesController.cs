@@ -1,4 +1,4 @@
-﻿using MarketplaceArtesanato.Core.Entities.DTO;
+using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
@@ -33,7 +33,7 @@ namespace MarketplaceArtesanato.API.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERRO FAVORITOS GET] {ex.Message}");
-                // Se a tabela não existir, o erro vai aparecer aqui
+                // Se a tabela nao existir, o erro vai aparecer aqui
                 return StatusCode(500, new { message = "Erro ao buscar favoritos." });
             }
         }

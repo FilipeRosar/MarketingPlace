@@ -91,10 +91,10 @@
 
           <div class="mb-6 flex items-center space-x-2">
             <app-rating-stars
-              [rating]="product.averageRating"
-              [totalRatings]="product.totalRatings">
+              [rating]="displayAverageRating"
+              [totalRatings]="displayTotalRatings">
             </app-rating-stars>
-            <span class="text-sm text-gray-500 hover:text-gray-700 cursor-pointer underline decoration-dotted">({{ product.totalRatings }} avaliações)</span>
+            <span class="text-sm text-gray-500 hover:text-gray-700 cursor-pointer underline decoration-dotted">({{ displayTotalRatings }} avaliações)</span>
           </div>
 
           <div class="mt-2 mb-8 p-4 bg-stone-50 rounded-xl border border-stone-100">
@@ -119,7 +119,10 @@
 
             <p class="text-sm text-gray-500 mt-2 flex items-center gap-1">
                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-               Em até 12x de {{ ((product.salePrice || product.price) / 12) | currencyBr }}
+               Em ate {{ getMaxInstallments() }}x de {{ getInstallmentValue() | currencyBr }}
+               @if (getNoInterestInstallments() > 0) {
+                 <span class="text-green-600">sem juros ate {{ getNoInterestInstallments() }}x</span>
+               }
             </p>
           </div>
 
@@ -136,29 +139,96 @@
             </button>
           </div>
 
-          <div>
-            <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <div class="mt-6">
+            <div class="flex flex-wrap gap-2 border-b border-stone-100 pb-2">
+              <button type="button"
+                      (click)="setTab('details')"
+                      class="px-4 py-2 text-sm font-semibold rounded-full transition-colors"
+                      [ngClass]="activeTab === 'details' ? 'bg-primary text-white' : 'text-gray-600 hover:text-primary'">
                 Detalhes do Produto
-            </h3>
-            <div class="prose prose-sm text-gray-600 leading-relaxed border-t border-stone-100 pt-4">
-              <p class="whitespace-pre-line">{{ product.description }}</p>
+              </button>
+              @if (product.storyEnabled) {
+                <button type="button"
+                        (click)="setTab('story')"
+                        class="px-4 py-2 text-sm font-semibold rounded-full transition-colors"
+                        [ngClass]="activeTab === 'story' ? 'bg-primary text-white' : 'text-gray-600 hover:text-primary'">
+                  A historia dessa peca
+                </button>
+              }
+            </div>
+
+            <div class="mt-6">
+              @if (activeTab === 'details') {
+                <div>
+                  <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                      Detalhes do Produto
+                  </h3>
+                  <div class="prose prose-sm text-gray-600 leading-relaxed border-t border-stone-100 pt-4">
+                    <p class="whitespace-pre-line">{{ product.description }}</p>
+                  </div>
+                </div>
+
+                @if (product.tags && product.tags.length > 0) {
+                  <div class="mt-8 pt-6 border-t border-stone-100">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tags Relacionadas:</h4>
+                    <div class="flex flex-wrap gap-2">
+                      @for (tag of product.tags; track tag) {
+                        <a [routerLink]="['/category-page']" [queryParams]="{search: tag}"
+                           class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-primary cursor-pointer transition-colors border border-stone-200">
+                          #{{ tag }}
+                        </a>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+
+              @if (activeTab === 'story') {
+                <div class="space-y-6">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    @if (product.storyMaker) {
+                      <div class="bg-stone-50 border border-stone-100 rounded-xl p-4">
+                        <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Quem fez</p>
+                        <p class="text-sm font-semibold text-gray-900 mt-1">{{ product.storyMaker }}</p>
+                      </div>
+                    }
+                    @if (product.storyExperience) {
+                      <div class="bg-stone-50 border border-stone-100 rounded-xl p-4">
+                        <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Ha quanto tempo produz</p>
+                        <p class="text-sm font-semibold text-gray-900 mt-1">{{ product.storyExperience }}</p>
+                      </div>
+                    }
+                    @if (product.storyInspiration) {
+                      <div class="bg-stone-50 border border-stone-100 rounded-xl p-4">
+                        <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Inspiracao</p>
+                        <p class="text-sm font-semibold text-gray-900 mt-1">{{ product.storyInspiration }}</p>
+                      </div>
+                    }
+                  </div>
+
+                  @if (storyHtml) {
+                    <div class="bg-white border border-stone-100 rounded-2xl p-6">
+                      <div [innerHTML]="storyHtml"></div>
+                    </div>
+                  }
+
+                  @if (product.storyMediaUrls && product.storyMediaUrls.length > 0) {
+                    <div>
+                      <h4 class="text-sm font-bold text-gray-900 mb-3">Fotos do processo</h4>
+                      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        @for (img of product.storyMediaUrls; track $index) {
+                          <div class="aspect-square rounded-xl overflow-hidden border border-stone-100 shadow-sm">
+                            <img [src]="img" class="w-full h-full object-cover" alt="Foto do processo">
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           </div>
-
-          @if (product.tags && product.tags.length > 0) {
-            <div class="mt-8 pt-6 border-t border-stone-100">
-              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tags Relacionadas:</h4>
-              <div class="flex flex-wrap gap-2">
-                @for (tag of product.tags; track tag) {
-                  <a [routerLink]="['/category-page']" [queryParams]="{search: tag}"
-                     class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-primary cursor-pointer transition-colors border border-stone-200">
-                    #{{ tag }}
-                  </a>
-                }
-              </div>
-            </div>
-          }
         </div>
       </div>
 
@@ -172,21 +242,22 @@
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 text-center sticky top-24">
               <p class="text-sm text-gray-500 mb-2 font-medium">Nota Média</p>
               <div class="flex justify-center items-end gap-2 mb-4">
-                 <span class="text-6xl font-extrabold text-primary leading-none">{{ product.averageRating | number:'1.1-1' }}</span>
+                 <span class="text-6xl font-extrabold text-primary leading-none">{{ displayAverageRating | number:'1.1-1' }}</span>
                  <span class="text-gray-400 text-xl font-bold mb-2">/ 5</span>
               </div>
               <div class="flex justify-center mb-2">
                   <app-rating-stars
-                    [rating]="product.averageRating"
-                    [totalRatings]="product.totalRatings">
+                    [rating]="displayAverageRating"
+                    [totalRatings]="displayTotalRatings">
                   </app-rating-stars>
               </div>
-              <p class="text-xs text-gray-500">Baseado em {{ product.totalRatings }} avaliações verificadas.</p>
+              <p class="text-xs text-gray-500">Baseado em {{ displayTotalRatings }} avaliações verificadas.</p>
             </div>
           </div>
 
           <div class="md:col-span-2 space-y-8">
-            @if (currentUser$ | async) {
+            @if (currentUser$ | async; as user) {
+              @if (user.role === 'Customer') {
               <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-100">
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Deixe sua Avaliação</h3>
                 <form [formGroup]="reviewForm" (ngSubmit)="submitReview()" class="space-y-4">
@@ -209,40 +280,91 @@
                               class="w-full border-stone-300 rounded-xl shadow-sm focus:ring-primary focus:border-primary p-4 resize-none"></textarea>
                   </div>
                   <div class="flex justify-end">
-                      <button type="submit" [disabled]="reviewForm.invalid || isSubmittingReview"
-                              class="px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-                        {{ isSubmittingReview ? 'Enviando...' : 'Publicar Avaliação' }}
-                      </button>
+                      <button type="submit"
+                [disabled]="isSubmittingReview || reviewForm.invalid"
+                class="px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary-dark transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+
+                @if (isSubmittingReview) {
+                  <span class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Enviando...
+                  </span>
+                } @else {
+                  Publicar Avaliação
+                }
+              </button>
                   </div>
                 </form>
               </div>
+              } @else {
+                <div class="bg-stone-50 border border-stone-200 p-6 rounded-2xl text-center">
+                  <p class="text-gray-600">Como vendedor, voce pode responder as avaliacoes abaixo.</p>
+                </div>
+              }
             } @else {
               <div class="bg-stone-50 border border-stone-200 p-6 rounded-2xl text-center">
                 <p class="text-gray-600">Quer avaliar este produto?</p>
-                <a routerLink="/login" class="text-primary font-bold hover:underline cursor-pointer mt-2 inline-block">Faça login na sua conta</a>
+                <a routerLink="/login" class="text-primary font-bold hover:underline cursor-pointer mt-2 inline-block">Faca login na sua conta</a>
               </div>
             }
-
             <div class="space-y-6">
-              @for (review of mockReviews; track $index) {
-                <div class="p-6 bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div class="flex justify-between items-start mb-2">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center font-bold text-gray-600">
-                            {{ review.name.charAt(0) }}
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-gray-900 leading-none">{{ review.name }}</h4>
-                            <p class="text-xs text-gray-500 mt-1">Comprador verificado</p>
-                        </div>
+              @if (reviews.length === 0) {
+                <div class="text-sm text-gray-500">Sem avaliacoes ainda. Seja o primeiro a comentar.</div>
+              } @else {
+                @for (review of reviews; track $index) {
+                  <div class="p-6 bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-2">
+                      <div class="flex items-center gap-3">
+                          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center font-bold text-gray-600">
+                              {{ review.customerName.charAt(0) }}
+                          </div>
+                          <div>
+                              <h4 class="font-bold text-gray-900 leading-none">{{ review.customerName }}</h4>
+                              <p class="text-xs text-gray-500 mt-1">Comprador verificado</p>
+                          </div>
+                      </div>
+                      <span class="text-xs text-gray-400 bg-stone-50 px-2 py-1 rounded">{{ review.createdAt | date:'dd/MM/yyyy' }}</span>
                     </div>
-                    <span class="text-xs text-gray-400 bg-stone-50 px-2 py-1 rounded">{{ review.date }}</span>
+                    <div class="mb-3 pl-13">
+                      <app-rating-stars [rating]="review.stars"></app-rating-stars>
+                    </div>
+                    <p class="text-sm text-gray-700 pl-13 leading-relaxed">"{{ review.review }}"</p>
+                    @if (review.sellerReply) {
+                      <div class="mt-4 ml-13 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+                        <div class="flex items-center justify-between mb-2">
+                          <p class="text-xs font-bold text-gray-600 uppercase">Resposta do vendedor</p>
+                          @if (review.sellerReplyAt) {
+                            <span class="text-xs text-gray-400">{{ review.sellerReplyAt | date:'dd/MM/yyyy' }}</span>
+                          }
+                        </div>
+                        <p class="text-sm text-gray-700 leading-relaxed">{{ review.sellerReply }}</p>
+                      </div>
+                    }
+                    @if (currentUser$ | async; as replyUser) {
+                      @if (replyUser.role === 'Seller') {
+                        <div class="mt-4 ml-13">
+                          <label class="sr-only">Resposta do vendedor</label>
+                          <textarea rows="2"
+                                    class="w-full border-stone-300 rounded-xl shadow-sm focus:ring-primary focus:border-primary p-3 resize-none"
+                                    placeholder="Responder como vendedor..."
+                                    [value]="replyDrafts[review.id] ?? review.sellerReply ?? ''"
+                                    (input)="onReplyInput(review.id, $event)"></textarea>
+                          <div class="flex justify-end mt-2">
+                            <button type="button"
+                                    (click)="submitSellerReply(review)"
+                                    [disabled]="replySubmitting[review.id]"
+                                    class="px-4 py-2 border border-transparent rounded-full shadow-sm text-xs font-bold text-white bg-primary hover:bg-primary-dark transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                              {{ review.sellerReply ? 'Atualizar resposta' : 'Responder' }}
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    }
                   </div>
-                  <div class="mb-3 pl-13">
-                    <app-rating-stars [rating]="review.stars"></app-rating-stars>
-                  </div>
-                  <p class="text-sm text-gray-700 pl-13 leading-relaxed">"{{ review.comment }}"</p>
-                </div>
+                }
               }
             </div>
           </div>

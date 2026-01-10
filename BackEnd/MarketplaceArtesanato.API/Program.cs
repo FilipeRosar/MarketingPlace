@@ -83,6 +83,8 @@ builder.Services.AddScoped<IFavoritesService, FavoritesService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
+builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
+builder.Services.AddScoped<IPlatformFeeService, PlatformFeeService>();
 builder.Services.AddScoped<IProductService, MarketplaceArtesanato.Services.Services.ProductService>();
 builder.Services.Configure<AzureBlobSettings>(builder.Configuration.GetSection("Storage:AzureBlob"));
 
@@ -211,7 +213,10 @@ if (app.Environment.IsDevelopment())
     // app.MapOpenApi(); // Removido pois já usamos SwaggerGen acima, evita conflito
 }
 
-app.UseHttpsRedirection();
+app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api/webhook"), appBuilder =>
+{
+    appBuilder.UseHttpsRedirection();
+});
 
 // 1. CORS deve vir ANTES de Auth e ANTES dos Controllers
 app.UseCors("AllowAngular");

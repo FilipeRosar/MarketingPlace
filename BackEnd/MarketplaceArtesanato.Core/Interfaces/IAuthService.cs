@@ -15,5 +15,6 @@ namespace MarketplaceArtesanato.Core.Interfaces
         Task<AuthResponseDto> LoginAsync(LoginDto dto);
         Task<AuthResponseDto> ForgotPasswordAsync(ForgotPasswordDto dto);
         Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordDto dto);
+        Task<AuthResponseDto> GetCurrentUserAsync();
     }
 }

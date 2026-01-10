@@ -39,14 +39,10 @@ export class CartService {
   }
 
   async addToCart(product: Product) {
-    // 1. Snapshot do estado antes da alteração (para rollback)
     const previousItems = this.cartItems();
 
-    // 2. Atualização Otimista (UI atualiza na hora)
     this.updateLocalState(product, 1);
-    this.notificationService.success(`${product.name} adicionado!`);
 
-    // 3. Persistência no Backend
     if (this.authService.currentUserValue) {
       try {
         await firstValueFrom(this.http.post(`${this.apiUrl}/add`, {
@@ -56,7 +52,6 @@ export class CartService {
       } catch (err) {
         console.error('Erro ao salvar carrinho no servidor', err);
 
-        // 4. ROLLBACK: Reverte se der erro
         this.cartItems.set(previousItems);
         this.saveLocal();
         this.notificationService.error('Erro ao salvar no carrinho. Tente novamente.');
@@ -127,12 +122,6 @@ export class CartService {
     const existing = current.find(i => i.product.id === product.id);
 
     if (existing) {
-      // Atualiza apenas localmente, sem chamar a API de novo (addToCart já chama ou quem chamou updateLocalState)
-      // Nota: Se updateLocalState for chamado de addToCart, ele só atualiza o sinal.
-      // Se for chamado de outro lugar, precisa cuidar.
-      // Aqui, simplificamos: addToCart chama a API de ADD. Se já existe, a API de ADD deve saber somar ou retornar ok.
-      // No seu Backend CartService.cs, AddItemAsync soma a quantidade se já existe. Então está correto.
-
       this.cartItems.update(items =>
           items.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + qty } : item)
       );

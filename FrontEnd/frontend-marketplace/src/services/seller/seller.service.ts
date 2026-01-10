@@ -47,6 +47,18 @@ export class SellerService {
     return this.http.put<void>(`${this.apiUrl}/profile`, data);
   }
 
+  createStripeConnectLink(): Observable<{ url: string }> {
+    return this.http.post<{ url: string }>(`${this.apiUrl}/stripe/connect`, {});
+  }
+
+  createStripeDashboardLink(): Observable<{ url: string }> {
+    return this.http.post<{ url: string }>(`${this.apiUrl}/stripe/dashboard`, {});
+  }
+
+  getStripeStatus(): Observable<{ isConnected: boolean; accountId?: string; chargesEnabled?: boolean; detailsSubmitted?: boolean }> {
+    return this.http.get<{ isConnected: boolean; accountId?: string; chargesEnabled?: boolean; detailsSubmitted?: boolean }>(`${this.apiUrl}/stripe/status`);
+  }
+
   uploadBanner(file: File): Observable<{ imageUrl: string }> {
     const formData = new FormData();
     formData.append('file', file);

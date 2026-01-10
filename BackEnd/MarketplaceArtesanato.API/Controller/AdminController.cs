@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
-using MarketplaceArtesanato.Core.Entities.DTO; // Ensure this namespace has your DTOs
+using MarketplaceArtesanato.Core.Entities.DTO; 
 using MarketplaceArtesanato.Core.Entities.Enums;
-using MarketplaceArtesanato.Core.Entities.Models.Requests; // For UpdateCommissionRateDto, etc.
+using MarketplaceArtesanato.Core.Entities.Models.Requests; 
 using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
@@ -99,6 +99,7 @@ namespace MarketplaceArtesanato.API.Controllers
         }
 
         [HttpPost("approve-seller/{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ApproveSeller(Guid id)
         {
             try
@@ -191,8 +192,7 @@ namespace MarketplaceArtesanato.API.Controllers
         {
             var startDate = start?.Date;
             var endDate = end.HasValue ? end.Value.Date.AddDays(1).AddTicks(-1) : (DateTime?)null;
-            // ETAPA 1: Consulta ao Banco de Dados (SQL Puro)
-            // Trazemos apenas os dados numéricos (Ano, Mês e Total)
+
             var rawData = await _context.Orders
                 .Where(o => o.Status == OrderStatus.Confirmed || o.Status == OrderStatus.Sent || o.Status == OrderStatus.Delivered)
                 .Where(o => !startDate.HasValue || o.CreatedAt >= startDate.Value)
@@ -204,15 +204,13 @@ namespace MarketplaceArtesanato.API.Controllers
                     Month = g.Key.Month,
                     Total = g.Sum(o => o.TotalAmount)
                 })
-                .OrderBy(r => r.Year)       // Ordena corretamente por data (número)
+                .OrderBy(r => r.Year)       
                 .ThenBy(r => r.Month)
-                .ToListAsync(); // Aqui o EF executa a query e traz os dados para a memória
+                .ToListAsync(); 
 
-            // ETAPA 2: Formatação em Memória (C#)
-            // Agora que os dados estão na memória, podemos usar interpolação de string
             var result = rawData.Select(x => new
             {
-                month = $"{x.Month:D2}/{x.Year}", // Formata "05/2024"
+                month = $"{x.Month:D2}/{x.Year}", 
                 total = x.Total
             });
 
@@ -220,7 +218,6 @@ namespace MarketplaceArtesanato.API.Controllers
         }
     }
 
-    // Simple DTO for Customers
     public class CustomerResponseDto
     {
         public Guid Id { get; set; }

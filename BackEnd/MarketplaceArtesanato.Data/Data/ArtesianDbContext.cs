@@ -17,6 +17,7 @@ public class ArtesianDbContext : DbContext
     public DbSet<Admin> Admins => Set<Admin>(); // Nova tabela Admin
 
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductStoryMedia> ProductStoryMedia => Set<ProductStoryMedia>();
     public DbSet<Rating> Ratings => Set<Rating>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();

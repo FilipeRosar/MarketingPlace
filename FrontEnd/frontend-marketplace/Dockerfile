@@ -14,8 +14,11 @@ WORKDIR /usr/share/nginx/html
 
 RUN rm -rf ./*
 
-# Copia os arquivos gerados
-COPY --from=build /app/dist/frontend-marketplace/browser .
+# Copia os arquivos gerados (CSR ou SSR)
+COPY --from=build /app/dist/frontend-marketplace/ .
+
+# Se existir pasta browser (SSR), traz o conteudo para a raiz
+RUN if [ -d browser ]; then cp -r browser/* .; fi
 
 # --- CORREÇÃO AQUI ---
 # Renomeia o index.csr.html para index.html caso o Angular tenha gerado com esse nome

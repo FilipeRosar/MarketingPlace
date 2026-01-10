@@ -17,14 +17,14 @@ export class ShippingService {
    * @param orderId ID do pedido que serÃ¡ enviado
    * @param serviceId ID do serviÃ§o de frete (ex: '1' para SEDEX, '2' para PAC) - Opcional se o backend jÃ¡ tiver lÃ³gica padrÃ£o
    */
-  generateLabel(orderId: string, serviceId?: string, agencyId?: string): Observable<{ labelUrl: string }> {
+  generateLabel(orderId: string, serviceId?: string, agencyId?: string): Observable<{ labelUrl: string; warning?: string }> {
     const payload = {
       orderId: orderId,
       serviceId: serviceId ?? '',
       agencyId: agencyId ?? ''
     };
 
-    return this.http.post<{ labelUrl: string }>(`${this.apiUrl}/generate-label`, payload);
+    return this.http.post<{ labelUrl: string; warning?: string }>(`${this.apiUrl}/generate-label`, payload);
   }
 
   /**

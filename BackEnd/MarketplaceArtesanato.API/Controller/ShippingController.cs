@@ -30,8 +30,8 @@ namespace MarketplaceArtesanato.API.Controller
         {
             try
             {
-                var url = await _shippingService.GenerateLabelAsync(request);
-                return Ok(new { labelUrl = url });
+                var result = await _shippingService.GenerateLabelAsync(request);
+                return Ok(new { labelUrl = result.LabelUrl, warning = result.Warning });
             }
             catch (InvalidOperationException ex)
             {

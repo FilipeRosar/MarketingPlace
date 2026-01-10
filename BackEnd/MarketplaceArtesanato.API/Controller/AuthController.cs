@@ -1,7 +1,9 @@
-﻿using MarketplaceArtesanato.API.Models.Requests;
+﻿using MarketplaceArtesanato.API.Extensions;
+using MarketplaceArtesanato.API.Models.Requests;
 using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Models.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MarketplaceArtesanato.API.Controllers
@@ -18,6 +20,9 @@ namespace MarketplaceArtesanato.API.Controllers
         }
 
         [HttpPost("register/customer")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult> RegisterCustomer([FromBody] RegisterCostumerDto dto)
         {
             var result = await _authService.RegisterCustomerAsync(dto);
@@ -29,8 +34,16 @@ namespace MarketplaceArtesanato.API.Controllers
         }
 
         [HttpPost("register/seller")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult> RegisterSeller([FromBody] RegisterSellerDto dto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var result = await _authService.RegisterSellerAsync(dto);
             if (!result.Success)
             {
@@ -40,8 +53,15 @@ namespace MarketplaceArtesanato.API.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var result = await _authService.LoginAsync(dto);
             if (!result.Success)
             {
@@ -51,8 +71,15 @@ namespace MarketplaceArtesanato.API.Controllers
         }
 
         [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var result = await _authService.ForgotPasswordAsync(dto);
             if (!result.Success)
             {
@@ -63,8 +90,15 @@ namespace MarketplaceArtesanato.API.Controllers
         }
 
         [HttpPost("reset-password")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var result = await _authService.ResetPasswordAsync(dto);
             if (!result.Success)
             {
@@ -72,5 +106,20 @@ namespace MarketplaceArtesanato.API.Controllers
             }
             return Ok(new { message = result.Message });
         }
+        //[HttpGet("me")]
+        //[Authorize]
+        //[ProducesResponseType(StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        //public async Task<IActionResult> GetCurrentUser()
+        //{
+        //    var userId = User.GetUserId();
+
+        //    var user = await _authService.GetCurrentUserAsync(userId);
+
+        //    if (user == null)
+        //        return Unauthorized();
+
+        //    return Ok(user);
+        //}
     }
 }

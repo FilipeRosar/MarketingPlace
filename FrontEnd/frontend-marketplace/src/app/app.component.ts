@@ -1,5 +1,5 @@
 // src/app/app.component.ts
-import { Component, inject, signal, effect, OnInit, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, PLATFORM_ID } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 
@@ -21,7 +21,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private chatService = inject(ChatService);
   private platformId = inject(PLATFORM_ID);
 
-  // Dark mode com signal (reativo e persistente)
   isDark = signal(false);
 
   ngOnInit(): void {
@@ -48,15 +47,10 @@ export class AppComponent implements OnInit, OnDestroy {
     // Aplica a classe imediatamente
     this.applyDarkMode();
 
-    // Reativo: atualiza automaticamente se o usuário mudar a preferência do sistema
-    effect(() => {
-      this.applyDarkMode();
-    });
-
-    // Escuta mudanças no sistema (macOS/Windows)
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       if (!localStorage.getItem('trama-theme')) {
         this.isDark.set(e.matches);
+        this.applyDarkMode();
       }
     });
   }
@@ -70,9 +64,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   // Toggle manual (chame do header)
-  toggleDarkMode(): void {
-    this.isDark.update(v => !v);
-  }
+  toggleDarkMode(): void {this.isDark.update(v => !v);    this.applyDarkMode();  }
 
   // CHAT: só inicia se tiver usuário logado
   private setupChatConnection(): void {

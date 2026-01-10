@@ -56,7 +56,12 @@
             <p class="text-lg font-bold text-primary">{{ product.price | currencyBr }}</p>
         }
 
-        <p class="text-[10px] text-gray-400">até 12x</p>
+        <div class="text-[10px] text-gray-400">
+        ate {{ getMaxInstallments(product) }}x de {{ getInstallmentValue(product) | currencyBr }}
+        @if (getNoInterestInstallments(product) > 0) {
+          <span class="block text-[10px] text-green-600">sem juros ate {{ getNoInterestInstallments(product) }}x</span>
+        }
+      </div>
       </div>
 
       <button

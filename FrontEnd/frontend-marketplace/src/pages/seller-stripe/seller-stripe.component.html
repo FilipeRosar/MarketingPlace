@@ -1,0 +1,81 @@
+<div class="min-h-screen bg-surface py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-bold text-gray-900">Stripe do Vendedor</h1>
+      <a routerLink="/seller-dashboard" class="text-sm font-medium text-primary hover:underline">Voltar ao painel</a>
+    </div>
+
+    @if (errorMessage) {
+      <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
+        {{ errorMessage }}
+      </div>
+    }
+
+    <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 mb-8">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">Status da Conta</h2>
+
+      @if (isLoading) {
+        <p class="text-sm text-gray-500">Carregando status...</p>
+      } @else {
+        @if (stripeStatus?.isConnected) {
+          <div class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4">
+            Conta conectada e pronta para receber pagamentos.
+          </div>
+        } @else if (stripeStatus?.detailsSubmitted && !stripeStatus?.chargesEnabled) {
+          <div class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            Cadastro enviado. Conta em verificacao pelo Stripe.
+          </div>
+        } @else {
+          <div class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-4">
+            Conta nao conectada. Termine o cadastro no Stripe para receber pagamentos.
+          </div>
+        }
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-sm text-gray-600">
+          <div>
+            <p class="font-semibold text-gray-900">Account ID</p>
+            <p>{{ stripeStatus?.accountId || '—' }}</p>
+          </div>
+          <div>
+            <p class="font-semibold text-gray-900">Charges Enabled</p>
+            <p>{{ stripeStatus?.chargesEnabled ? 'Sim' : 'Nao' }}</p>
+          </div>
+          <div>
+            <p class="font-semibold text-gray-900">Details Submitted</p>
+            <p>{{ stripeStatus?.detailsSubmitted ? 'Sim' : 'Nao' }}</p>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 mb-8">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">Como funciona</h2>
+      <ol class="list-decimal list-inside text-sm text-gray-600 space-y-2">
+        <li>Voce sera redirecionado ao Stripe para preencher os dados legais.</li>
+        <li>O Stripe faz a verificacao e devolve voce ao painel.</li>
+        <li>Quando aprovado, seus pagamentos sao liberados automaticamente.</li>
+      </ol>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3">
+      @if (stripeStatus?.isConnected) {
+        <button (click)="manageStripe()"
+                [disabled]="isWorking"
+                class="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-bold text-white bg-primary hover:bg-primary-dark transition-colors disabled:opacity-50">
+          Abrir Painel Stripe
+        </button>
+      } @else {
+        <button (click)="connectStripe()"
+                [disabled]="isWorking"
+                class="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-bold text-white bg-primary hover:bg-primary-dark transition-colors disabled:opacity-50">
+          Conectar Stripe
+        </button>
+      }
+      <button (click)="loadStatus()"
+              [disabled]="isLoading"
+              class="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-bold text-gray-700 bg-stone-100 hover:bg-stone-200 transition-colors disabled:opacity-50">
+        Atualizar status
+      </button>
+    </div>
+  </div>
+</div>

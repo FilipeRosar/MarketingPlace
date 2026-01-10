@@ -68,6 +68,11 @@ export const routes: Routes = [
     canActivate: [sellerGuard]
   },
   {
+    path: 'seller/stripe',
+    loadComponent: () => import('../pages/seller-stripe/seller-stripe.component').then(m => m.SellerStripeComponent),
+    canActivate: [sellerGuard]
+  },
+  {
     path: 'seller-profile/:id',
     component: SellerProfileComponent,
     canActivate: [sellerGuard]

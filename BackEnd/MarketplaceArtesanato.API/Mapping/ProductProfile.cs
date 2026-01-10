@@ -17,6 +17,7 @@ namespace MarketplaceArtesanato.API.Mapping
         {
             CreateMap<CreateProductDto, Product>()
                 .ForMember(dest => dest.Images, opt => opt.Ignore())
+                .ForMember(dest => dest.StoryMedia, opt => opt.Ignore())
                 .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(",", src.Tags)));
 
             CreateMap<Address, AddressResponseDto>();
@@ -34,7 +35,9 @@ namespace MarketplaceArtesanato.API.Mapping
                 .ForMember(dest => dest.TotalRatings, opt => opt.MapFrom(src =>
                     src.Ratings != null ? src.Ratings.Count : 0))
                 .ForMember(dest => dest.Tags, apt => apt.MapFrom(src =>
-                string.IsNullOrEmpty(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()));
+                string.IsNullOrEmpty(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()))
+                .ForMember(dest => dest.StoryMediaUrls, opt => opt.MapFrom(src =>
+                    src.StoryMedia != null ? src.StoryMedia.Select(m => m.Url).ToList() : new List<string>()));
         }
     }
 }

@@ -14,6 +14,7 @@ namespace MarketplaceArtesanato.Core.Entities.Models.Responses
         public decimal TotalAmount { get; set; }
         public OrderStatus Status { get; set; }
         public string? TrackingCode { get; set; }
+        public List<string> TrackingCodes { get; set; } = new();
         public string? Carrier { get; set; }
         public DateTime? ShippedAt { get; set; }
         public List<OrderItemResponseDto> Items { get; set; } = new();

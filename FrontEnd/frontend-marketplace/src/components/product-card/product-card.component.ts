@@ -53,7 +53,29 @@ export class ProductCardComponent implements OnInit, OnDestroy {
       this.displayImage = this.product.imageUrl;
     }
   }
+  private getDisplayPrice(product: Product): number {
+    if (product.salePrice && product.salePrice > 0 && product.salePrice < product.price) {
+      return product.salePrice;
+    }
+    return product.price;
+  }
 
+  getMaxInstallments(product: Product): number {
+    const max = product.maxInstallments ?? 12;
+    return Math.min(12, Math.max(1, Math.floor(max)));
+  }
+
+  getNoInterestInstallments(product: Product): number {
+    const max = this.getMaxInstallments(product);
+    const noInterest = product.maxNoInterestInstallments ?? 0;
+    return Math.min(max, Math.max(0, Math.floor(noInterest)));
+  }
+
+  getInstallmentValue(product: Product): number {
+    const price = this.getDisplayPrice(product);
+    const max = this.getMaxInstallments(product);
+    return Number((price / max).toFixed(2));
+  }
   ngOnDestroy() {
     if (this.favSub) this.favSub.unsubscribe();
   }

@@ -19,11 +19,13 @@ namespace MarketplaceArtesanato.API.Controllers
     {
         private readonly ISellerService _sellerService;
         private readonly IStorageService _storageService;
+        private readonly IStripeConnectService _stripeConnectService;
 
-        public SellersController(ISellerService sellerService, IStorageService storageService)
+        public SellersController(ISellerService sellerService, IStorageService storageService, IStripeConnectService stripeConnectService)
         {
             _sellerService = sellerService;
             _storageService = storageService;
+            _stripeConnectService = stripeConnectService;
         }
 
         [HttpGet]
@@ -177,6 +179,54 @@ namespace MarketplaceArtesanato.API.Controllers
                 return NotFound("Perfil de vendedor não encontrado.");
 
             return NoContent();
+        }
+
+        [HttpPost("stripe/connect")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> CreateStripeConnectLink()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var url = await _stripeConnectService.CreateOnboardingLinkAsync(userId);
+                return Ok(new { url });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("stripe/status")]
+        [Authorize(Roles = "Seller")]
+        public async Task<ActionResult<StripeConnectStatusDto>> GetStripeStatus()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var status = await _stripeConnectService.GetStatusAsync(userId);
+                return Ok(status);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("stripe/dashboard")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetStripeDashboardLink()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var url = await _stripeConnectService.CreateDashboardLinkAsync(userId);
+                return Ok(new { url });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

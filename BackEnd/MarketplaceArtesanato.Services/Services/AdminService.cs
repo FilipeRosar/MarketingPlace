@@ -78,32 +78,44 @@ namespace MarketplaceArtesanato.Services.Services
         public async Task ApproveSellerAsync(Guid sellerId)
         {
             var seller = await _context.Sellers
-                .AsNoTracking()
-                .Include(s => s.User) 
+                .Include(s => s.User)
                 .FirstOrDefaultAsync(s => s.Id == sellerId);
 
             if (seller == null) throw new KeyNotFoundException("Vendedor não encontrado.");
 
-            seller.IsApproved = true; 
+            seller.IsApproved = true;
+            seller.StoreApproved = true; 
+            seller.UpdatedAt = DateTime.UtcNow;
+
+            if (seller.User != null)
+            {
+                seller.User.IsApproved = true;
+                seller.StoreApproved = true;
+                _context.Entry(seller.User).State = EntityState.Modified;
+            }
+
             await _context.SaveChangesAsync();
 
-            await _emailService.SendApprovalEmailAsync(seller.User.Email, seller.User.Name);
+            if (seller.User != null)
+            {
+                await _emailService.SendApprovalEmailAsync(seller.User.Email, seller.User.Name);
+            }
 
             await _hubContext.Clients.Group("Admins")
                 .SendAsync("ReceiveNotification", new
                 {
                     title = "Vendedor Aprovado!",
-                    message = $"Vendedor {seller.StoreName} (de {seller.User.Name}) agora pode vender na Trama.",
+                    message = $"Vendedor {seller.StoreName} (de {seller.User?.Name}) agora pode vender na Trama.",
                     icon = "🎉"
                 });
         }
-
         public async Task RejectSellerAsync(Guid sellerId)
         {
             var seller = await _context.Sellers.FindAsync(sellerId);
             if (seller == null) throw new KeyNotFoundException("Vendedor não encontrado.");
 
             seller.IsDeleted = true; 
+            
             await _context.SaveChangesAsync();
         }
 

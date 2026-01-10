@@ -18,9 +18,17 @@ export interface Product {
   averageRating: number;
   totalRatings: number;
   salePrice?: number;
+  maxInstallments?: number;
+  maxNoInterestInstallments?: number;
   sellerId: string;
   seller: Seller;
   sellerName: string;
+  storyEnabled?: boolean;
+  storyMaker?: string;
+  storyExperience?: string;
+  storyInspiration?: string;
+  storyMarkdown?: string;
+  storyMediaUrls?: string[];
 }
 export interface Seller {
   id: string;

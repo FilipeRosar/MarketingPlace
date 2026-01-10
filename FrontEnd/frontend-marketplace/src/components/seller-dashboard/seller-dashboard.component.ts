@@ -16,7 +16,7 @@ import { CurrencyBrPipe } from '../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
 
 interface DailyRevenue {
-  date: string;   // ISO string
+  date: string;
   revenue: number;
 }
 
@@ -70,8 +70,10 @@ export class SellerDashboardComponent implements OnInit {
     dailyRevenue: []
   };
 
-  chartDays: string[] = [];
+  stripeStatus: { isConnected: boolean; accountId?: string; chargesEnabled?: boolean; detailsSubmitted?: boolean } | null = null;
+  isStripeLoading = false;
 
+  chartDays: string[] = [];
   ngOnInit(): void {
     this.loadDashboardData();
   }
@@ -97,6 +99,7 @@ export class SellerDashboardComponent implements OnInit {
 
     this.sellerService.getDashboardData().subscribe({
       next: (data: DashboardStats) => {
+        this.loadStripeStatus();
         this.stats = data;
         this.mapChartDays();
 
@@ -181,6 +184,48 @@ export class SellerDashboardComponent implements OnInit {
     };
     return map[status] || 'Desconhecido';
   }
+  private loadStripeStatus() {
+    this.isStripeLoading = true;
+    this.sellerService.getStripeStatus().subscribe({
+      next: (status) => {
+        this.stripeStatus = status;
+        this.isStripeLoading = false;
+      },
+      error: () => {
+        this.isStripeLoading = false;
+      }
+    });
+  }
+
+  connectStripe() {
+    if (this.isStripeLoading) return;
+    this.isStripeLoading = true;
+    this.sellerService.createStripeConnectLink().subscribe({
+      next: (res) => {
+        window.location.href = res.url;
+      },
+      error: (err) => {
+        this.isStripeLoading = false;
+        const msg = err?.error?.message || 'Erro ao iniciar conexao com Stripe.';
+        alert(msg);
+      }
+    });
+  }
+
+  manageStripe() {
+    if (this.isStripeLoading) return;
+    this.isStripeLoading = true;
+    this.sellerService.createStripeDashboardLink().subscribe({
+      next: (res) => {
+        window.location.href = res.url;
+      },
+      error: (err) => {
+        this.isStripeLoading = false;
+        const msg = err?.error?.message || 'Erro ao abrir portal do Stripe.';
+        alert(msg);
+      }
+    });
+  }
 
   // ==========================
   // PRODUCTS
@@ -202,7 +247,10 @@ export class SellerDashboardComponent implements OnInit {
   }
 
   openEditModal(product: Product) {
-    this.editingProduct = { ...product };
+    const discountPercent = product.salePrice && product.price
+      ? Math.max(0, Math.round((1 - product.salePrice / product.price) * 100))
+      : 0;
+    this.editingProduct = { ...product, discountPercent };
     this.isEditing = true;
   }
 
@@ -214,7 +262,27 @@ export class SellerDashboardComponent implements OnInit {
   saveProduct() {
     this.isSaving = true;
 
-    this.productService.updateProduct(this.editingProduct.id, this.editingProduct)
+    const discountPercent = this.parseNumber(this.editingProduct.discountPercent);
+    const price = this.parseNumber(this.editingProduct.price);
+    const normalizedDiscount = Math.min(Math.max(discountPercent, 0), 90);
+    const salePrice = normalizedDiscount > 0 && price > 0
+      ? Number((price * (1 - normalizedDiscount / 100)).toFixed(2))
+      : null;
+
+    const updateData = {
+      id: this.editingProduct.id,
+      name: this.editingProduct.name,
+      description: this.editingProduct.description,
+      price: price > 0 ? price : null,
+      stockQuantity: this.editingProduct.stockQuantity,
+      salePrice,
+      maxInstallments: this.editingProduct.maxInstallments,
+      maxNoInterestInstallments: this.editingProduct.maxNoInterestInstallments
+    };
+
+    console.log('[seller-dashboard] updateProduct payload', updateData);
+
+    this.productService.updateProduct(this.editingProduct.id, updateData)
       .subscribe({
         next: () => {
           this.isSaving = false;
@@ -228,6 +296,31 @@ export class SellerDashboardComponent implements OnInit {
       });
   }
 
+  getDiscountPercent(product: Product): number {
+    if (!product.salePrice || !product.price) return 0;
+    return Math.max(0, Math.round((1 - product.salePrice / product.price) * 100));
+  }
+
+  getSalePricePreview(): number | null {
+    const price = this.parseNumber(this.editingProduct.price);
+    const discountPercent = this.parseNumber(this.editingProduct.discountPercent);
+    const normalizedDiscount = Math.min(Math.max(discountPercent, 0), 90);
+    if (price <= 0 || normalizedDiscount <= 0) return null;
+    return Number((price * (1 - normalizedDiscount / 100)).toFixed(2));
+  }
+
+  private parseNumber(value: unknown): number {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value !== 'string') return 0;
+    const trimmed = value.trim();
+    if (!trimmed) return 0;
+    const normalized = trimmed.includes(',')
+      ? trimmed.replace(/\./g, '').replace(',', '.')
+      : trimmed;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
   // ==========================
   // SHIPPING
   // ==========================
@@ -237,6 +330,9 @@ export class SellerDashboardComponent implements OnInit {
     this.shippingService.generateLabel(order.id).subscribe({
       next: res => {
         window.open(res.labelUrl, '_blank');
+        if (res.warning) {
+          alert(res.warning);
+        }
         this.loadDashboardData();
       },
       error: (err) => {
@@ -246,17 +342,27 @@ export class SellerDashboardComponent implements OnInit {
       }
     });
   }
-
   addTrackingManual(order: any) {
-    const code = prompt('Código de rastreio:');
+    const code = prompt('Codigo de rastreio:');
     if (!code) return;
 
     const carrier = prompt('Transportadora:', 'Correios');
     if (!carrier) return;
 
-    order.trackingCode = code;
-    order.carrier = carrier;
-    order.status = 'Enviado';
+    this.isLoading = true;
+    this.orderService.updateTracking(order.id, code, carrier).subscribe({
+      next: () => {
+        order.trackingCode = code;
+        order.carrier = carrier;
+        order.status = 'Enviado';
+        this.loadDashboardData();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        const msg = err?.error?.message || 'Erro ao atualizar rastreio.';
+        alert(msg);
+      }
+    });
   }
 
   // ==========================

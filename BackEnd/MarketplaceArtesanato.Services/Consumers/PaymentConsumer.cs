@@ -49,9 +49,9 @@ public class PaymentConsumer : IConsumer<PaymentProcessedEvent>
                 return;
             }
 
-            if (order.Status == OrderStatus.Confirmed)
+            if (order.Status != OrderStatus.Pending && order.Status != OrderStatus.Processing)
             {
-                _logger.LogInformation("Pagamento processado para pedido {OrderId}", order.Id);
+                _logger.LogInformation("Pedido {OrderId} ja processado com status {Status}", order.Id, order.Status);
                 return;
             }
 

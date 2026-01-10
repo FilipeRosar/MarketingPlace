@@ -1,5 +1,5 @@
 ﻿
-
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -19,6 +19,11 @@ namespace MarketplaceArtesanato.Core.Entities
 
         [StringLength(500)]
         public string Review { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        public string? SellerReply { get; set; }
+
+        public DateTime? SellerReplyAt { get; set; }
 
     }
 }

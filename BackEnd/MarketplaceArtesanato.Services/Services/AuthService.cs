@@ -194,10 +194,17 @@ namespace MarketplaceArtesanato.Services.Services
 
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return new AuthResponseDto { Success = false, Message = "E-mail ou senha inválidos." };
-
-            if (user.Role == UserRole.Seller && user.SellerProfile != null && !user.SellerProfile.IsApproved)
+            Console.WriteLine($"Vendedor: {user.Name}, Profile Is Null: {user.SellerProfile == null}, Approved: {user.SellerProfile?.IsApproved}");
+            if (user.Role == UserRole.Seller)
             {
-                return new AuthResponseDto { Success = false, Message = "Sua loja ainda está em análise. Aguarde aprovação do administrador." };
+                if (user.SellerProfile == null || !user.SellerProfile.IsApproved)
+                {
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = "Sua loja ainda está em análise. Aguarde aprovação do administrador."
+                    };
+                }
             }
 
             var token = GenerateJwtToken(user);
@@ -345,6 +352,11 @@ namespace MarketplaceArtesanato.Services.Services
             str = Regex.Replace(str, @"\s+", " ").Trim();
             str = Regex.Replace(str, @"\s", "-");
             return str;
+        }
+
+        public Task<AuthResponseDto> GetCurrentUserAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }

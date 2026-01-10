@@ -1,4 +1,5 @@
-﻿using MarketplaceArtesanato.Core.Entities.Models.Requests;
+using MarketplaceArtesanato.Core.Entities.Models.Requests;
+using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace MarketplaceArtesanato.Core.Interfaces
     public interface IShippingService
     {
         Task<List<ShippingOptionDto>> CalculateShippingAsync(CalculateShippingRequest request);
-        Task<string> GenerateLabelAsync(GenerateLabelRequest request);
+        Task<GenerateLabelResponseDto> GenerateLabelAsync(GenerateLabelRequest request);
     }
 }
+

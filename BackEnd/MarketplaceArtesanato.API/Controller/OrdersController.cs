@@ -77,7 +77,7 @@ namespace MarketplaceArtesanato.API.Controllers
                 var userId = User.GetUserId();
                 var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
 
-                await _orderService.UpdateTrackingAsync(id, userId, role, dto.TrackingCode);
+                await _orderService.UpdateTrackingAsync(id, userId, role, dto.TrackingCode, dto.Carrier);
 
                 return Ok(new { message = "Rastreamento atualizado com sucesso." });
             }

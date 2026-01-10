@@ -12,7 +12,7 @@ export interface Seller {
 
 export interface SellerMoment {
   id: string;
-  videoUrl: string; // ou imageUrl
+  videoUrl: string;
   thumbnailUrl?: string;
   description: string;
   createdAt: string;

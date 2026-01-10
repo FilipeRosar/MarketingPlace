@@ -1,4 +1,5 @@
-Ôªøusing MarketplaceArtesanato.Core.Entities.Models.Requests;
+using MarketplaceArtesanato.Core.Entities.Models.Requests;
+using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Entities.DTO; // Certifique-se de ter este namespace para ShippingOptionDto
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
@@ -85,7 +86,7 @@ namespace MarketplaceArtesanato.Services.Services
             return options ?? new List<ShippingOptionDto>();
         }
 
-        public async Task<string> GenerateLabelAsync(GenerateLabelRequest request)
+        public async Task<GenerateLabelResponseDto> GenerateLabelAsync(GenerateLabelRequest request)
         {
             try
             {
@@ -97,7 +98,7 @@ namespace MarketplaceArtesanato.Services.Services
                     .FirstOrDefaultAsync(o => o.Id == request.OrderId);
 
                 if (order == null)
-                    throw new InvalidOperationException("Pedido n√£o encontrado.");
+                    throw new InvalidOperationException("Pedido n„o encontrado.");
 
                 if (order.Items == null || !order.Items.Any())
                     throw new InvalidOperationException("Pedido nao possui itens.");
@@ -198,6 +199,17 @@ namespace MarketplaceArtesanato.Services.Services
                 if (missingFields.Count > 0)
                     throw new InvalidOperationException("Campos obrigatorios faltando: " + string.Join(", ", missingFields));
 
+                const decimal maxNonCommercialInsurance = 1000m;
+                var nonCommercial = true;
+                var insuranceValue = order.TotalAmount;
+                string? warning = null;
+
+                if (nonCommercial && insuranceValue > maxNonCommercialInsurance)
+                {
+                    insuranceValue = maxNonCommercialInsurance;
+                    warning = "Seguro limitado a R$ 1.000,00 para envios nao comerciais.";
+                }
+
                 var from = new
                 {
                     name = seller.User.Name?.Trim() ?? "Vendedor Trama",
@@ -246,7 +258,7 @@ namespace MarketplaceArtesanato.Services.Services
                             height = (int)(i.Product.Height > 0 ? i.Product.Height : 2),
                             length = (int)(i.Product.Length > 0 ? i.Product.Length : 16),
                             weight = (double)(i.Product.Weight > 0 ? i.Product.Weight : 0.3m),
-                            insurance_value = (double)order.TotalAmount,
+                            insurance_value = (double)insuranceValue,
                             quantity = i.Quantity
                         }).ToArray()
                     };
@@ -264,7 +276,7 @@ namespace MarketplaceArtesanato.Services.Services
                 }
 
                 if (string.IsNullOrWhiteSpace(serviceId))
-                    throw new InvalidOperationException("Servi√ßo de frete n√£o definido ou indispon√≠vel.");
+                    throw new InvalidOperationException("ServiÁo de frete n„o definido ou indisponÌvel.");
 
                 var cartPayload = new
                 {
@@ -296,11 +308,11 @@ namespace MarketplaceArtesanato.Services.Services
             },
                     options = new
                     {
-                        insurance_value = (double)order.TotalAmount,
+                        insurance_value = (double)insuranceValue,
                         receipt = false,
                         own_hand = false,
                         reverse = false,
-                        non_commercial = true,
+                        non_commercial = nonCommercial,
                         platform = "Mitra.ma"
                     }
                 };
@@ -323,7 +335,7 @@ namespace MarketplaceArtesanato.Services.Services
 
                 var cartJson = JsonDocument.Parse(cartContent);
                 var orderIdME = cartJson.RootElement.GetProperty("id").GetString()
-                    ?? throw new InvalidOperationException("ID do pedido no Melhor Envio n√£o retornado.");
+                    ?? throw new InvalidOperationException("ID do pedido no Melhor Envio n„o retornado.");
 
                 // 8. Checkout
                 var checkoutPayload = new { orders = new[] { orderIdME } };
@@ -346,13 +358,17 @@ namespace MarketplaceArtesanato.Services.Services
                 var url = printJson.RootElement.GetProperty("url").GetString();
 
                 if (string.IsNullOrEmpty(url))
-                    throw new InvalidOperationException("URL da etiqueta n√£o foi gerada.");
+                    throw new InvalidOperationException("URL da etiqueta n„o foi gerada.");
 
-                return url;
+                return new GenerateLabelResponseDto
+                {
+                    LabelUrl = url,
+                    Warning = warning
+                };
             }
             catch (Exception ex)
             {
-                // Log detalhado (use ILogger em produ√ß√£o)
+                // Log detalhado (use ILogger em produÁ„o)
                 Console.WriteLine($"[ERRO GERAR ETIQUETA] {ex.Message}\n{ex.StackTrace}");
                 throw new InvalidOperationException($"Falha ao gerar etiqueta: {ex.Message}");
             }
@@ -396,4 +412,5 @@ namespace MarketplaceArtesanato.Services.Services
         }
     }
 }
+
 

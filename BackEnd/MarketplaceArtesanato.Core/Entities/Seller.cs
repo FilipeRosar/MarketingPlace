@@ -35,8 +35,9 @@ namespace MarketplaceArtesanato.Core.Entities
         public bool IsOnVacation { get; set; } = false;
         public string? StripeAccountId { get; set; }
         public bool IsStripeConnected { get; set; } = false;
-        public decimal RatingAverage { get; set; } = 0m; 
+        public decimal RatingAverage { get; set; } = 5m; 
         public int TotalSales { get; set; } = 0;
+        public bool StoreApproved { get; set; } = false;
         public string? InstagramUrl { get; set; }
         public string? FacebookUrl { get; set; }
         public string? TiktokUrl { get; set; }

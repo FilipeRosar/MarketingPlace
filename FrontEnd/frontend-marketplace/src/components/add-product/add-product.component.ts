@@ -19,6 +19,9 @@ export class AddProductComponent {
   private notificationService = inject(NotificationService);
   selectedFiles: File[] = [];
   imagePreviews: string[] = [];
+  storyFiles: File[] = [];
+  storyPreviews: string[] = [];
+  maxStoryMedia = 8;
   tags: string[] = [];
   productForm: FormGroup;
   isLoading = false;
@@ -178,7 +181,14 @@ export class AddProductComponent {
       length: ['', [Validators.required, Validators.min(1)]],
       stockQuantity: [1, [Validators.required, Validators.min(1)]],
       category: ['', Validators.required],
-      subcategory: ['']
+      subcategory: [''],
+      maxInstallments: [12, [Validators.required, Validators.min(1), Validators.max(12)]],
+      maxNoInterestInstallments: [0, [Validators.required, Validators.min(0), Validators.max(12)]],
+      storyEnabled: [false],
+      storyMaker: [""],
+      storyExperience: [""],
+      storyInspiration: [""],
+      storyMarkdown: [""]
     });
 
     this.productForm.get('category')?.valueChanges.subscribe((value) => {
@@ -228,6 +238,48 @@ export class AddProductComponent {
       this.tags.push(tag);
     }
   }
+
+  onStoryMediaSelected(event: any) {
+    const files: FileList = event.target.files;
+
+    if (files.length === 0) return;
+
+    if (this.storyFiles.length + files.length > this.maxStoryMedia) {
+      this.notificationService.warning(`Maximo de ${this.maxStoryMedia} fotos do processo.`);
+      return;
+    }
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      if (!file.type.startsWith('image/')) {
+        this.notificationService.error(`Arquivo ${file.name} nao e uma imagem.`);
+        continue;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        this.notificationService.error(`Imagem ${file.name} muito grande (max 5MB).`);
+        continue;
+      }
+
+      this.storyFiles.push(file);
+
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.storyPreviews.push(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    this.productForm.markAsDirty();
+  }
+
+  removeStoryMedia(index: number) {
+    this.storyFiles.splice(index, 1);
+    this.storyPreviews.splice(index, 1);
+    this.productForm.markAsDirty();
+  }
+
   removeImage(index: number) {
   this.selectedFiles.splice(index, 1);
   this.imagePreviews.splice(index, 1);
@@ -256,6 +308,9 @@ export class AddProductComponent {
   formData.append('Length', this.productForm.get('length')!.value);
   formData.append('StockQuantity', this.productForm.get('stockQuantity')!.value);
   formData.append('Category', this.productForm.get('category')!.value);
+  formData.append('MaxInstallments', this.productForm.get('maxInstallments')!.value);
+  formData.append('MaxNoInterestInstallments', this.productForm.get('maxNoInterestInstallments')!.value);
+  formData.append('StoryEnabled', this.productForm.get('storyEnabled')!.value ? 'true' : 'false');
 
   // ENVIA TODAS AS IMAGENS
   this.selectedFiles.forEach(file => {
@@ -265,6 +320,22 @@ export class AddProductComponent {
   const selectedSubcategory = this.productForm.get('subcategory')?.value;
   if (selectedSubcategory && !this.tags.includes(selectedSubcategory)) {
     this.tags.push(selectedSubcategory);
+  }
+
+  if (this.productForm.get('storyEnabled')!.value) {
+    const storyMaker = String(this.productForm.get('storyMaker')!.value || '').trim();
+    const storyExperience = String(this.productForm.get('storyExperience')!.value || '').trim();
+    const storyInspiration = String(this.productForm.get('storyInspiration')!.value || '').trim();
+    const storyMarkdown = String(this.productForm.get('storyMarkdown')!.value || '').trim();
+
+    if (storyMaker) formData.append('StoryMaker', storyMaker);
+    if (storyExperience) formData.append('StoryExperience', storyExperience);
+    if (storyInspiration) formData.append('StoryInspiration', storyInspiration);
+    if (storyMarkdown) formData.append('StoryMarkdown', storyMarkdown);
+
+    this.storyFiles.forEach(file => {
+      formData.append('StoryMedia', file, file.name);
+    });
   }
 
   // Tags
@@ -286,5 +357,4 @@ export class AddProductComponent {
   });
 }
 }
-
 

@@ -1,4 +1,4 @@
-ï»¿using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Events;
 using MarketplaceArtesanato.Core.Interfaces;
@@ -87,7 +87,7 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var webhookSecret = _config["Stripe:WebhookSecret"];
             if (string.IsNullOrEmpty(webhookSecret))
-                throw new InvalidOperationException("Webhook secret nÃ£o configurado.");
+                throw new InvalidOperationException("Webhook secret não configurado.");
 
             StripeEvent stripeEvent;
             try
@@ -96,12 +96,12 @@ namespace MarketplaceArtesanato.Services.Services
             }
             catch (StripeException ex)
             {
-                _logger.LogError(ex, "Assinatura do webhook invÃ¡lida.");
+                _logger.LogError(ex, "Assinatura do webhook inválida.");
                 throw;
 
             }
 
-            // CORREÃ‡ÃƒO: use Stripe.Events (com E maiÃºsculo) e o nome exato da constante
+            // CORREÇÃO: use Stripe.Events (com E maiúsculo) e o nome exato da constante
             if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted ||
                 stripeEvent.Type == EventTypes.CheckoutSessionAsyncPaymentSucceeded)
             {
@@ -126,13 +126,12 @@ namespace MarketplaceArtesanato.Services.Services
 
                     if (order == null)
                     {
-                        _logger.LogError("Pedido {OrderId} nÃ£o encontrado no webhook.", orderId);
+                        _logger.LogError("Pedido {OrderId} não encontrado no webhook.", orderId);
                         return;
                     }
-
-                    if (order.Status == OrderStatus.Confirmed)
+                    if (order.Status != OrderStatus.Pending && order.Status != OrderStatus.Processing)
                     {
-                        _logger.LogInformation("Pedido {OrderId} jÃ¡ processado.", orderId);
+                        _logger.LogInformation("Pedido {OrderId} ja processado com status {Status}.", orderId, order.Status);
                         return;
                     }
 
@@ -181,8 +180,7 @@ namespace MarketplaceArtesanato.Services.Services
                     _logger.LogError("Pedido {OrderId} nao encontrado no webhook async_payment_failed.", orderId);
                     return;
                 }
-
-                if (order.Status == OrderStatus.Canceled)
+                    if (order.Status == OrderStatus.Canceled)
                 {
                     _logger.LogInformation("Pedido {OrderId} ja cancelado.", orderId);
                     return;
@@ -212,18 +210,39 @@ namespace MarketplaceArtesanato.Services.Services
 
                 if (string.IsNullOrEmpty(seller.StripeAccountId))
                 {
-                    _logger.LogWarning("Vendedor {SellerName} (ID: {SellerId}) nÃ£o tem conta Stripe conectada. Valor retido.", seller.StoreName, seller.Id);
+                    _logger.LogWarning("Vendedor {SellerName} (ID: {SellerId}) não tem conta Stripe conectada. Valor retido.", seller.StoreName, seller.Id);
                     continue;
                 }
 
                 decimal sellerGross = group.Sum(i => i.UnitPrice * i.Quantity);
-                decimal commissionRate = seller.CommissionRate / 100m; // ex: 10% = 0.10m
-                decimal commissionAmount = sellerGross * commissionRate;
+                decimal commissionAmount = 0m;
+
+                if (order.SellerCommissions != null && order.SellerCommissions.TryGetValue(seller.Id, out var storedCommission))
+                {
+                    commissionAmount = storedCommission;
+
+                    // Compatibilidade: pedidos antigos gravavam o valor liquido do vendedor.
+                    if (commissionAmount > sellerGross)
+                    {
+                        commissionAmount = 0m;
+                    }
+                    else if (commissionAmount > sellerGross * 0.5m)
+                    {
+                        commissionAmount = sellerGross - storedCommission;
+                        if (commissionAmount < 0m) commissionAmount = 0m;
+                    }
+                }
+                else
+                {
+                    decimal commissionRate = seller.CommissionRate / 100m; // fallback
+                    commissionAmount = sellerGross * commissionRate;
+                }
+
                 decimal netAmount = sellerGross - commissionAmount;
 
                 if (netAmount <= 0)
                 {
-                    _logger.LogInformation("Valor lÃ­quido zero para vendedor {SellerName}. TransferÃªncia ignorada.", seller.StoreName);
+                    _logger.LogInformation("Valor líquido zero para vendedor {SellerName}. Transferência ignorada.", seller.StoreName);
                     continue;
                 }
 
@@ -234,7 +253,7 @@ namespace MarketplaceArtesanato.Services.Services
                     Amount = amountInCents,
                     Currency = "brl",
                     Destination = seller.StripeAccountId,
-                    SourceTransaction = paymentIntentId, // Vincula Ã  cobranÃ§a original
+                    SourceTransaction = paymentIntentId, // Vincula à cobrança original
                     TransferGroup = order.Id.ToString(),
                     Description = $"Venda Mitra.ma - Pedido #{order.Id}",
                     Metadata = new Dictionary<string, string>
@@ -250,13 +269,13 @@ namespace MarketplaceArtesanato.Services.Services
                 try
                 {
                     var transfer = await transferService.CreateAsync(transferOptions);
-                    _logger.LogInformation("TransferÃªncia de R$ {NetAmount} realizada para {SellerName} (Transfer ID: {TransferId})",
+                    _logger.LogInformation("Transferência de R$ {NetAmount} realizada para {SellerName} (Transfer ID: {TransferId})",
                         netAmount, seller.StoreName, transfer.Id);
                 }
                 catch (StripeException ex)
                 {
                     _logger.LogError(ex, "Falha ao transferir R$ {NetAmount} para vendedor {SellerName}", netAmount, seller.StoreName);
-                    // Aqui vocÃª pode salvar em uma tabela de "transferÃªncias pendentes" para retry manual
+                    // Aqui você pode salvar em uma tabela de "transferências pendentes" para retry manual
                 }
             }
         }

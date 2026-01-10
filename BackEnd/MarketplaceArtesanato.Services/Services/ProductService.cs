@@ -34,6 +34,7 @@ namespace MarketplaceArtesanato.Services.Services
                 .Include(p => p.Seller!).ThenInclude(s => s.Address)
                 .Include(p => p.Ratings!).ThenInclude(r => r.Customer)
                 .Include(p => p.Images)
+                .Include(p => p.StoryMedia)
                 .Where(p => !p.IsDeleted)
                 .AsQueryable();
 
@@ -94,6 +95,7 @@ namespace MarketplaceArtesanato.Services.Services
                 .Include(p => p.Seller!).ThenInclude(s => s.Address)
                 .Include(p => p.Ratings!).ThenInclude(r => r.Customer)
                 .Include(p => p.Images)
+                .Include(p => p.StoryMedia)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null) return null;
@@ -108,6 +110,19 @@ namespace MarketplaceArtesanato.Services.Services
 
             if (!seller.IsApproved)
                 throw new UnauthorizedAccessException("Sua loja ainda está em análise. Aguarde a aprovação para publicar produtos.");
+
+            var storyMediaUrls = new List<string>();
+            if (dto.StoryEnabled && dto.StoryMedia != null)
+            {
+                foreach (var file in dto.StoryMedia)
+                {
+                    if (file.Length > 0 && IsImage(file))
+                    {
+                        var url = await _storage.UploadFileAsync(file);
+                        storyMediaUrls.Add(url);
+                    }
+                }
+            }
 
             // Upload de Imagens
             var imageUrls = new List<string>();
@@ -135,6 +150,26 @@ namespace MarketplaceArtesanato.Services.Services
                 ProductId = product.Id,
                 IsMain = imageUrls.First() == url
             }).ToList();
+
+            if (!dto.StoryEnabled)
+            {
+                product.StoryEnabled = false;
+                product.StoryMaker = null;
+                product.StoryExperience = null;
+                product.StoryInspiration = null;
+                product.StoryMarkdown = null;
+                product.StoryMedia = new List<ProductStoryMedia>();
+            }
+            else
+            {
+                product.StoryEnabled = true;
+                product.StoryMedia = storyMediaUrls.Select(url => new ProductStoryMedia
+                {
+                    Id = Guid.NewGuid(),
+                    Url = url,
+                    ProductId = product.Id
+                }).ToList();
+            }
 
             product.CreatedAt = DateTime.UtcNow;
             product.IsDeleted = false;
@@ -182,6 +217,7 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var product = await _context.Products
                 .Include(p => p.Images)
+                .Include(p => p.StoryMedia)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null) return false;
@@ -200,6 +236,11 @@ namespace MarketplaceArtesanato.Services.Services
             foreach (var image in product.Images)
             {
                 try { await _storage.DeleteAsync(image.Url); } catch { }
+            }
+
+            foreach (var media in product.StoryMedia ?? new List<ProductStoryMedia>())
+            {
+                try { await _storage.DeleteAsync(media.Url); } catch { }
             }
 
             _context.Products.Remove(product);

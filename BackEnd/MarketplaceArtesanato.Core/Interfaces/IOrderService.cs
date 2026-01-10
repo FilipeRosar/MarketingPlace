@@ -13,7 +13,7 @@ namespace MarketplaceArtesanato.Core.Interfaces
         Task<List<OrderResponseDto>> GetByUserAsync(Guid userId, string role);
         Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role);
         Task<CheckoutResponseResult> CreateOrderAsync(Guid buyerId, CheckoutRequestDto dto);
-        Task UpdateTrackingAsync(Guid orderId, Guid userId, string role, string trackingCode);
+        Task UpdateTrackingAsync(Guid orderId, Guid userId, string role, string trackingCode, string carrier);
         Task CancelOrderAsync(Guid orderId, Guid userId, string role);
     }
 

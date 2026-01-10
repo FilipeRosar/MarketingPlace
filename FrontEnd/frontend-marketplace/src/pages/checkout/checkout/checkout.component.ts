@@ -151,6 +151,28 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     return { items, usedFallback };
   }
 
+  getMaxInstallmentsForCart(): number {
+    const items = this.cartItems();
+    if (items.length === 0) return 1;
+    const maxValues = items.map(item => item.product.maxInstallments ?? 12);
+    const minValue = Math.min(...maxValues);
+    return Math.min(12, Math.max(1, Math.floor(minValue)));
+  }
+
+  getNoInterestInstallmentsForCart(): number {
+    const items = this.cartItems();
+    if (items.length === 0) return 0;
+    const max = this.getMaxInstallmentsForCart();
+    const noInterestValues = items.map(item => item.product.maxNoInterestInstallments ?? 0);
+    const minValue = Math.min(...noInterestValues);
+    return Math.min(max, Math.max(0, Math.floor(minValue)));
+  }
+
+  getInstallmentValueForCart(): number {
+    const max = this.getMaxInstallmentsForCart();
+    return Number((this.total() / max).toFixed(2));
+  }
+
   onCheckout() {
     if (this.cartItems().length === 0) {
       this.notificationService.warning('Seu carrinho está vazio!', 'Ops!');

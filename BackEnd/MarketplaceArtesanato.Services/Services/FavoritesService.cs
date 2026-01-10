@@ -1,4 +1,4 @@
-﻿using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
 using Microsoft.EntityFrameworkCore;

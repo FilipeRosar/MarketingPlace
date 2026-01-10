@@ -23,6 +23,7 @@ export interface Order {
   totalAmount: number;
   status: OrderStatus;
   trackingCode?: string;
+  trackingCodes?: string[];
   carrier?: string;
   shippedAt?: string;
   items: OrderItem[];

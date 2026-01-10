@@ -18,92 +18,137 @@ namespace MarketplaceArtesanato.Services.Services
         private readonly IMapper _mapper;
         private readonly IStripePaymentService _stripeService;
         private readonly ILogger<OrderService> _logger;
+        private readonly IPlatformFeeService _platformFeeService;
 
         public OrderService(
             ArtesianDbContext context,
             IMapper mapper,
             IStripePaymentService stripeService,
-            ILogger<OrderService> logger)
+            ILogger<OrderService> logger,
+            IPlatformFeeService platformFeeService)
         {
             _context = context;
             _mapper = mapper;
             _stripeService = stripeService;
             _logger = logger;
+            _platformFeeService = platformFeeService;
         }
 
-        public async Task<List<OrderResponseDto>> GetByUserAsync(Guid userId, string role)
-{
-    var query = _context.Orders
-        .Include(o => o.Items).ThenInclude(i => i.Product)
-        .AsNoTracking();
-
-    Guid sellerId = Guid.Empty;
-
-    if (role == "Seller")
-    {
-        sellerId = await _context.Sellers
-            .Where(s => s.UserId == userId)
-            .Select(s => s.Id)
-            .FirstOrDefaultAsync();
-
-        if (sellerId == Guid.Empty)
+                public async Task<List<OrderResponseDto>> GetByUserAsync(Guid userId, string role)
         {
-            return new List<OrderResponseDto>();
-        }
+            var query = _context.Orders
+                .Include(o => o.Items).ThenInclude(i => i.Product)
+                .AsNoTracking();
 
-        query = query.Where(o => o.Items.Any(i => i.Product.SellerId == sellerId));
-    }
-    else if (role == "Admin")
-    {
-        // Admin ve tudo
-    }
-    else // Customer
-    {
-        query = query.Where(o => o.BuyerId == userId);
-    }
+            Guid sellerId = Guid.Empty;
 
-    var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
-    var dtos = _mapper.Map<List<OrderResponseDto>>(orders);
-
-    if (role == "Seller" && sellerId != Guid.Empty)
-    {
-        for (int i = 0; i < orders.Count && i < dtos.Count; i++)
-        {
-            var order = orders[i];
-            if (order.TrackingCodes != null && order.TrackingCodes.TryGetValue(sellerId, out var code))
+            if (role == "Seller")
             {
-                dtos[i].TrackingCode = code;
+                sellerId = await _context.Sellers
+                    .Where(s => s.UserId == userId)
+                    .Select(s => s.Id)
+                    .FirstOrDefaultAsync();
+
+                if (sellerId == Guid.Empty)
+                {
+                    return new List<OrderResponseDto>();
+                }
+
+                query = query.Where(o => o.Items.Any(i => i.Product.SellerId == sellerId));
             }
+            else if (role == "Admin")
+            {
+                // Admin ve tudo
+            }
+            else // Customer
+            {
+                query = query.Where(o => o.BuyerId == userId);
+            }
+
+            var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+            var dtos = _mapper.Map<List<OrderResponseDto>>(orders);
+
+            for (int i = 0; i < orders.Count && i < dtos.Count; i++)
+            {
+                var order = orders[i];
+
+                if (role == "Seller" && sellerId != Guid.Empty)
+                {
+                    if (order.TrackingCodes != null && order.TrackingCodes.TryGetValue(sellerId, out var code))
+                    {
+                        dtos[i].TrackingCode = code;
+                        dtos[i].TrackingCodes = new List<string> { code };
+                    }
+                }
+                else if (order.TrackingCodes != null && order.TrackingCodes.Count > 0)
+                {
+                    dtos[i].TrackingCode = order.TrackingCodes.First().Value;
+                    dtos[i].TrackingCodes = order.TrackingCodes.Values.ToList();
+                }
+
+                if (!string.IsNullOrWhiteSpace(order.Carrier))
+                {
+                    dtos[i].Carrier = order.Carrier;
+                }
+
+                if (dtos[i].TrackingCodes == null)
+                {
+                    dtos[i].TrackingCodes = new List<string>();
+                }
+            }
+
+            return dtos;
         }
-    }
 
-    return dtos;
-}
+                public async Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
+                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
+                .Include(o => o.Buyer)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
 
-        public async Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role)
-{
-    var order = await _context.Orders
-        .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
-        .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
-        .Include(o => o.Buyer) // Importante incluir o comprador
-        .FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) throw new KeyNotFoundException("Pedido nao encontrado.");
 
-    if (order == null) throw new KeyNotFoundException("Pedido nao encontrado.");
+            var sellerId = role == "Seller"
+                ? await _context.Sellers.Where(s => s.UserId == userId).Select(s => s.Id).FirstOrDefaultAsync()
+                : Guid.Empty;
 
-    var sellerId = role == "Seller"
-        ? await _context.Sellers.Where(s => s.UserId == userId).Select(s => s.Id).FirstOrDefaultAsync()
-        : Guid.Empty;
+            bool isBuyer = order.BuyerId == userId;
+            bool isSeller = role == "Seller" && sellerId != Guid.Empty && order.Items.Any(i => i.Product.SellerId == sellerId);
+            bool isAdmin = role == "Admin";
 
-    bool isBuyer = order.BuyerId == userId;
-    // Verifica se o usuario e vendedor e se tem algum produto dele no pedido
-    bool isSeller = role == "Seller" && sellerId != Guid.Empty && order.Items.Any(i => i.Product.SellerId == sellerId);
-    bool isAdmin = role == "Admin";
+            if (!isBuyer && !isSeller && !isAdmin)
+                throw new UnauthorizedAccessException("Sem permissao para visualizar este pedido.");
 
-    if (!isBuyer && !isSeller && !isAdmin)
-        throw new UnauthorizedAccessException("Sem permissao para visualizar este pedido.");
+            var dto = _mapper.Map<OrderResponseDto>(order);
 
-    return _mapper.Map<OrderResponseDto>(order);
-}
+            if (role == "Seller" && sellerId != Guid.Empty)
+            {
+                if (order.TrackingCodes != null && order.TrackingCodes.TryGetValue(sellerId, out var code))
+                {
+                    dto.TrackingCode = code;
+                    dto.TrackingCodes = new List<string> { code };
+                }
+            }
+            else if (order.TrackingCodes != null && order.TrackingCodes.Count > 0)
+            {
+                dto.TrackingCode = order.TrackingCodes.First().Value;
+                dto.TrackingCodes = order.TrackingCodes.Values.ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(order.Carrier))
+            {
+                dto.Carrier = order.Carrier;
+            }
+
+            if (dto.TrackingCodes == null)
+            {
+                dto.TrackingCodes = new List<string>();
+            }
+
+            return dto;
+        }
 
         public async Task<CheckoutResponseResult> CreateOrderAsync(Guid buyerId, CheckoutRequestDto dto)
         {
@@ -134,6 +179,7 @@ namespace MarketplaceArtesanato.Services.Services
             };
 
             decimal orderTotal = 0;
+            var sellerTotals = new Dictionary<Guid, decimal>();
 
             foreach (var itemDto in dto.Items)
             {
@@ -156,11 +202,27 @@ namespace MarketplaceArtesanato.Services.Services
 
                 order.Items.Add(orderItem);
                 orderTotal += orderItem.UnitPrice * orderItem.Quantity;
-
-                // Cálculo de Comissão (Split)
                 var sellerId = product.SellerId;
                 var itemTotal = orderItem.UnitPrice * orderItem.Quantity;
-                var commission = itemTotal * (product.Seller.CommissionRate / 100m);
+
+                if (sellerTotals.ContainsKey(sellerId))
+                    sellerTotals[sellerId] += itemTotal;
+                else
+                    sellerTotals[sellerId] = itemTotal;
+            }
+
+            var sellerRates = new Dictionary<Guid, decimal>();
+            foreach (var (sellerId, sellerTotal) in sellerTotals)
+            {
+                var rate = await _platformFeeService.GetCommissionRateAsync(sellerId, sellerTotal);
+                sellerRates[sellerId] = rate;
+            }
+
+            foreach (var item in order.Items)
+            {
+                var sellerId = item.Product.SellerId;
+                var itemTotal = item.UnitPrice * item.Quantity;
+                var commission = itemTotal * (sellerRates[sellerId] / 100m);
 
                 if (order.SellerCommissions.ContainsKey(sellerId))
                     order.SellerCommissions[sellerId] += commission;
@@ -185,7 +247,7 @@ namespace MarketplaceArtesanato.Services.Services
             };
         }
 
-        public async Task UpdateTrackingAsync(Guid orderId, Guid userId, string role, string trackingCode)
+        public async Task UpdateTrackingAsync(Guid orderId, Guid userId, string role, string trackingCode, string carrier)
         {
             var order = await _context.Orders
                 .Include(o => o.Items).ThenInclude(i => i.Product)
@@ -221,9 +283,13 @@ else if (role == "Admin")
             }
 
             // Regra de Negócio Simplificada: Se já foi pago e adicionou rastreio, muda para Enviado
+            order.Carrier = carrier?.Trim() ?? string.Empty;
+
+
             if (order.Status == OrderStatus.Confirmed)
             {
                 order.Status = OrderStatus.Sent;
+                order.ShippedAt = DateTime.UtcNow;
             }
 
             // Truque para o EF Core detectar mudança no JSON/Dictionary
