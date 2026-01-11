@@ -4,6 +4,23 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { MomentResponseDto } from '../../models/moment/moment.model';
 
+export type SellerPlan = 'Basic' | 'Pro' | 'Premium';
+
+export interface SellerSubscription {
+  sellerId: string;
+  plan: SellerPlan;
+  startedAt: string;
+  expiresAt?: string;
+  isActive: boolean;
+  commissionRate: number;
+  monthlyPrice: number;
+  highlightLimit: number;
+  hasVerifiedBadge: boolean;
+  hasAdvancedAnalytics: boolean;
+  hasPrioritySupport: boolean;
+  canHighlightProducts: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -57,6 +74,18 @@ export class SellerService {
 
   getStripeStatus(): Observable<{ isConnected: boolean; accountId?: string; chargesEnabled?: boolean; detailsSubmitted?: boolean }> {
     return this.http.get<{ isConnected: boolean; accountId?: string; chargesEnabled?: boolean; detailsSubmitted?: boolean }>(`${this.apiUrl}/stripe/status`);
+  }
+
+  getSubscription(): Observable<SellerSubscription> {
+    return this.http.get<SellerSubscription>(`${this.apiUrl}/subscription`);
+  }
+
+  createSubscriptionCheckout(plan: SellerPlan): Observable<{ url?: string; subscription?: SellerSubscription }> {
+    return this.http.post<{ url?: string; subscription?: SellerSubscription }>(`${this.apiUrl}/subscription/checkout`, { plan });
+  }
+
+  cancelSubscription(): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/subscription`);
   }
 
   uploadBanner(file: File): Observable<{ imageUrl: string }> {

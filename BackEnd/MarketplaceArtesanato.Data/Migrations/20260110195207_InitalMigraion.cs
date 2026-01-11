@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MarketplaceArtesanato.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class InitalMigraion : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -21,7 +21,9 @@ namespace MarketplaceArtesanato.Data.Migrations
                     City = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     State = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ZipCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Country = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Country = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Complement = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    District = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -182,7 +184,11 @@ namespace MarketplaceArtesanato.Data.Migrations
                     IsStripeConnected = table.Column<bool>(type: "bit", nullable: false),
                     RatingAverage = table.Column<decimal>(type: "decimal(2,1)", precision: 2, scale: 1, nullable: false),
                     TotalSales = table.Column<int>(type: "int", nullable: false),
+                    StoreApproved = table.Column<bool>(type: "bit", nullable: false),
                     InstagramUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FacebookUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TiktokUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    YoutubeUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false)
@@ -205,6 +211,28 @@ namespace MarketplaceArtesanato.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Moments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SellerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    VideoUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ThumbUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Moments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Moments_Sellers_SellerId",
+                        column: x => x.SellerId,
+                        principalTable: "Sellers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
@@ -215,6 +243,7 @@ namespace MarketplaceArtesanato.Data.Migrations
                     StripeSessionId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     StripePaymentIntentId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
+                    Carrier = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SellerCommissions = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TrackingCodesJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CustomerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
@@ -252,11 +281,22 @@ namespace MarketplaceArtesanato.Data.Migrations
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
                     Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     SalePrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
+                    MaxInstallments = table.Column<int>(type: "int", nullable: false),
+                    MaxNoInterestInstallments = table.Column<int>(type: "int", nullable: false),
                     StockQuantity = table.Column<int>(type: "int", nullable: false),
                     Tags = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Category = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     SellerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Weight = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Width = table.Column<int>(type: "int", nullable: false),
+                    Height = table.Column<int>(type: "int", nullable: false),
+                    Length = table.Column<int>(type: "int", nullable: false),
+                    StoryEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    StoryMaker = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    StoryExperience = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    StoryInspiration = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    StoryMarkdown = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CustomerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -276,6 +316,38 @@ namespace MarketplaceArtesanato.Data.Migrations
                         principalTable: "Sellers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SellerSubscriptions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SellerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Plan = table.Column<int>(type: "int", nullable: false),
+                    StartedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CommissionRate = table.Column<decimal>(type: "decimal(5,2)", precision: 5, scale: 2, nullable: false),
+                    CanHighlightProducts = table.Column<bool>(type: "bit", nullable: false),
+                    MonthlyPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    HighlightLimit = table.Column<int>(type: "int", nullable: false),
+                    HasVerifiedBadge = table.Column<bool>(type: "bit", nullable: false),
+                    HasAdvancedAnalytics = table.Column<bool>(type: "bit", nullable: false),
+                    HasPrioritySupport = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SellerSubscriptions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SellerSubscriptions_Sellers_SellerId",
+                        column: x => x.SellerId,
+                        principalTable: "Sellers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -357,6 +429,25 @@ namespace MarketplaceArtesanato.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ProductStoryMedia",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductStoryMedia", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductStoryMedia_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Ratings",
                 columns: table => new
                 {
@@ -365,6 +456,8 @@ namespace MarketplaceArtesanato.Data.Migrations
                     ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Stars = table.Column<int>(type: "int", nullable: false),
                     Review = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    SellerReply = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    SellerReplyAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false)
@@ -400,15 +493,15 @@ namespace MarketplaceArtesanato.Data.Migrations
                 {
                     table.PrimaryKey("PK_UserFavorites", x => new { x.UserId, x.ProductId });
                     table.ForeignKey(
-                        name: "FK_UserFavorites_Customer_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Customer",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
                         name: "FK_UserFavorites_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserFavorites_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -440,6 +533,11 @@ namespace MarketplaceArtesanato.Data.Migrations
                 table: "Customer",
                 column: "UserId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Moments_SellerId",
+                table: "Moments",
+                column: "SellerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_OrderId",
@@ -482,6 +580,11 @@ namespace MarketplaceArtesanato.Data.Migrations
                 column: "SellerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductStoryMedia_ProductId",
+                table: "ProductStoryMedia",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Ratings_CustomerId",
                 table: "Ratings",
                 column: "CustomerId");
@@ -500,6 +603,17 @@ namespace MarketplaceArtesanato.Data.Migrations
                 name: "IX_Sellers_UserId",
                 table: "Sellers",
                 column: "UserId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SellerSubscriptions_Plan",
+                table: "SellerSubscriptions",
+                column: "Plan");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SellerSubscriptions_SellerId",
+                table: "SellerSubscriptions",
+                column: "SellerId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -528,13 +642,22 @@ namespace MarketplaceArtesanato.Data.Migrations
                 name: "CartItems");
 
             migrationBuilder.DropTable(
+                name: "Moments");
+
+            migrationBuilder.DropTable(
                 name: "OrderItems");
 
             migrationBuilder.DropTable(
                 name: "ProductImage");
 
             migrationBuilder.DropTable(
+                name: "ProductStoryMedia");
+
+            migrationBuilder.DropTable(
                 name: "Ratings");
+
+            migrationBuilder.DropTable(
+                name: "SellerSubscriptions");
 
             migrationBuilder.DropTable(
                 name: "SystemSettings");

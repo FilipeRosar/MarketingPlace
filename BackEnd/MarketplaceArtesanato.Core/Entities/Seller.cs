@@ -22,11 +22,12 @@ namespace MarketplaceArtesanato.Core.Entities
         public string? BannerImageUrl { get; set; } 
 
         [StringLength(18)]
-        public string? CNPJ { get; set; } 
+        public string? CNPJ { get; set; }
+        public decimal PlanDiscountPercentage { get; set; }
 
         public string? PixKey { get; set; } 
 
-        public decimal CommissionRate { get; set; } = 15.0m;
+        public decimal CommissionRate { get; set; } = 12.0m;
 
         public Guid AddressId { get; set; }
         public Address Address { get; set; } = null!;
@@ -42,6 +43,8 @@ namespace MarketplaceArtesanato.Core.Entities
         public string? FacebookUrl { get; set; }
         public string? TiktokUrl { get; set; }
         public string? YoutubeUrl { get; set; }
+        public SellerSubscription? Subscription { get; set; }
+
         public ICollection<Moment> Moments { get; set; } = new List<Moment>();
         public List<Product> Products { get; set; } = new();
         public List<Order> OrdersReceived { get; set; } = new();

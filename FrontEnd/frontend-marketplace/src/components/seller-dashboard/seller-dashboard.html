@@ -6,27 +6,41 @@
       <div class="flex justify-between h-16 items-center">
         <h1 class="text-xl font-bold text-gray-800">Painel do Vendedor</h1>
 
-        <div class="flex space-x-1 bg-stone-100 p-1 rounded-lg">
+        <div class="flex space-x-1 bg-stone-100 p-1 rounded-lg overflow-x-auto">
           <button (click)="setActiveTab('overview')"
                   [class.bg-white]="activeTab === 'overview'"
                   [class.shadow-sm]="activeTab === 'overview'"
-                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap"
                   [ngClass]="activeTab === 'overview' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
             Visão Geral
           </button>
           <button (click)="setActiveTab('products')"
                   [class.bg-white]="activeTab === 'products'"
                   [class.shadow-sm]="activeTab === 'products'"
-                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap"
                   [ngClass]="activeTab === 'products' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
             Meus Produtos
+          </button>
+          <button (click)="setActiveTab('promotions')"
+                  [class.bg-white]="activeTab === 'promotions'"
+                  [class.shadow-sm]="activeTab === 'promotions'"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap"
+                  [ngClass]="activeTab === 'promotions' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
+            🎉 Promoções
           </button>
           <button (click)="setActiveTab('orders')"
                   [class.bg-white]="activeTab === 'orders'"
                   [class.shadow-sm]="activeTab === 'orders'"
-                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap"
                   [ngClass]="activeTab === 'orders' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
             Vendas
+          </button>
+          <button (click)="setActiveTab('subscription')"
+                  [class.bg-white]="activeTab === 'subscription'"
+                  [class.shadow-sm]="activeTab === 'subscription'"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap"
+                  [ngClass]="activeTab === 'subscription' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
+            Assinatura
           </button>
         </div>
       </div>
@@ -56,7 +70,13 @@
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Receita Total</h3>
-                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">+12%</span>
+                <span
+                  class="text-xs px-2 py-1 rounded-full"
+                  [ngClass]="getRevenueGrowth() >= 0
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'">
+                  {{ getRevenueGrowth() >= 0 ? '+' : '' }}{{ getRevenueGrowth() }}%
+                </span>
               </div>
               <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.totalRevenue | currencyBr }}</p>
               <p class="text-xs text-gray-400 mt-1">nos últimos 30 dias</p>
@@ -65,7 +85,13 @@
             <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Vendas Realizadas</h3>
-                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">+5%</span>
+                <span
+                  class="text-xs px-2 py-1 rounded-full"
+                  [ngClass]="getSalesGrowth() >= 0
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-red-100 text-red-800'">
+                  {{ getSalesGrowth() >= 0 ? '+' : '' }}{{ getSalesGrowth() }}%
+                </span>
               </div>
               <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.totalSales }}</p>
               <p class="text-xs text-gray-400 mt-1">pedidos processados</p>
@@ -103,13 +129,12 @@
             }
           </div>
 
-          <!-- Gráfico de Vendas (Scroll Horizontal na Tabela/Gráfico se necessário) -->
+          <!-- Gráfico de Vendas -->
           <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
             <h3 class="text-lg font-bold text-gray-900 mb-6">Desempenho de Vendas</h3>
 
             <div class="overflow-x-auto pb-4">
               <div class="flex items-end space-x-6 h-64 pb-2 border-b border-stone-200 min-w-[600px]">
-
                 @for (item of stats.dailyRevenue; track item; let i = $index) {
                   <div class="flex-1 flex flex-col items-center group">
                     <div class="w-full bg-primary/30 hover:bg-primary/50 transition-all rounded-t-md relative"
@@ -119,20 +144,18 @@
                         {{ item.revenue | currencyBr }}
                       </span>
                     </div>
-
                     <span class="text-xs text-gray-500 mt-2">
                       {{ chartDays[i] }}
                     </span>
                   </div>
-      }
-
-    </div>
-  </div>
-</div>
+                }
+              </div>
+            </div>
+          </div>
         </div>
       }
 
-      <!-- TAB: PRODUTOS (Lista Existente com Ações de Edição) -->
+      <!-- TAB: PRODUTOS -->
       @if (activeTab === 'products') {
         <div class="animate-fade-in-up">
           <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -175,7 +198,6 @@
                          }
                       </div>
 
-                      <!-- Botões de Ação -->
                       <div class="flex gap-3">
                         <button (click)="openEditModal(product)" class="text-gray-400 hover:text-blue-500 transition-colors p-1" title="Editar">
                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -198,12 +220,164 @@
         </div>
       }
 
-      <!-- TAB: VENDAS (ATUALIZADA COM GESTÃO DE ENVIO) -->
+      <!-- TAB: PROMOÇÕES -->
+      @if (activeTab === 'promotions') {
+        <div class="animate-fade-in-up space-y-6">
+
+          <!-- Header com botão de criar -->
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-2xl font-bold text-gray-900">Gerenciar Promoções</h3>
+              <p class="text-sm text-gray-500 mt-1">Crie descontos especiais para impulsionar suas vendas</p>
+            </div>
+            <button (click)="openPromotionModal()"
+                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-all">
+              <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nova Promoção
+            </button>
+          </div>
+
+          <!-- Card de Informação -->
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <div class="flex-1">
+              <h4 class="text-sm font-semibold text-blue-900">Como funcionam as promoções?</h4>
+              <p class="text-xs text-blue-700 mt-1">
+                As promoções aplicam descontos temporários em produtos específicos.
+                Os preços promocionais são exibidos automaticamente na loja e podem ser combinados com outros descontos do sistema.
+              </p>
+            </div>
+          </div>
+
+          <!-- Lista de Promoções -->
+          @if (promotions.length === 0) {
+            <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-stone-300">
+              <div class="text-6xl mb-4">🎉</div>
+              <p class="text-gray-500 mb-2">Você ainda não criou nenhuma promoção.</p>
+              <p class="text-sm text-gray-400">Comece agora e aumente suas vendas!</p>
+            </div>
+          } @else {
+            <div class="bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
+              <div class="divide-y divide-stone-100">
+                @for (promo of promotions; track promo.id) {
+                  <div class="p-6 hover:bg-stone-50 transition-colors">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <!-- Info Principal -->
+                      <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                          <h4 class="text-lg font-bold text-gray-900">{{ promo.name }}</h4>
+
+                          <!-- Badge de Status -->
+                          @if (isPromotionActive(promo)) {
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                              Ativa
+                            </span>
+                          } @else if (isPromotionUpcoming(promo)) {
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              Agendada
+                            </span>
+                          } @else {
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                              Encerrada
+                            </span>
+                          }
+                        </div>
+
+                        @if (promo.description) {
+                          <p class="text-sm text-gray-600 mb-3">{{ promo.description }}</p>
+                        }
+
+                        <!-- Detalhes -->
+                        <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+                          <div class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            <span class="font-semibold text-green-600">{{ promo.discountPercentage }}% OFF</span>
+                          </div>
+
+                          <div class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                            <span>{{ promo.productCount }} produto(s)</span>
+                          </div>
+
+                          <div class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>{{ formatDate(promo.startDate) }} - {{ formatDate(promo.endDate) }}</span>
+                          </div>
+                        </div>
+
+                        <!-- Produtos inclusos (preview) -->
+                        @if (promo.productNames && promo.productNames.length > 0) {
+                          <div class="mt-3 flex items-center gap-2 flex-wrap">
+                            <span class="text-xs text-gray-400">Produtos:</span>
+                            @for (name of promo.productNames.slice(0, 3); track name) {
+                              <span class="text-xs bg-stone-100 text-stone-700 px-2 py-1 rounded">{{ name }}</span>
+                            }
+                            @if (promo.productNames.length > 3) {
+                              <span class="text-xs text-gray-400">+{{ promo.productNames.length - 3 }}</span>
+                            }
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Ações -->
+                      <div class="flex gap-2">
+                        <button (click)="editPromotion(promo)"
+                                class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Editar">
+                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+
+                        <button (click)="togglePromotionStatus(promo)"
+                                [class.text-red-600]="promo.isActive"
+                                [class.text-green-600]="!promo.isActive"
+                                class="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+                                [title]="promo.isActive ? 'Desativar' : 'Ativar'">
+                          @if (promo.isActive) {
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          } @else {
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          }
+                        </button>
+
+                        <button (click)="deletePromotion(promo)"
+                                class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Excluir">
+                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- TAB: VENDAS -->
       @if (activeTab === 'orders') {
         <div class="animate-fade-in-up bg-white shadow-soft rounded-2xl overflow-hidden border border-stone-100">
           <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-gray-900">Gerenciamento de Pedidos</h3>
-            <!-- Contador (opcional) -->
             <span class="text-xs bg-stone-100 text-stone-600 py-1 px-2 rounded-full">{{ recentOrders.length }} Pedidos</span>
           </div>
 
@@ -214,9 +388,7 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pedido</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Cliente</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Data</th>
-
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produtos</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Rastreio / Envio</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ações</th>
                 </tr>
@@ -243,7 +415,6 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.customer }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.date }}</td>
 
-                    <!-- Status Badge -->
                     <td class="px-6 py-4 whitespace-nowrap">
                       <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                             [ngClass]="{
@@ -256,7 +427,6 @@
                       </span>
                     </td>
 
-                    <!-- Coluna de Rastreio -->
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       @if (order.trackingCode) {
                         <div class="flex flex-col">
@@ -272,7 +442,6 @@
                       }
                     </td>
 
-                    <!-- Ações de Envio -->
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       @if ((order.status === 'Confirmado' || order.status === 'Confirmed') && !order.trackingCode) {
                           <button (click)="generateLabel(order)" class="text-white bg-primary hover:bg-primary-dark px-3 py-1 rounded text-xs shadow-sm mr-2 transition-colors" title="Gerar com Melhor Envio">
@@ -296,14 +465,224 @@
         </div>
       }
 
+      <!-- TAB: ASSINATURA -->
+      @if (activeTab === 'subscription') {
+        <div class="animate-fade-in-up space-y-6">
+          @if (subscriptionMessage) {
+            <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg">
+              {{ subscriptionMessage }}
+            </div>
+          }
+
+          <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 class="text-sm font-medium text-gray-500">Status da assinatura</h3>
+                <p class="text-base font-semibold text-gray-900 mt-1">{{ getSubscriptionStatusLabel() }}</p>
+                @if (subscription?.startedAt) {
+                  <p class="text-xs text-gray-500 mt-1">Inicio: {{ subscription?.startedAt | date:'dd/MM/yyyy' }}</p>
+                }
+              </div>
+              @if (subscription?.isActive && subscription?.plan !== 'Basic') {
+                <button (click)="cancelSubscription()"
+                        [disabled]="isSubscribing"
+                        class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium text-white bg-stone-900 hover:bg-stone-700 disabled:opacity-50">
+                  Cancelar assinatura
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (isSubscriptionLoading) {
+            <app-loading-spinner></app-loading-spinner>
+          } @else {
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              @for (plan of sellerPlans; track plan.key) {
+                <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 flex flex-col">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-lg font-bold text-gray-900">{{ plan.name }}</h4>
+                    @if (isCurrentPlan(plan.key)) {
+                      <span class="text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">Atual</span>
+                    }
+                  </div>
+                  <p class="text-2xl font-bold text-gray-900 mt-4">
+                    {{ plan.price | currencyBr }}
+                    <span class="text-xs text-gray-400">/mes</span>
+                  </p>
+                  <ul class="mt-4 space-y-2 text-sm text-gray-600">
+                    @for (item of plan.highlights; track item) {
+                      <li class="flex items-center gap-2">
+                        <span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                        {{ item }}
+                      </li>
+                    }
+                  </ul>
+                  <button (click)="startSubscription(plan.key)"
+                          [disabled]="isSubscribing || isCurrentPlan(plan.key)"
+                          class="mt-6 inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium text-white bg-primary hover:bg-primary-dark disabled:opacity-50">
+                    @if (isCurrentPlan(plan.key)) {
+                      Plano atual
+                    } @else if (plan.price === 0) {
+                      Ativar
+                    } @else {
+                      Assinar
+                    }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
     }
   </div>
+
+  <!-- MODAL DE CRIAÇÃO/EDIÇÃO DE PROMOÇÃO -->
+  @if (isPromotionModalOpen) {
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closePromotionModal()"></div>
+
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl leading-6 font-bold text-gray-900" id="modal-title">
+                {{ editingPromotion?.id ? 'Editar' : 'Nova' }} Promoção
+              </h3>
+              <button (click)="closePromotionModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="space-y-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Promoção *</label>
+                <input type="text"
+                       [(ngModel)]="editingPromotion.name"
+                       placeholder="Ex: Black Friday 2026"
+                       class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-3">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <textarea rows="2"
+                          [(ngModel)]="editingPromotion.description"
+                          placeholder="Descreva a promoção (opcional)"
+                          class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-3"></textarea>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Desconto (%) *</label>
+                <div class="relative">
+                  <input type="number"
+                         [(ngModel)]="editingPromotion.discountPercentage"
+                         min="1"
+                         max="90"
+                         step="1"
+                         placeholder="Ex: 20"
+                         class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm border p-3 pr-12 bg-green-50">
+                  <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span class="text-green-700 font-semibold">%</span>
+                  </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Valor entre 1% e 90%</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Data Início *</label>
+                  <input type="datetime-local"
+                         [(ngModel)]="editingPromotion.startDate"
+                         class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-3">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Data Fim *</label>
+                  <input type="datetime-local"
+                         [(ngModel)]="editingPromotion.endDate"
+                         class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-3">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Produtos na Promoção *</label>
+
+                <div class="relative mb-3">
+                  <input type="text"
+                         [(ngModel)]="productSearchTerm"
+                         (input)="filterProducts()"
+                         placeholder="Buscar produtos..."
+                         class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-3 pl-10">
+                  <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+
+                <div class="border border-stone-200 rounded-lg max-h-64 overflow-y-auto">
+                  @if (filteredProducts.length === 0) {
+                    <div class="p-4 text-center text-gray-500 text-sm">
+                      Nenhum produto encontrado
+                    </div>
+                  } @else {
+                    @for (product of filteredProducts; track product.id) {
+                      <label class="flex items-center p-3 hover:bg-stone-50 cursor-pointer border-b border-stone-100 last:border-0">
+                        <input type="checkbox"
+                               [checked]="isProductSelected(product.id)"
+                               (change)="toggleProductSelection(product.id)"
+                               class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                        <img [src]="product.imageUrl"
+                             [alt]="product.name"
+                             class="h-10 w-10 rounded-lg object-cover ml-3 bg-stone-100">
+                        <div class="ml-3 flex-1">
+                          <p class="text-sm font-medium text-gray-900">{{ product.name }}</p>
+                          <p class="text-xs text-gray-500">{{ product.price | currencyBr }}</p>
+                        </div>
+                      </label>
+                    }
+                  }
+                </div>
+
+                <p class="text-xs text-gray-500 mt-2">
+                  {{ editingPromotion.productIds?.length || 0 }} produto(s) selecionado(s)
+                </p>
+              </div>
+
+              <div class="flex items-center">
+                <input type="checkbox"
+                       [(ngModel)]="editingPromotion.isActive"
+                       class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                       id="promo-active">
+                <label for="promo-active" class="ml-2 block text-sm text-gray-900">
+                  Ativar promoção imediatamente
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+            <button type="button"
+                    (click)="savePromotion()"
+                    [disabled]="isSavingPromotion || !isPromotionValid()"
+                    class="w-full inline-flex justify-center rounded-full border border-transparent shadow-sm px-6 py-3 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ isSavingPromotion ? 'Salvando...' : (editingPromotion?.id ? 'Salvar Alterações' : 'Criar Promoção') }}
+            </button>
+            <button type="button"
+                    (click)="closePromotionModal()"
+                    class="mt-3 w-full inline-flex justify-center rounded-full border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- MODAL DE EDIÇÃO DE PRODUTO -->
   @if (isEditing) {
     <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <!-- Backdrop -->
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeEditModal()"></div>
 
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
@@ -311,13 +690,11 @@
             <h3 class="text-lg leading-6 font-bold text-gray-900 mb-4" id="modal-title">Editar Produto</h3>
 
             <div class="space-y-4">
-                <!-- Nome -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nome</label>
                     <input type="text" [(ngModel)]="editingProduct.name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
                 </div>
 
-                <!-- Preço e Promoção -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Preço Original (R$)</label>
@@ -334,13 +711,11 @@
                     </div>
                 </div>
 
-                <!-- Estoque -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Estoque</label>
                     <input type="number" [(ngModel)]="editingProduct.stockQuantity" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
                 </div>
 
-                <!-- Parcelas -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Máx. de parcelas</label>
@@ -352,7 +727,6 @@
                     </div>
                 </div>
 
-                <!-- Descrição -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Descrição</label>
                     <textarea rows="3" [(ngModel)]="editingProduct.description" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2"></textarea>

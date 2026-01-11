@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MarketplaceArtesanato.Data.Migrations
 {
     [DbContext(typeof(ArtesianDbContext))]
-    [Migration("20260108223153_FixUserFavoritesUserFk")]
-    partial class FixUserFavoritesUserFk
+    [Migration("20260110195207_InitalMigraion")]
+    partial class InitalMigraion
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -432,6 +432,24 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Property<int>("StockQuantity")
                         .HasColumnType("int");
 
+                    b.Property<bool>("StoryEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("StoryExperience")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("StoryInspiration")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("StoryMaker")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("StoryMarkdown")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Tags")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -477,6 +495,26 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.ToTable("ProductImage");
                 });
 
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.ProductStoryMedia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductStoryMedia");
+                });
+
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Rating", b =>
                 {
                     b.Property<Guid>("Id")
@@ -499,6 +537,13 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SellerReply")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("SellerReplyAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Stars")
                         .HasColumnType("int");
@@ -569,6 +614,9 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .HasPrecision(2, 1)
                         .HasColumnType("decimal(2,1)");
 
+                    b.Property<bool>("StoreApproved")
+                        .HasColumnType("bit");
+
                     b.Property<string>("StoreName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -603,6 +651,68 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Sellers");
+                });
+
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.SellerSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("CanHighlightProducts")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("CommissionRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("HasAdvancedAnalytics")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasPrioritySupport")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasVerifiedBadge")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("HighlightLimit")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("MonthlyPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Plan")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Plan");
+
+                    b.HasIndex("SellerId")
+                        .IsUnique();
+
+                    b.ToTable("SellerSubscriptions");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.SystemSetting", b =>
@@ -842,6 +952,17 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.ProductStoryMedia", b =>
+                {
+                    b.HasOne("MarketplaceArtesanato.Core.Entities.Product", "Product")
+                        .WithMany("StoryMedia")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Rating", b =>
                 {
                     b.HasOne("MarketplaceArtesanato.Core.Entities.Customer", "Customer")
@@ -878,6 +999,17 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Navigation("Address");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.SellerSubscription", b =>
+                {
+                    b.HasOne("MarketplaceArtesanato.Core.Entities.Seller", "Seller")
+                        .WithOne("Subscription")
+                        .HasForeignKey("MarketplaceArtesanato.Core.Entities.SellerSubscription", "SellerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Seller");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.User", b =>
@@ -933,6 +1065,8 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Navigation("Images");
 
                     b.Navigation("Ratings");
+
+                    b.Navigation("StoryMedia");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Seller", b =>
@@ -942,6 +1076,8 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Navigation("OrdersReceived");
 
                     b.Navigation("Products");
+
+                    b.Navigation("Subscription");
                 });
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.User", b =>

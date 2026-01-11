@@ -14,7 +14,8 @@ export interface Product {
 
   category: string;
   status?: string;
-
+  hasActivePromotion?: boolean;
+  activePromotionName?: string;
   averageRating: number;
   totalRatings: number;
   salePrice?: number;

@@ -10,7 +10,9 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
     {
         public Guid SellerId { get; set; }
         public decimal TotalRevenue { get; set; }
+        public decimal PreviousRevenue { get; set; }
         public int TotalSales { get; set; }
+        public int PreviousSeles { get; set; }
         public int ActiveProducts { get; set; }
         public List<DailyRevenueDto> DailyRevenue { get; set; } = new();
     }

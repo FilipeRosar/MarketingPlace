@@ -3,6 +3,7 @@ using MarketplaceArtesanato.API.Models.Requests;
 using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.DTO;
+using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Entities.Models.Requests;
 using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Interfaces;
@@ -10,6 +11,7 @@ using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Services.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Stripe;
 
 namespace MarketplaceArtesanato.API.Controllers
 {
@@ -20,12 +22,15 @@ namespace MarketplaceArtesanato.API.Controllers
         private readonly ISellerService _sellerService;
         private readonly IStorageService _storageService;
         private readonly IStripeConnectService _stripeConnectService;
+        private readonly ISellerSubscriptionService _sellerSubscriptionService;
 
-        public SellersController(ISellerService sellerService, IStorageService storageService, IStripeConnectService stripeConnectService)
+        public SellersController(ISellerService sellerService, IStorageService storageService, IStripeConnectService stripeConnectService, ISellerSubscriptionService sellerSubscriptionService)
         {
             _sellerService = sellerService;
             _storageService = storageService;
             _stripeConnectService = stripeConnectService;
+            _sellerSubscriptionService = sellerSubscriptionService;
+
         }
 
         [HttpGet]
@@ -68,7 +73,9 @@ namespace MarketplaceArtesanato.API.Controllers
         {
             if (video == null || video.Length == 0)
                 return BadRequest("Vídeo é obrigatório.");
-
+            var userId = User.GetUserId();
+            if (!await _sellerService.IsOwnerAsync(sellerId, userId))
+                return Forbid();
             try
             {
                 var videoUrl = await _storageService.UploadVideoAsync(video);
@@ -90,11 +97,11 @@ namespace MarketplaceArtesanato.API.Controllers
         public async Task<ActionResult<object>> UploadMomentThumb(Guid sellerId, IFormFile thumb)
         {
             if (thumb == null || thumb.Length == 0)
-                return Ok(new { imageUrl = "" }); // thumbnail é opcional
+                return Ok(new { imageUrl = "" }); 
 
             try
             {
-                var imageUrl = await _storageService.UploadFileAsync(thumb); // reutiliza o método de imagem
+                var imageUrl = await _storageService.UploadFileAsync(thumb); 
                 return Ok(new { imageUrl });
             }
             catch (Exception)
@@ -132,7 +139,6 @@ namespace MarketplaceArtesanato.API.Controllers
         public async Task<ActionResult<SellerDashboardDto>> GetDashboard()
         {
             
-                // Tente capturar o ID assim para garantir que o JWT está sendo lido
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
                 if (string.IsNullOrEmpty(userIdClaim))
@@ -227,6 +233,103 @@ namespace MarketplaceArtesanato.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+        [HttpPost("subscription/checkout")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> CreateSubscriptionCheckout([FromBody] SubscribeRequestDto dto)
+        {
+            var userId = User.GetUserId();
+
+            var seller = await _sellerService.GetByUserIdAsync(userId);
+            if (seller == null)
+                return NotFound("Perfil de vendedor nao encontrado para este usuario.");
+            try
+            {
+                if (dto.Plan == SellerPlan.Basic)
+                {
+                    var subscription = await _sellerSubscriptionService.SubscribeAsync(seller.Id, SellerPlan.Basic);
+                    return Ok(new { subscription });
+                }
+
+                var url = await _sellerSubscriptionService.CreateCheckoutSessionAsync(seller.Id, dto.Plan);
+                return Ok(new { url });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("subscription")]
+        [Authorize(Roles = "Seller")]
+        public async Task<ActionResult<SellerSubscription>> GetMySubscription()
+        {
+            var userId = User.GetUserId();
+
+            var seller = await _sellerService.GetByUserIdAsync(userId);
+            if (seller == null)
+                return NotFound("Perfil de vendedor não encontrado para este usuário.");
+
+            var subscription = await _sellerSubscriptionService.GetActiveSubscriptionAsync(seller.Id);
+
+            if (subscription == null)
+                return NotFound("Nenhuma assinatura ativa encontrada para este vendedor.");
+
+            return Ok(subscription);
+        }
+        [HttpPost("subscription")]
+        [Authorize(Roles = "Seller")]
+        public async Task<ActionResult<SellerSubscription>> Subscribe([FromBody] SubscribeRequestDto dto)
+        {
+            var userId = User.GetUserId();
+            var seller = await _sellerService.GetByUserIdAsync(userId);
+            if (seller == null)
+                return NotFound("Perfil de vendedor não encontrado para este usuário.");
+            try
+            {
+                var subscription = await _sellerSubscriptionService.SubscribeAsync(seller.Id, dto.Plan);
+                return Ok(subscription);
+                
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        [HttpPut("subscription")]
+        [Authorize(Roles = "Seller")]
+        public async Task<ActionResult<SellerSubscription>> ChangeSubscriptionPlan([FromBody] SubscribeRequestDto dto)
+        {
+            var userId = User.GetUserId();
+            var seller = await _sellerService.GetByUserIdAsync(userId);
+            if (seller == null)
+                return NotFound("Vendedor não encontrado.");
+            try
+            {
+                var updatedSubscription = await _sellerSubscriptionService.ChangePlanAsync(seller.Id, dto.Plan);
+                return Ok(updatedSubscription);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("subscription")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> CancelSubscription()
+        {
+            var userId = User.GetUserId();
+
+            var seller = await _sellerService.GetByUserIdAsync(userId);
+            if (seller == null)
+                return NotFound("Vendedor não encontrado.");
+
+            await _sellerSubscriptionService.CancelAsync(seller.Id);
+
+            await _sellerSubscriptionService.SubscribeAsync(seller.Id, SellerPlan.Basic);
+
+            return NoContent();
         }
     }
 }

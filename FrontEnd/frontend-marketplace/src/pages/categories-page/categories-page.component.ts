@@ -66,16 +66,15 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     sortBy: 'relevance'
   });
 
-  // OpÃ§Ãµes dos filtros (Mapeamento para label)
   categories = [
     { value: '', label: 'Todas as categorias' },
-    { value: '0', label: 'DecoraÃ§Ã£o' },
+    { value: '0', label: 'Decoração' },
     { value: '1', label: 'Joias' },
     { value: '2', label: 'Roupas' },
     { value: '3', label: 'Arte' },
     { value: '4', label: 'Brinquedos' },
-    { value: '5', label: 'AcessÃ³rios' },
-    { value: '6', label: 'MÃ³veis' },
+    { value: '5', label: 'Acessórios' },
+    { value: '6', label: 'Móveis' },
     { value: '7', label: 'Cozinha' },
     { value: '8', label: 'Papelaria' },
     { value: '9', label: 'Outros' }
@@ -218,23 +217,23 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
 
   colors = [
     { name: 'Terracota', hex: '#b45309' },
-    { name: 'SÃ¡lvia', hex: '#84a98c' },
+    { name: 'Sálvia', hex: '#84a98c' },
     { name: 'Areia', hex: '#d6ccc2' },
-    { name: 'CarvÃ£o', hex: '#264653' },
+    { name: 'Carvão', hex: '#264653' },
     { name: 'Mostarda', hex: '#e9c46a' },
     { name: 'Lavanda', hex: '#cdb4db' }
   ];
 
-  regions = ['Todas as regiÃµes', 'Nordeste', 'Sudeste', 'Sul', 'Norte', 'Centro-Oeste'];
+  regions = ['Todas as regiões', 'Nordeste', 'Sudeste', 'Sul', 'Norte', 'Centro-Oeste'];
   sortOptions = [
     { value: 'relevance', label: 'Mais relevantes' },
     { value: 'newest', label: 'Mais recentes' },
-    { value: 'price-low', label: 'Menor preÃ§o' },
-    { value: 'price-high', label: 'Maior preÃ§o' },
+    { value: 'price-low', label: 'Menor preço' },
+    { value: 'price-high', label: 'Maior preço' },
     { value: 'bestsellers', label: 'Mais vendidos' }
   ];
 
-  // TÃ­tulo DinÃ¢mico (Computed Signal)
+  // Título Dinâmico (Computed Signal)
   pageTitle = computed(() => {
     const f = this.filters();
 
@@ -269,7 +268,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       this.filters.update(f => ({
         ...f,
-        search: params['search'] || '', // Ajustado para 'search' (era 'q' no exemplo anterior, mas header usa 'search')
+        search: params['search'] || '',
         subcategory: params['subcategory'] || '',
         category: params['category'] || '',
         color: params['color'] || '',
@@ -288,11 +287,10 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
       this.updateUrl({ search: term });
     });
 
-    // Efeito para atualizar SEO e Filtros quando mudarem
     effect(() => {
       this.applyFilters();
 
-      // Atualiza tÃ­tulo da aba do navegador
+
       this.seoService.updateSeoData({
         title: this.pageTitle(),
         description: `Encontre o melhor de ${this.pageTitle()} no Trama.`,
@@ -321,7 +319,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
         const items = Array.isArray(res) ? res : (res.items || res.data || []);
         this.products.set(items);
         this.totalItems.set(res.total || items.length);
-        this.applyFilters(); // Reaplica filtros locais se houver (cor, preÃ§o)
+        this.applyFilters();
         this.isLoading.set(false);
       },
       error: () => {
@@ -355,9 +353,7 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
     const f = this.filters();
     let filtered = [...this.products()];
 
-    // Filtros locais (que o backend talvez nÃ£o suporte ainda ou para refinamento)
     if (f.color) {
-      // SimulaÃ§Ã£o: filtra se a tag contÃ©m a cor
       filtered = filtered.filter(p => p.tags?.some((t: string) => t.toLowerCase().includes(f.color.toLowerCase())));
     }
 
@@ -365,12 +361,10 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(p => p.price >= f.priceMin && p.price <= f.priceMax);
     }
 
-    // OrdenaÃ§Ã£o local (se o backend nÃ£o ordenar)
     filtered.sort((a, b) => {
       switch (f.sortBy) {
         case 'price-low': return a.price - b.price;
         case 'price-high': return b.price - a.price;
-        // case 'newest': ... (precisa de data no produto)
         default: return 0;
       }
     });
@@ -380,11 +374,8 @@ export class CategoriesPageComponent implements OnInit, OnDestroy {
 
   updateUrl(partial: Partial<FilterState>) {
     const current = this.filters();
-    // Remove search se categoria mudar, ou vice-versa, se desejar comportamento exclusivo
-    // Aqui mantemos acumulativo, mas limpamos search se estiver vazio
     const updated = { ...current, ...partial };
 
-    // Limpeza de objetos vazios para a URL ficar bonita
     const queryParams: any = {
         search: updated.search || null,
         subcategory: updated.subcategory || null,

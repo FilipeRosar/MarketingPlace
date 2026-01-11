@@ -84,7 +84,9 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
 builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
+builder.Services.AddScoped<ISellerSubscriptionService, SellerSubscribeService>();
 builder.Services.AddScoped<IPlatformFeeService, PlatformFeeService>();
+builder.Services.AddScoped<IPriceCalculationService, PriceCalculationService>();
 builder.Services.AddScoped<IProductService, MarketplaceArtesanato.Services.Services.ProductService>();
 builder.Services.Configure<AzureBlobSettings>(builder.Configuration.GetSection("Storage:AzureBlob"));
 
@@ -210,7 +212,6 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "MarketplaceArtesanato API V1");
         c.RoutePrefix = "swagger";
     });
-    // app.MapOpenApi(); // Removido pois já usamos SwaggerGen acima, evita conflito
 }
 
 app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api/webhook"), appBuilder =>
