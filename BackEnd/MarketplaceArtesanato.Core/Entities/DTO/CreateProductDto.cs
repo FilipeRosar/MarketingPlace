@@ -61,6 +61,7 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         [StringLength(1000)] public string? Description { get; set; }
         public decimal? Price { get; set; }
         public decimal? SalePrice { get; set; }
+        public bool? BoostProduct { get; set; }
         public int? MaxInstallments { get; set; }
         public int? MaxNoInterestInstallments { get; set; }
         public int? StockQuantity { get; set; }

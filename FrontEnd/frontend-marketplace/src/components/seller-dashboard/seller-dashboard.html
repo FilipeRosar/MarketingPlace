@@ -35,6 +35,13 @@
                   [ngClass]="activeTab === 'orders' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
             Vendas
           </button>
+          <button (click)="setActiveTab('chat')"
+                  [class.bg-white]="activeTab === 'chat'"
+                  [class.shadow-sm]="activeTab === 'chat'"
+                  class="px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap"
+                  [ngClass]="activeTab === 'chat' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'">
+            Chat
+          </button>
           <button (click)="setActiveTab('subscription')"
                   [class.bg-white]="activeTab === 'subscription'"
                   [class.shadow-sm]="activeTab === 'subscription'"
@@ -105,6 +112,30 @@
               <p class="text-3xl font-bold text-gray-900 mt-2">{{ products.length }}</p>
               <p class="text-xs text-gray-400 mt-1">itens no catálogo</p>
             </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-medium text-gray-500">Solicitacoes de contato</h3>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ contactRequestCount }}</p>
+              </div>
+              <a routerLink="/chat" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold text-primary border border-primary hover:bg-primary hover:text-white transition-colors">
+                Ver Chat
+              </a>
+            </div>
+            @if (contactRequests.length > 0) {
+              <div class="mt-4 space-y-3">
+                @for (req of contactRequests; track req.customerId) {
+                  <div class="flex items-center justify-between text-sm text-gray-700">
+                    <span class="font-medium">{{ req.customerName }}</span>
+                    <span class="text-xs text-gray-400">{{ req.lastMessageAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-xs text-gray-500 mt-3">Nenhuma solicitacao pendente.</p>
+            }
           </div>
 
           <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100">
@@ -182,6 +213,11 @@
                            @if (product.salePrice) {
                               <span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
                                 Oferta {{ getDiscountPercent(product) }}%
+                              </span>
+                           }
+                           @if (product.isBoosted) {
+                              <span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
+                                Boost
                               </span>
                            }
                         </div>
@@ -493,22 +529,37 @@
             </div>
           </div>
 
+
+
+          <div class="flex justify-end">
+            <button (click)="openPlanCompareModal()"
+                    class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium text-primary border border-primary hover:bg-primary hover:text-white transition-colors">
+              Comparar planos
+            </button>
+          </div>
           @if (isSubscriptionLoading) {
             <app-loading-spinner></app-loading-spinner>
           } @else {
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               @for (plan of sellerPlans; track plan.key) {
                 <div class="bg-white p-6 rounded-2xl shadow-soft border border-stone-100 flex flex-col">
-                  <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between">
                     <h4 class="text-lg font-bold text-gray-900">{{ plan.name }}</h4>
-                    @if (isCurrentPlan(plan.key)) {
-                      <span class="text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">Atual</span>
+                    @if (plan.badge) {
+                      <span class="text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-1 rounded-full">{{ plan.badge }}</span>
+                    } @else if (isCurrentPlan(plan.key)) {
+                      <span class="text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">Plano atual</span>
                     }
                   </div>
                   <p class="text-2xl font-bold text-gray-900 mt-4">
                     {{ plan.price | currencyBr }}
                     <span class="text-xs text-gray-400">/mes</span>
                   </p>
+                  <p class="text-sm text-gray-600 mt-2">{{ plan.description }}</p>
+                  @if (getSavingsText(plan.key)) {
+                    <p class="text-xs text-emerald-700 mt-2 font-medium">{{ getSavingsText(plan.key) }}</p>
+                  }
+
                   <ul class="mt-4 space-y-2 text-sm text-gray-600">
                     @for (item of plan.highlights; track item) {
                       <li class="flex items-center gap-2">
@@ -521,13 +572,12 @@
                           [disabled]="isSubscribing || isCurrentPlan(plan.key)"
                           class="mt-6 inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium text-white bg-primary hover:bg-primary-dark disabled:opacity-50">
                     @if (isCurrentPlan(plan.key)) {
-                      Plano atual
-                    } @else if (plan.price === 0) {
-                      Ativar
+                      {{ plan.ctaActive }}
                     } @else {
-                      Assinar
+                      {{ plan.ctaInactive }}
                     }
                   </button>
+                  <p class="mt-4 text-xs text-gray-500">Cancele quando quiser. Sem fidelidade.</p>
                 </div>
               }
             </div>
@@ -538,7 +588,60 @@
     }
   </div>
 
-  <!-- MODAL DE CRIAÇÃO/EDIÇÃO DE PROMOÇÃO -->
+  
+
+  @if (isPlanCompareOpen) {
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="compare-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closePlanCompareModal()"></div>
+
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl leading-6 font-bold text-gray-900" id="compare-title">Comparar planos</h3>
+              <button (click)="closePlanCompareModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm text-left">
+                <thead class="bg-stone-50 text-stone-700">
+                  <tr>
+                    <th class="px-4 py-3 font-semibold">Beneficio</th>
+                    <th class="px-4 py-3 font-semibold">Basic</th>
+                    <th class="px-4 py-3 font-semibold">Pro</th>
+                    <th class="px-4 py-3 font-semibold">Premium</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100">
+                  @for (row of planComparisonRows; track row.label) {
+                    <tr>
+                      <td class="px-4 py-3 text-stone-600">{{ row.label }}</td>
+                      <td class="px-4 py-3 text-gray-900">{{ row.values.Basic }}</td>
+                      <td class="px-4 py-3 text-gray-900">{{ row.values.Pro }}</td>
+                      <td class="px-4 py-3 text-gray-900">{{ row.values.Premium }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+            <button type="button"
+                    (click)="closePlanCompareModal()"
+                    class="w-full inline-flex justify-center rounded-full border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:w-auto sm:text-sm">
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+<!-- MODAL DE CRIAÇÃO/EDIÇÃO DE PROMOÇÃO -->
   @if (isPromotionModalOpen) {
     <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -700,17 +803,26 @@
                         <label class="block text-sm font-medium text-gray-700">Preço Original (R$)</label>
                         <input type="number" [(ngModel)]="editingProduct.price" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-green-700">Desconto (%)</label>
-                        <input type="number" [(ngModel)]="editingProduct.discountPercent" min="0" max="90" step="1" placeholder="Opcional" class="mt-1 block w-full border-green-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm border p-2 bg-green-50">
-                        @if (getSalePricePreview() !== null) {
-                          <p class="text-xs text-green-700 mt-1">
-                            Preço final: {{ getSalePricePreview()! | currencyBr }}
-                          </p>
-                        }
-                    </div>
                 </div>
 
+
+
+                <div class="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50 p-3">
+                    <div>
+                        <p class="text-sm font-semibold text-blue-900">Boost do produto</p>
+                        <p class="text-xs text-blue-700">{{ getBoostAvailabilityLabel() }}</p>
+                        @if (subscription?.canHighlightProducts) {
+                          <p class="text-[10px] text-blue-700 mt-1">Restantes neste mes: {{ getBoostRemaining() }}</p>
+                        }
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-blue-900">
+                        <input type="checkbox"
+                               [(ngModel)]="editingProduct.boostProduct"
+                               [disabled]="!isBoostAllowedForEdit()"
+                               class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                        Ativar boost por 30 dias
+                    </label>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Estoque</label>
                     <input type="number" [(ngModel)]="editingProduct.stockQuantity" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm border p-2">

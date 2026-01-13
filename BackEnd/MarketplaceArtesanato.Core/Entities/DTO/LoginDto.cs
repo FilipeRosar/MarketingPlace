@@ -13,5 +13,7 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         public string Email { get; set; } = string.Empty;
         [Required]
         public string Password { get; set; } = string.Empty;
+        [Required]
+        public string TurnstileToken { get; set; } = null!;
     }
 }

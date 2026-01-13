@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth/auth.service';
 import { CartService } from '../../services/cart/cart.service';
 import { ProductService } from '../../services/product/product.service';
 import { SellerService } from '../../services/seller/seller.service';
+import { ChatService } from '../../services/chat/chat.service';
 import { Subscription, Subject, forkJoin, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, switchMap, takeUntil } from 'rxjs/operators';
 
@@ -30,6 +31,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
   private productService = inject(ProductService);
   private sellerService = inject(SellerService);
+  private chatService = inject(ChatService);
 
   // Observables & Data
   currentUser$ = this.authService.currentUser$;
@@ -51,6 +53,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   searchSuggestionsProducts: any[] = [];
   searchSuggestionsSellers: any[] = [];
+  chatRequestCount = 0;
 
   // Categorias e subcategorias (ASCII para evitar problemas de encoding)
   categories = [
@@ -226,6 +229,25 @@ export class HeaderComponent implements OnInit, OnDestroy {
   @Output() toggleDark = new EventEmitter<void>();
 
   ngOnInit(): void {
+    this.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        if (user?.role === 'Seller') {
+          this.refreshChatRequests();
+        } else {
+          this.chatRequestCount = 0;
+        }
+      });
+
+    this.chatService.notifications$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        const user = this.authService.currentUserValue;
+        if (user?.role === 'Seller') {
+          this.refreshChatRequests();
+        }
+      });
+
     this.routerSub = this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
@@ -371,6 +393,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']).then(() => {
       if (isPlatformBrowser(this.platformId)) {
          window.scrollTo(0, 0);
+      }
+    });
+  }
+
+  private refreshChatRequests() {
+    this.chatService.getContactRequestThreads().subscribe({
+      next: threads => {
+        this.chatRequestCount = threads.length;
+      },
+      error: () => {
+        this.chatRequestCount = 0;
       }
     });
   }

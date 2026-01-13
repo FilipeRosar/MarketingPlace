@@ -12,13 +12,13 @@ namespace MarketplaceArtesanato.Core.Models.Requests
     {
         [Required]
         public List<CheckoutItemDto> Items { get; set; } = new();
-
+        public ShippingAddressDTO? ShippingAddress { get; set; }
         public decimal ShippingFee { get; set; } = 0m;
         public string? ShippingName { get; set; }
-
+        public decimal ShippingCost { get; set; }
         [Required]
         public string SuccessUrl { get; set; } = string.Empty;
-
+        public string? Carrier { get; set; }
         [Required]
         public string CancelUrl { get; set; } = string.Empty;
     }

@@ -1,8 +1,9 @@
-using AutoMapper;
+Ôªøusing AutoMapper;
 using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
+using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Entities.Enums;
-using MarketplaceArtesanato.Core.Entities.Models.Responses; 
+using MarketplaceArtesanato.Core.Entities.Models.Responses;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Models.Requests;
 using MarketplaceArtesanato.Data.Data;
@@ -19,25 +20,30 @@ namespace MarketplaceArtesanato.Services.Services
         private readonly IStripePaymentService _stripeService;
         private readonly ILogger<OrderService> _logger;
         private readonly IPlatformFeeService _platformFeeService;
+        private readonly IPriceCalculationService _priceCalculationService;
 
         public OrderService(
             ArtesianDbContext context,
             IMapper mapper,
             IStripePaymentService stripeService,
             ILogger<OrderService> logger,
-            IPlatformFeeService platformFeeService)
+            IPlatformFeeService platformFeeService,
+            IPriceCalculationService priceCalculationService)
         {
             _context = context;
             _mapper = mapper;
             _stripeService = stripeService;
             _logger = logger;
             _platformFeeService = platformFeeService;
+            _priceCalculationService = priceCalculationService;
         }
 
-                public async Task<List<OrderResponseDto>> GetByUserAsync(Guid userId, string role)
+        public async Task<List<OrderResponseDto>> GetByUserAsync(Guid userId, string role)
         {
-            var query = _context.Orders
-                .Include(o => o.Items).ThenInclude(i => i.Product)
+            IQueryable<Order> query = _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Seller)
                 .AsNoTracking();
 
             Guid sellerId = Guid.Empty;
@@ -66,41 +72,21 @@ namespace MarketplaceArtesanato.Services.Services
             }
 
             var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
-            var dtos = _mapper.Map<List<OrderResponseDto>>(orders);
+            var dtos = new List<OrderResponseDto>();
 
-            for (int i = 0; i < orders.Count && i < dtos.Count; i++)
+            foreach (var order in orders)
             {
-                var order = orders[i];
+                var dto = _mapper.Map<OrderResponseDto>(order);
 
-                if (role == "Seller" && sellerId != Guid.Empty)
-                {
-                    if (order.TrackingCodes != null && order.TrackingCodes.TryGetValue(sellerId, out var code))
-                    {
-                        dtos[i].TrackingCode = code;
-                        dtos[i].TrackingCodes = new List<string> { code };
-                    }
-                }
-                else if (order.TrackingCodes != null && order.TrackingCodes.Count > 0)
-                {
-                    dtos[i].TrackingCode = order.TrackingCodes.First().Value;
-                    dtos[i].TrackingCodes = order.TrackingCodes.Values.ToList();
-                }
+                EnrichOrderDto(dto, order, sellerId, role);
 
-                if (!string.IsNullOrWhiteSpace(order.Carrier))
-                {
-                    dtos[i].Carrier = order.Carrier;
-                }
-
-                if (dtos[i].TrackingCodes == null)
-                {
-                    dtos[i].TrackingCodes = new List<string>();
-                }
+                dtos.Add(dto);
             }
 
             return dtos;
         }
 
-                public async Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role)
+        public async Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role)
         {
             var order = await _context.Orders
                 .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
@@ -108,7 +94,7 @@ namespace MarketplaceArtesanato.Services.Services
                 .Include(o => o.Buyer)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
-            if (order == null) throw new KeyNotFoundException("Pedido nao encontrado.");
+            if (order == null) throw new KeyNotFoundException("Pedido n√£o encontrado.");
 
             var sellerId = role == "Seller"
                 ? await _context.Sellers.Where(s => s.UserId == userId).Select(s => s.Id).FirstOrDefaultAsync()
@@ -119,10 +105,17 @@ namespace MarketplaceArtesanato.Services.Services
             bool isAdmin = role == "Admin";
 
             if (!isBuyer && !isSeller && !isAdmin)
-                throw new UnauthorizedAccessException("Sem permissao para visualizar este pedido.");
+                throw new UnauthorizedAccessException("Sem permiss√£o para visualizar este pedido.");
 
             var dto = _mapper.Map<OrderResponseDto>(order);
 
+            EnrichOrderDto(dto, order, sellerId, role);
+
+            return dto;
+        }
+
+        private void EnrichOrderDto(OrderResponseDto dto, Order order, Guid sellerId, string role)
+        {
             if (role == "Seller" && sellerId != Guid.Empty)
             {
                 if (order.TrackingCodes != null && order.TrackingCodes.TryGetValue(sellerId, out var code))
@@ -147,13 +140,48 @@ namespace MarketplaceArtesanato.Services.Services
                 dto.TrackingCodes = new List<string>();
             }
 
-            return dto;
+            dto.ShippingCost = order.ShippingCost;
+            dto.Subtotal = order.Items.Sum(i => i.UnitPrice * i.Quantity);
+
+            var sellerNames = order.Items
+                .Where(i => i.Product?.Seller != null)
+                .Select(i => i.Product.Seller.StoreName)
+                .Distinct()
+                .ToList();
+
+            if (sellerNames.Count == 1)
+            {
+                dto.SellerName = sellerNames.First();
+            }
+
+            if (order.ShippingAddress != null)
+            {
+                dto.ShippingAddress = new ShippingAddressDTO
+                {
+                    Street = order.ShippingAddress.Street,
+                    Number = order.ShippingAddress.Number,
+                    Complement = order.ShippingAddress.Complement,
+                    Neighborhood = order.ShippingAddress.Neighborhood,
+                    City = order.ShippingAddress.City,
+                    State = order.ShippingAddress.State,
+                    ZipCode = order.ShippingAddress.ZipCode
+                };
+            }
+
+            foreach (var itemDto in dto.Items)
+            {
+                var item = order.Items.FirstOrDefault(i => i.Id == itemDto.Id);
+                if (item?.Product?.Seller != null)
+                {
+                    itemDto.SellerName = item.Product.Seller.StoreName;
+                }
+            }
         }
 
         public async Task<CheckoutResponseResult> CreateOrderAsync(Guid buyerId, CheckoutRequestDto dto)
         {
             var buyer = await _context.Users.FindAsync(buyerId);
-            if (buyer == null) throw new KeyNotFoundException("Comprador n„o encontrado.");
+            if (buyer == null) throw new KeyNotFoundException("Comprador n√£o encontrado.");
 
             // 1. Validar e Buscar Produtos
             var productIds = dto.Items.Select(i => i.ProductId).ToList();
@@ -163,7 +191,7 @@ namespace MarketplaceArtesanato.Services.Services
                 .ToListAsync();
 
             if (products.Count != productIds.Count)
-                throw new InvalidOperationException("Algum produto do carrinho n„o foi encontrado ou est· indisponÌvel.");
+                throw new InvalidOperationException("Algum produto do carrinho n√£o foi encontrado ou est√° indispon√≠vel.");
 
             // 2. Construir o Pedido
             var order = new Order
@@ -175,7 +203,23 @@ namespace MarketplaceArtesanato.Services.Services
                 CreatedAt = DateTime.UtcNow,
                 Items = new List<OrderItem>(),
                 SellerCommissions = new Dictionary<Guid, decimal>(),
-                TrackingCodes = new Dictionary<Guid, string>()
+                TrackingCodes = new Dictionary<Guid, string>(),
+
+                // ‚úÖ NOVO: Adicionar ShippingCost e Carrier do DTO
+                ShippingCost = dto.ShippingCost,
+                Carrier = dto.Carrier ?? "Correios",
+
+                // ‚úÖ NOVO: Adicionar ShippingAddress do DTO
+                ShippingAddress = dto.ShippingAddress != null ? new ShippingAddress
+                {
+                    Street = dto.ShippingAddress.Street,
+                    Number = dto.ShippingAddress.Number,
+                    Complement = dto.ShippingAddress.Complement,
+                    Neighborhood = dto.ShippingAddress.Neighborhood,
+                    City = dto.ShippingAddress.City,
+                    State = dto.ShippingAddress.State,
+                    ZipCode = dto.ShippingAddress.ZipCode
+                } : null
             };
 
             decimal orderTotal = 0;
@@ -185,9 +229,12 @@ namespace MarketplaceArtesanato.Services.Services
             {
                 var product = products.First(p => p.Id == itemDto.ProductId);
 
-                // ValidaÁ„o de Estoque
+                // Valida√ß√£o de Estoque
                 if (product.StockQuantity < itemDto.Quantity)
                     throw new InvalidOperationException($"Estoque insuficiente para o produto: {product.Name}");
+
+                var priceResult = await _priceCalculationService.CalculateProductPriceAsync(product, buyerId);
+                var unitPrice = priceResult.FinalPrice;
 
                 var orderItem = new OrderItem
                 {
@@ -195,7 +242,7 @@ namespace MarketplaceArtesanato.Services.Services
                     ProductId = product.Id,
                     Product = product,
                     Quantity = itemDto.Quantity,
-                    UnitPrice = product.Price,
+                    UnitPrice = unitPrice,
                     ProductName = product.Name,
                     ProductImage = product.Images.FirstOrDefault()?.Url
                 };
@@ -230,13 +277,11 @@ namespace MarketplaceArtesanato.Services.Services
                     order.SellerCommissions[sellerId] = commission;
             }
 
-            order.TotalAmount = orderTotal;
+            order.TotalAmount = orderTotal + order.ShippingCost;
 
-            // 3. Persistir Pedido (Status Pendente)
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            // 4. Gerar Sess„o de Pagamento no Stripe
             var paymentUrl = await _stripeService.CreateCheckoutSessionAsync(order, buyerId);
 
             return new CheckoutResponseResult
@@ -253,26 +298,25 @@ namespace MarketplaceArtesanato.Services.Services
                 .Include(o => o.Items).ThenInclude(i => i.Product)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
-            if (order == null) throw new KeyNotFoundException("Pedido n„o encontrado.");
+            if (order == null) throw new KeyNotFoundException("Pedido n√£o encontrado.");
 
-            // Garante inicializaÁ„o do dicion·rio se for nulo
             if (order.TrackingCodes == null) order.TrackingCodes = new Dictionary<Guid, string>();
 
             if (role == "Seller")
-{
-    var sellerId = await _context.Sellers
-        .Where(s => s.UserId == userId)
-        .Select(s => s.Id)
-        .FirstOrDefaultAsync();
-
-    bool isMyOrder = sellerId != Guid.Empty && order.Items.Any(i => i.Product.SellerId == sellerId);
-    if (!isMyOrder) throw new UnauthorizedAccessException("Este pedido nao contem seus produtos.");
-
-    order.TrackingCodes[sellerId] = trackingCode;
-}
-else if (role == "Admin")
             {
-                // Admin: Se quiser ser especÌfico, o DTO deveria ter o SellerId alvo.
+                var sellerId = await _context.Sellers
+                    .Where(s => s.UserId == userId)
+                    .Select(s => s.Id)
+                    .FirstOrDefaultAsync();
+
+                bool isMyOrder = sellerId != Guid.Empty && order.Items.Any(i => i.Product.SellerId == sellerId);
+                if (!isMyOrder) throw new UnauthorizedAccessException("Este pedido n√£o cont√©m seus produtos.");
+
+                order.TrackingCodes[sellerId] = trackingCode;
+            }
+            else if (role == "Admin")
+            {
+                // Admin: Se quiser ser espec√≠fico, o DTO deveria ter o SellerId alvo.
                 // Fallback: pega o primeiro vendedor encontrado
                 var targetSellerId = order.Items.First().Product.SellerId;
                 order.TrackingCodes[targetSellerId] = trackingCode;
@@ -282,9 +326,8 @@ else if (role == "Admin")
                 throw new UnauthorizedAccessException("Apenas Vendedores ou Admins podem atualizar rastreio.");
             }
 
-            // Regra de NegÛcio Simplificada: Se j· foi pago e adicionou rastreio, muda para Enviado
+            // Regra de Neg√≥cio Simplificada: Se j√° foi pago e adicionou rastreio, muda para Enviado
             order.Carrier = carrier?.Trim() ?? string.Empty;
-
 
             if (order.Status == OrderStatus.Confirmed)
             {
@@ -292,7 +335,7 @@ else if (role == "Admin")
                 order.ShippedAt = DateTime.UtcNow;
             }
 
-            // Truque para o EF Core detectar mudanÁa no JSON/Dictionary
+            // Truque para o EF Core detectar mudan√ßa no JSON/Dictionary
             order.TrackingCodes = new Dictionary<Guid, string>(order.TrackingCodes);
 
             await _context.SaveChangesAsync();
@@ -304,16 +347,16 @@ else if (role == "Admin")
                 .Include(o => o.Items)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
-            if (order == null) throw new KeyNotFoundException("Pedido n∆o encontrado.");
+            if (order == null) throw new KeyNotFoundException("Pedido n√£o encontrado.");
 
             var isBuyer = order.BuyerId == userId;
             var isAdmin = role == "Admin";
 
             if (!isBuyer && !isAdmin)
-                throw new UnauthorizedAccessException("Sem permiss∆o para cancelar este pedido.");
+                throw new UnauthorizedAccessException("Sem permiss√£o para cancelar este pedido.");
 
             if (order.Status == OrderStatus.Sent || order.Status == OrderStatus.Delivered)
-                throw new InvalidOperationException("Pedido j† enviado/entregue n∆o pode ser cancelado.");
+                throw new InvalidOperationException("Pedido j√° enviado/entregue n√£o pode ser cancelado.");
 
             if (order.Status == OrderStatus.Canceled || order.Status == OrderStatus.Refunded)
                 return;
@@ -345,6 +388,80 @@ else if (role == "Admin")
 
             await _context.SaveChangesAsync();
         }
+        public async Task<List<OrderDto>> GetMyOrdersAsync(Guid userId)
+        {
+            var orders = await _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Seller)
+                .Where(o => o.BuyerId == userId)
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+
+            return orders.Select(o => MapToDTO(o)).ToList();
+        }
+
+        private OrderDto MapToDTO(Order order)
+        {
+            var dto = new OrderDto
+            {
+                Id = order.Id,
+                BuyerId = order.BuyerId,
+                CreatedAt = order.CreatedAt,
+                ShippedAt = order.ShippedAt,
+                TotalAmount = order.TotalAmount,
+
+                // ‚úÖ Frete e subtotal
+                ShippingCost = order.ShippingCost,
+                SubTotal = order.Subtotal,
+
+                StripeSessionId = order.StripeSessionId,
+                StripePaymentIntentId = order.StripePaymentIntentId,
+                Status = order.Status,
+                StatusText = order.Status.ToString(),
+                Carrier = order.Carrier,
+
+                TrackingCode = order.TrackingCodes?.Values.FirstOrDefault(),
+                TrackingCodes = order.TrackingCodes?.Values.ToList(),
+
+                // ‚úÖ Endere√ßo
+                ShippingAddress = order.ShippingAddress == null ? null : new ShippingAddressDTO
+                {
+                    Street = order.ShippingAddress.Street,
+                    Number = order.ShippingAddress.Number,
+                    Complement = order.ShippingAddress.Complement,
+                    Neighborhood = order.ShippingAddress.Neighborhood,
+                    City = order.ShippingAddress.City,
+                    State = order.ShippingAddress.State,
+                    ZipCode = order.ShippingAddress.ZipCode
+                },
+
+                SellerName = GetSellerName(order),
+
+                Items = order.Items.Select(i => new OrderItemDto
+                {
+                    ProductId = i.ProductId,
+                    ProductName = i.ProductName,
+                    ProductImage = i.ProductImage,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+
+                    SellerName = i.Product?.Seller?.StoreName ?? "Vendedor n√£o dispon√≠vel"
+                }).ToList()
+            };
+
+            return dto;
+        }
+
+        private string? GetSellerName(Order order)
+        {
+            var sellerNames = order.Items
+                .Where(i => i.Product?.Seller != null)
+                .Select(i => i.Product.Seller.StoreName)
+                .Distinct()
+                .ToList();
+
+            return sellerNames.Count == 1 ? sellerNames.First() : null;
+        }
     }
 }
-

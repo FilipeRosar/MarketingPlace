@@ -23,9 +23,14 @@ import { RouterLink } from '@angular/router';
 
       <!-- Info -->
       <div class="flex-1 min-w-0">
-        <h3 class="text-base font-bold text-gray-900 truncate group-hover:text-primary transition-colors">
-          {{ seller.name }}
-        </h3>
+        <div class="flex items-center gap-2">
+          <h3 class="text-base font-bold text-gray-900 truncate group-hover:text-primary transition-colors">
+            {{ seller.name }}
+          </h3>
+          @if (seller.hasVerifiedBadge) {
+            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700"><span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white"><svg class="w-2.5 h-2.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10l3 3 7-7" /></svg></span><span>Verificado</span></span>
+          }
+        </div>
         @if (seller.bio) {
           <p class="text-xs text-gray-500 line-clamp-1 mt-0.5">{{ seller.bio }}</p>
         }

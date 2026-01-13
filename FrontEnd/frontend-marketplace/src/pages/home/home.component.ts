@@ -7,6 +7,7 @@ import { SeoService } from '../../services/SEO/seo.service';
 import { Product } from '../../models/product/product.model';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
+import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 
 @Component({
   selector: 'app-home',
@@ -18,8 +19,21 @@ import { LoadingSpinnerComponent } from '../../components/loading-spinner.compon
     LoadingSpinnerComponent
   ],
   templateUrl: './home.component.html',
-  styleUrl: './home.component.css'
+  styleUrl: './home.component.css',
+  animations: [
+  trigger('fadeSlide', [
+    transition(':enter', [
+      style({ opacity: 0, transform: 'translateY(10px) scale(0.9)' }),
+      animate('600ms ease-out', style({ opacity: 1, transform: 'translateY(0) scale(1)' }))
+    ]),
+    transition(':leave', [
+      animate('400ms ease-in', style({ opacity: 0, scale: 0.9 }))
+    ])
+  ])
+]
 })
+
+
 export class HomeComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
   private seoService = inject(SeoService);
@@ -32,16 +46,20 @@ export class HomeComponent implements OnInit, OnDestroy {
   featuredProducts: Product[] = [];
   isLoading = true;
 
+  // ✅ CORRIGIDO: Removido "src/" do início dos caminhos
   heroImages = [
-    { id: 1, src: 'src/assets/img/photo-1513519245088-0e12902e5a38.jpeg' },
-    { id: 2, src: 'src/assets/img/photo-1584589167171-541ce45f1eea.jpeg' },
-    { id: 3, src: 'src/assets/img/photo-1590736969955-71cc94801759.jpeg' },
-    { id: 4, src: 'src/assets/img/photo-1605518216938-7c31b7b14ad0.jpeg' },
-    { id: 5, src: 'src/assets/img/photo-1610701596007-11502861dcfa.jpeg' },
-    { id: 6, src: 'src/assets/img/debby-hudson-MzSqFPLo8CE-unsplash.jpeg' },
-    { id: 7, src: 'src/assets/img/dewang-gupta-ESEnXckWlLY-unsplash.jpeg' },
-    { id: 8, src: 'src/assets/img/henrik-donnestad-t2Sai-AqIpI-unsplash.jpeg' }
-    ];
+  // Estes arquivos aparecem como .jpeg no seu print:
+  { id: 1, src: '/assets/img/photo-1513519245088-0e12902e5a38.jpeg' },
+  { id: 2, src: '/assets/img/photo-1584589167171-541ce45f1eea.jpeg' },
+  { id: 3, src: '/assets/img/photo-1590736969955-71cc94801759.jpeg' },
+  { id: 4, src: '/assets/img/photo-1605518216938-7c31b7b14ad0.jpeg' },
+  { id: 5, src: '/assets/img/photo-1610701596007-11502861dcfa.jpeg' },
+
+  // ⚠️ ATENÇÃO: Estes arquivos aparecem como .jpg no seu print:
+  { id: 6, src: '/assets/img/debby-hudson-MzSqFPLo8CE-unsplash.jpg' },
+  { id: 7, src: '/assets/img/dewang-gupta-ESEnXckWlLY-unsplash.jpg' },
+  { id: 8, src: '/assets/img/henrik-donnestad-t2Sai-AqIpI-unsplash.jpg' }
+];
 
   carouselCategories = [
     { label: 'Decoração', value: '0', img: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&q=80' },
@@ -49,7 +67,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     { label: 'Roupas', value: '2', img: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&q=80' },
     { label: 'Arte', value: '3', img: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&q=80' },
     { label: 'Móveis', value: '6', img: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&q=80' },
-    { label: 'Cozinha', value: '7', img: '/assets/img/kitchen.jpg' }
+    { label: 'Cozinha', value: '7', img: 'assets/img/kitchen.jpg' }
   ];
 
   private shuffleInterval: any;
@@ -103,11 +121,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   shuffleSquares(): void {
-  const index = Math.floor(Math.random() * this.heroImages.length);
-  const temp = this.heroImages[0];
-  this.heroImages[0] = this.heroImages[index];
-  this.heroImages[index] = temp;
-}
+    const index = Math.floor(Math.random() * this.heroImages.length);
+    const temp = this.heroImages[0];
+    this.heroImages[0] = this.heroImages[index];
+    this.heroImages[index] = temp;
+  }
 
   scrollCategories(direction: 'left' | 'right'): void {
     if (isPlatformBrowser(this.platformId) && this.categoriesContainer) {

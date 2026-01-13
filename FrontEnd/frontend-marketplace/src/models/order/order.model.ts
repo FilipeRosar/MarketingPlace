@@ -12,19 +12,31 @@ export interface OrderItem {
   id: string;
   productId: string;
   productName: string;
-  quantity: number;
-  unitPrice: number;
   productImage?: string;
+  unitPrice: number;
+  quantity: number;
+  sellerName?: string;
 }
 
 export interface Order {
   id: string;
+  sellerName?: string;
+  shippingCost: number;
   createdAt: string;
   totalAmount: number;
   status: OrderStatus;
   trackingCode?: string;
   trackingCodes?: string[];
   carrier?: string;
+  shippingAddress?:{
+    street: string;
+    number?: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  }
   shippedAt?: string;
   items: OrderItem[];
 }

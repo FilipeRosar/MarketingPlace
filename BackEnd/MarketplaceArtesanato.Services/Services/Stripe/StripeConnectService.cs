@@ -71,10 +71,37 @@ namespace MarketplaceArtesanato.Services.Services.Stripe
             if (string.IsNullOrWhiteSpace(seller.StripeAccountId))
                 throw new InvalidOperationException("Conta Stripe nao vinculada.");
 
-            var loginService = new AccountLoginLinkService();
-            var link = await loginService.CreateAsync(seller.StripeAccountId, new AccountLoginLinkCreateOptions());
+            var accountService = new AccountService();
+            var account = await accountService.GetAsync(seller.StripeAccountId);
 
-            return link.Url;
+            if (string.Equals(account.Type, "standard", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!account.DetailsSubmitted || (account.Requirements?.CurrentlyDue?.Count ?? 0) > 0)
+                {
+                    var returnUrl = _config["Stripe:ConnectReturnUrl"]
+                        ?? _config["Stripe:SuccessUrl"]
+                        ?? "http://localhost:4200/seller-dashboard";
+                    var refreshUrl = _config["Stripe:ConnectRefreshUrl"] ?? returnUrl;
+
+                    var linkService = new AccountLinkService();
+                    var link = await linkService.CreateAsync(new AccountLinkCreateOptions
+                    {
+                        Account = seller.StripeAccountId,
+                        RefreshUrl = refreshUrl,
+                        ReturnUrl = returnUrl,
+                        Type = "account_onboarding"
+                    });
+
+                    return link.Url;
+                }
+
+                return "https://dashboard.stripe.com/";
+            }
+
+            var loginService = new AccountLoginLinkService();
+            var loginLink = await loginService.CreateAsync(seller.StripeAccountId, new AccountLoginLinkCreateOptions());
+
+            return loginLink.Url;
         }
 
         public async Task<StripeConnectStatusDto> GetStatusAsync(Guid userId)
@@ -96,7 +123,8 @@ namespace MarketplaceArtesanato.Services.Services.Stripe
             var accountService = new AccountService();
             var account = await accountService.GetAsync(seller.StripeAccountId);
 
-            var isConnected = account.ChargesEnabled && account.DetailsSubmitted;
+            var requirementsDue = account.Requirements?.CurrentlyDue ?? new List<string>();
+            var isConnected = account.DetailsSubmitted && requirementsDue.Count == 0;
             if (seller.IsStripeConnected != isConnected)
             {
                 seller.IsStripeConnected = isConnected;

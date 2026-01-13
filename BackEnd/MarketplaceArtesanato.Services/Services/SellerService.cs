@@ -30,6 +30,7 @@ namespace MarketplaceArtesanato.Services.Services
             var seller = await _context.Sellers
                 .Include(s => s.Address)
                 .Include(s => s.Moments) 
+                .Include(s => s.Subscription)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             return seller == null ? null : _mapper.Map<SellerResponseDto>(seller);
@@ -40,6 +41,7 @@ namespace MarketplaceArtesanato.Services.Services
             var seller = await _context.Sellers
                 .Include(s => s.Address)
                 .Include(s => s.Moments)
+                .Include(s => s.Subscription)
                 .FirstOrDefaultAsync(s => s.UserId == userId);
 
             return seller == null ? null : _mapper.Map<SellerResponseDto>(seller);
@@ -55,6 +57,7 @@ namespace MarketplaceArtesanato.Services.Services
             var sellers = await _context.Sellers
                 .AsNoTracking()
                 .Include(s => s.Address)
+                .Include(s => s.Subscription)
                 .Where(s => s.IsApproved)
                 .Where(s =>
                     EF.Functions.Like(EF.Functions.Collate(s.StoreName, AccentInsensitiveCollation), $"%{normalized}%") ||

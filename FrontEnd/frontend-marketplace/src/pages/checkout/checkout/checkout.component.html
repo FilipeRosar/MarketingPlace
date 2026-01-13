@@ -126,8 +126,10 @@
 
                 <!-- Frete -->
                 <div class="flex items-center justify-between">
-                  <dt class="text-sm text-gray-600">Frete</dt>
-                  <dd class="text-sm font-medium text-green-600">Grátis</dd>
+                  <dt class="text-sm text-gray-600">Frete ({{ selectedShipping()?.name || 'Não selecionado' }})</dt>
+                  <dd class="text-sm font-medium" [class.text-green-600]="shippingFee() === 0" [class.text-gray-900]="shippingFee() > 0">
+                    {{ shippingFee() > 0 ? (shippingFee() | currencyBr) : 'Grátis' }}
+                  </dd>
                 </div>
 
                 <!-- Taxa de Serviço -->

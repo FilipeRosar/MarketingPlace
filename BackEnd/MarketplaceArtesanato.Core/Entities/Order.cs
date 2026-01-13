@@ -15,12 +15,29 @@ public class Order : BaseEntity
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalAmount { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal ShippingCost { get; set; }
+
     public string? StripeSessionId { get; set; }
     public string? StripePaymentIntentId { get; set; }
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
     public string Carrier { get; set; } = string.Empty;
+
+    public string? ShippingAddressJson { get; set; }
+
+    [NotMapped]
+    public ShippingAddress? ShippingAddress
+    {
+        get => string.IsNullOrEmpty(ShippingAddressJson)
+            ? null
+            : JsonSerializer.Deserialize<ShippingAddress>(ShippingAddressJson);
+        set => ShippingAddressJson = value == null
+            ? null
+            : JsonSerializer.Serialize(value);
+    }
+
     [NotMapped]
     public Dictionary<Guid, decimal> SellerCommissions { get; set; } = new();
 
@@ -33,7 +50,6 @@ public class Order : BaseEntity
             ? new()
             : JsonSerializer.Deserialize<Dictionary<Guid, decimal>>(value)!;
     }
-
 
     [NotMapped]
     public Dictionary<Guid, string> TrackingCodes { get; set; } = new();
@@ -50,6 +66,21 @@ public class Order : BaseEntity
 
     public void CalculateTotal()
     {
-        TotalAmount = Items.Sum(i => i.UnitPrice * i.Quantity);
+        var itemsTotal = Items.Sum(i => i.UnitPrice * i.Quantity);
+        TotalAmount = itemsTotal + ShippingCost;
     }
+
+    [NotMapped]
+    public decimal Subtotal => Items.Sum(i => i.UnitPrice * i.Quantity);
+}
+
+public class ShippingAddress
+{
+    public string Street { get; set; } = string.Empty;
+    public string Number { get; set; } = string.Empty;
+    public string? Complement { get; set; }
+    public string Neighborhood { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public string ZipCode { get; set; } = string.Empty;
 }

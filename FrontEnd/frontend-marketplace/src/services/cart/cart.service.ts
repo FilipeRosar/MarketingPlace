@@ -25,7 +25,7 @@ export class CartService {
    cartItems = signal<CartItem[]>([]);
 
   cartCount = computed(() => this.cartItems().reduce((acc, i) => acc + i.quantity, 0));
-  total = computed(() => this.cartItems().reduce((acc, item) => acc + (item.product.price * item.quantity), 0));
+  total = computed(() => this.cartItems().reduce((acc, item) => acc + (this.getEffectivePrice(item.product) * item.quantity), 0));
 
   constructor() {
     this.loadCart();
@@ -119,16 +119,33 @@ export class CartService {
 
   private updateLocalState(product: Product, qty: number) {
     const current = this.cartItems();
-    const existing = current.find(i => i.product.id === product.id);
+    const normalizedProduct = this.normalizeProductForCart(product);
+    const existing = current.find(i => i.product.id === normalizedProduct.id);
 
     if (existing) {
       this.cartItems.update(items =>
-          items.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + qty } : item)
+          items.map(item => item.product.id === normalizedProduct.id ? { ...item, quantity: item.quantity + qty } : item)
       );
     } else {
-      this.cartItems.set([...current, { product, quantity: qty }]);
+      this.cartItems.set([...current, { product: normalizedProduct, quantity: qty }]);
     }
     this.saveLocal();
+  }
+
+
+  private getEffectivePrice(product: Product): number {
+    if (product.salePrice && product.salePrice > 0 && product.salePrice < product.price) {
+      return product.salePrice;
+    }
+    return product.price;
+  }
+
+  private normalizeProductForCart(product: Product): Product {
+    const effectivePrice = this.getEffectivePrice(product);
+    if (effectivePrice !== product.price) {
+      return { ...product, price: effectivePrice };
+    }
+    return product;
   }
 
   private saveLocal() {
@@ -142,7 +159,14 @@ export class CartService {
       const saved = localStorage.getItem('cart');
       if (saved) {
         try {
-            this.cartItems.set(JSON.parse(saved));
+            const parsed = JSON.parse(saved);
+            const normalized = Array.isArray(parsed)
+              ? parsed.map((item: any) => ({
+                  ...item,
+                  product: item?.product ? this.normalizeProductForCart(item.product) : item.product
+                }))
+              : [];
+            this.cartItems.set(normalized);
         } catch {
             this.cartItems.set([]);
         }

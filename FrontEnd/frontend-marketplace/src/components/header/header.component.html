@@ -101,11 +101,23 @@
             </svg>
           </button>
 
-                    <div *ngIf="isDesktopCategoryOpen"
+          <div *ngIf="isDesktopCategoryOpen"
                class="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[720px] bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden z-50"
                (mouseenter)="onMouseEnterCategory()"
                (mouseleave)="onMouseLeaveCategory()">
             <div class="p-4 max-h-[70vh] overflow-y-auto">
+
+              <!-- ✅ NOVO: Botão "Ver Todas as Categorias" -->
+              <div class="mb-4 pb-4 border-b-2 border-stone-200">
+                <a routerLink="/categorias" (click)="closeMenus()"
+                   class="flex items-center justify-center gap-2 text-sm font-bold text-primary hover:text-primary-dark transition px-4 py-2.5 bg-primary/5 hover:bg-primary/10 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                  </svg>
+                  Ver Todas as Categorias
+                </a>
+              </div>
+
               <div class="grid grid-cols-2 gap-6">
                 @for (cat of categories; track cat.value) {
                   <div class="space-y-3">
@@ -226,6 +238,14 @@
 
                 <a routerLink="/favorites" (click)="closeMenus()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer md:hidden">Favoritos</a>
                 <a routerLink="/orders" (click)="closeMenus()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">Meus Pedidos</a>
+                <a routerLink="/chat" (click)="closeMenus()" class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-stone-50 hover:text-primary cursor-pointer">
+                  <span>Chat</span>
+                  @if (chatRequestCount > 0) {
+                    <span class="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full text-[11px] font-bold bg-red-500 text-white">
+                      {{ chatRequestCount }}
+                    </span>
+                  }
+                </a>
               </div>
 
               <div class="border-t border-stone-100 py-1">
@@ -285,7 +305,7 @@
               }
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-bold text-gray-900 truncate">OlÃ¡, {{ user.name }}</p>
+              <p class="text-sm font-bold text-gray-900 truncate">Olá, {{ user.name }}</p>
               <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
               @if (user.role === 'Admin') {
                  <p class="text-[10px] text-red-600 font-bold uppercase mt-1">Administrador</p>
@@ -364,7 +384,7 @@
         </div>
 
         <div class="space-y-1">
-            <a routerLink="/" (click)="closeMenus()" class="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50 cursor-pointer transition-colors">InÃ­cio</a>
+            <a routerLink="/" (click)="closeMenus()" class="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50 cursor-pointer transition-colors">Início</a>
 
             <div>
               <button (click)="toggleMobileCategoryMenu()" class="w-full flex justify-between items-center px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:text-primary hover:bg-stone-50 transition-colors">
@@ -374,7 +394,24 @@
                 </svg>
               </button>
 
-                            <div *ngIf="isMobileCategoryOpen" class="pl-4 mt-1 space-y-4 border-l-2 border-stone-100 ml-4 animate-fade-in-down">
+              <div *ngIf="isMobileCategoryOpen" class="pl-4 mt-1 space-y-4 border-l-2 border-stone-100 ml-4 animate-fade-in-down">
+
+                <!-- ✅ NOVO: Opção "Todas as Categorias" -->
+                <div class="pb-3 border-b border-stone-200">
+                  <a routerLink="/categorias" (click)="closeMenus()"
+                     class="flex items-center px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 rounded-lg transition-colors cursor-pointer">
+                    <span class="mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                      </svg>
+                    </span>
+                    <span>Todas as Categorias</span>
+                    <svg class="ml-auto w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </div>
+
                 @for (cat of categories; track cat.value) {
                   <div class="space-y-2">
                     <a [routerLink]="['/categorias']" [queryParams]="{ category: cat.value }" (click)="closeMenus()"
@@ -428,6 +465,14 @@
 
             <a routerLink="/orders" (click)="closeMenus()" class="block px-4 py-2 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Meus Pedidos</a>
             <a routerLink="/favorites" (click)="closeMenus()" class="block px-4 py-2 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">Favoritos</a>
+            <a routerLink="/chat" (click)="closeMenus()" class="flex items-center justify-between px-4 py-2 text-base font-medium text-gray-700 hover:text-primary cursor-pointer">
+              <span>Chat</span>
+              @if (chatRequestCount > 0) {
+                <span class="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full text-[11px] font-bold bg-red-500 text-white">
+                  {{ chatRequestCount }}
+                </span>
+              }
+            </a>
 
             <button (click)="logout()" class="block w-full text-left px-4 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg cursor-pointer mt-4">
                 Sair da conta
@@ -435,7 +480,7 @@
           } @else {
             <div class="grid grid-cols-1 gap-3 px-2">
                 <a routerLink="/login" (click)="closeMenus()" class="block w-full text-center py-3 text-base font-medium text-primary border border-primary/20 hover:bg-primary/5 rounded-xl cursor-pointer transition-colors">Entrar na conta</a>
-                <a routerLink="/register" (click)="closeMenus()" class="block w-full text-center py-3 text-base font-medium text-white bg-primary hover:bg-primary-dark rounded-xl cursor-pointer shadow-md transition-all">Criar conta grÃ¡tis</a>
+                <a routerLink="/register" (click)="closeMenus()" class="block w-full text-center py-3 text-base font-medium text-white bg-primary hover:bg-primary-dark rounded-xl cursor-pointer shadow-md transition-all">Criar conta grátis</a>
             </div>
           }
         </div>
@@ -448,5 +493,3 @@
 
 </header>
 <div class="h-16"></div>
-
-

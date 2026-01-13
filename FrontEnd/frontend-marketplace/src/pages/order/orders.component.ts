@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { OrderService } from '../../services/order/order.service';
-import { Order } from '../../models/order/order.model'; 
+import { Order } from '../../models/order/order.model';
 import { CurrencyBrPipe } from '../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
 import { ProductService } from '../../services/product/product.service';
@@ -26,6 +26,7 @@ export class OrdersComponent implements OnInit {
   isLoading = true;
   errorMessage = '';
   addingProductIds = new Set<string>();
+  openOrderId: string | null = null;
 
   // Mapeamento de Status para Texto e Cor
   // Ajuste conforme o Enum do seu backend (0=Pending, 1=Confirmed, etc)
@@ -58,7 +59,13 @@ export class OrdersComponent implements OnInit {
       }
     });
   }
-
+  toggleOrder(orderId: string) {
+    if (this.openOrderId === orderId) {
+      this.openOrderId = null;
+    } else {
+      this.openOrderId = orderId;
+    }
+  }
   cancelOrder(orderId: string) {
     if (!confirm('Tem certeza que deseja cancelar este pedido?')) {
       return;

@@ -21,6 +21,7 @@ namespace MarketplaceArtesanato.API.Controllers
         private readonly IPublishEndpoint _publishEndpoint;
         private readonly IConfiguration _config;
         private readonly IPlatformFeeService _platformFeeService;
+        private readonly IPriceCalculationService _priceCalculationService;
 
         private const long SERVICE_FEE_CENTS = 299; 
 
@@ -28,12 +29,14 @@ namespace MarketplaceArtesanato.API.Controllers
             ArtesianDbContext context,
             IPublishEndpoint publishEndpoint,
             IConfiguration config,
-            IPlatformFeeService platformFeeService)
+            IPlatformFeeService platformFeeService,
+            IPriceCalculationService priceCalculationService)
         {
             _context = context;
             _publishEndpoint = publishEndpoint;
             _config = config;
             _platformFeeService = platformFeeService;
+            _priceCalculationService = priceCalculationService;
         }
 
         [HttpPost("create-session")]
@@ -70,7 +73,9 @@ namespace MarketplaceArtesanato.API.Controllers
                 if (product == null) return BadRequest($"Produto {itemDto.ProductId} n?o encontrado.");
                 if (product.StockQuantity < itemDto.Quantity) return BadRequest($"Estoque insuficiente: {product.Name}");
 
-                decimal itemTotal = product.Price * itemDto.Quantity;
+                var priceResult = await _priceCalculationService.CalculateProductPriceAsync(product, customerId);
+                var unitPrice = priceResult.FinalPrice;
+                decimal itemTotal = unitPrice * itemDto.Quantity;
 
                 cartItems.Add((Product: product, Item: itemDto, ItemTotal: itemTotal));
 
@@ -112,7 +117,7 @@ namespace MarketplaceArtesanato.API.Controllers
                             Name = product.Name,
                             Images = product.Images?.Any() == true ? new List<string> { product.Images[0].Url } : null
                         },
-                        UnitAmount = (long)(product.Price * 100)
+                        UnitAmount = (long)(itemTotal / itemDto.Quantity * 100)
                     },
                     Quantity = itemDto.Quantity
                 });
@@ -122,7 +127,7 @@ namespace MarketplaceArtesanato.API.Controllers
                     Id = Guid.NewGuid(),
                     ProductId = product.Id,
                     Quantity = itemDto.Quantity,
-                    UnitPrice = product.Price,
+                    UnitPrice = itemTotal / itemDto.Quantity,
                     OrderId = order.Id
                 });
 
@@ -130,7 +135,7 @@ namespace MarketplaceArtesanato.API.Controllers
                 {
                     ProductId = product.Id,
                     Quantity = itemDto.Quantity,
-                    UnitPrice = product.Price,
+                    UnitPrice = itemTotal / itemDto.Quantity,
                     CommissionAmount = commission 
                 });
             }
@@ -183,10 +188,17 @@ namespace MarketplaceArtesanato.API.Controllers
                 ShippingAddressCollection = new SessionShippingAddressCollectionOptions { AllowedCountries = new List<string> { "BR" } },
                 PaymentIntentData = new SessionPaymentIntentDataOptions
                 {
-                    TransferGroup = order.Id.ToString()
+                    TransferGroup = order.Id.ToString(),
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "Type", "order" },
+                        { "OrderId", order.Id.ToString() },
+                        { "CustomerId", customerId.ToString() }
+                    }
                 },
                 Metadata = new Dictionary<string, string>
                 {
+                    { "Type", "order" },
                     { "OrderId", order.Id.ToString() },
                     { "CustomerId", customerId.ToString() }
                 }

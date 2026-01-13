@@ -11,6 +11,7 @@ namespace MarketplaceArtesanato.API.Mapping
         public SellerProfile()
         {
             CreateMap<Seller, SellerResponseDto>()
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.StoreName))
                 .ForMember(dest => dest.ProfileImageUrl, opt => opt.MapFrom(src => src.ProfileImageUrl))
                 .ForMember(dest => dest.BannerImageUrl, opt => opt.MapFrom(src => src.BannerImageUrl))
@@ -18,6 +19,8 @@ namespace MarketplaceArtesanato.API.Mapping
                 .ForMember(dest => dest.Instagram, opt => opt.MapFrom(src => src.InstagramUrl))
                 .ForMember(dest => dest.Facebook, opt => opt.MapFrom(src => src.FacebookUrl))
                 .ForMember(dest => dest.Tiktok, opt => opt.MapFrom(src => src.TiktokUrl))
+                .ForMember(dest => dest.HasVerifiedBadge, opt => opt.MapFrom(src =>
+                    src.Subscription != null && src.Subscription.IsActive && src.Subscription.HasVerifiedBadge))
                 .ForMember(dest => dest.Youtube, opt => opt.MapFrom(src => src.YoutubeUrl));
 
             CreateMap<Moment, MomentResponseDto>();

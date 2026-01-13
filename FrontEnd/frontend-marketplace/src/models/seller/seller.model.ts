@@ -1,5 +1,6 @@
 export interface Seller {
   id: string;
+  userId?: string;
   name: string;
 
   instagram?: string;

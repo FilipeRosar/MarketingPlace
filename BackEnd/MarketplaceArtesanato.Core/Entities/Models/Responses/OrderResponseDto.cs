@@ -1,4 +1,5 @@
-﻿using MarketplaceArtesanato.Core.Entities.Enums;
+﻿using MarketplaceArtesanato.Core.Entities.DTO;
+using MarketplaceArtesanato.Core.Entities.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,13 +18,19 @@ namespace MarketplaceArtesanato.Core.Entities.Models.Responses
         public List<string> TrackingCodes { get; set; } = new();
         public string? Carrier { get; set; }
         public DateTime? ShippedAt { get; set; }
+        public ShippingAddressDTO? ShippingAddress { get; set; }
         public List<OrderItemResponseDto> Items { get; set; } = new();
+        public decimal ShippingCost { get; set; }
+        public decimal Subtotal { get; set; }
+        public string SellerName { get; set; }
     }
 
     public class OrderItemResponseDto
     {
         public Guid Id { get; set; }
         public Guid ProductId { get; set; }
+        public string? SellerName { get; set; }
+        public ShippingAddressDTO? ShippingAddress { get; set; }
         public string ProductName { get; set; } = string.Empty;
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }

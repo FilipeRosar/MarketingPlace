@@ -1,0 +1,218 @@
+<div class="h-[calc(100vh-80px)] bg-gray-50 flex justify-center p-4 md:p-6 overflow-hidden">
+
+  <div class="w-full max-w-7xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex">
+
+    <div class="w-full md:w-80 lg:w-96 border-r border-gray-200 flex flex-col bg-white">
+
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+        <h2 class="text-lg font-bold text-gray-800">Mensagens</h2>
+        <span class="px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
+          {{ (authService.currentUserValue?.role === 'Seller' ? threads.length : customerThreads.length) }}
+        </span>
+      </div>
+
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+
+        @if (authService.currentUserValue?.role === 'Seller') {
+          @if (threads.length === 0 && !isLoading) {
+            <div class="flex flex-col items-center justify-center h-full text-gray-400 p-6 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <p class="text-sm">Nenhuma conversa iniciada.</p>
+            </div>
+          } @else {
+            @for (thread of threads; track thread.customerId) {
+              <button (click)="selectThread(thread)"
+                      class="w-full text-left p-4 hover:bg-gray-50 transition border-b border-gray-50 flex gap-3 items-center group relative"
+                      [class.bg-blue-50]="selectedThread?.customerId === thread.customerId"
+                      [class.border-l-4]="selectedThread?.customerId === thread.customerId"
+                      [class.border-l-primary]="selectedThread?.customerId === thread.customerId"
+                      [class.border-l-transparent]="selectedThread?.customerId !== thread.customerId">
+
+                <div class="relative">
+                  <div class="h-12 w-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-600 font-bold text-lg shadow-sm">
+                    {{ thread.customerName?.charAt(0)?.toUpperCase() || 'C' }}
+                  </div>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-baseline mb-1">
+                    <p class="text-sm font-bold text-gray-900 truncate">{{ thread.customerName }}</p>
+                    <span class="text-[10px] text-gray-400 font-medium">
+                      {{ getFormattedTime(thread.lastMessageAt) }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-500 truncate group-hover:text-gray-700 transition-colors">
+                    {{ thread.lastMessage || 'Nova conversa' }}
+                  </p>
+                </div>
+              </button>
+            }
+          }
+        }
+
+        @else {
+          @if (customerThreads.length === 0 && !isLoading) {
+            <div class="flex flex-col items-center justify-center h-full text-gray-400 p-6 text-center">
+              <p class="text-sm">Você ainda não iniciou conversas com lojas.</p>
+            </div>
+          } @else {
+            @for (thread of customerThreads; track thread.sellerId) {
+              <button (click)="selectCustomerThread(thread)"
+                      class="w-full text-left p-4 hover:bg-gray-50 transition border-b border-gray-50 flex gap-3 items-center group relative"
+                      [class.bg-blue-50]="selectedCustomerThread?.sellerId === thread.sellerId"
+                      [class.border-l-4]="selectedCustomerThread?.sellerId === thread.sellerId"
+                      [class.border-l-primary]="selectedCustomerThread?.sellerId === thread.sellerId"
+                      [class.border-l-transparent]="selectedCustomerThread?.sellerId !== thread.sellerId">
+
+                <div class="h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 text-primary-dark flex items-center justify-center font-bold text-lg shadow-sm">
+                  {{ thread.sellerName?.charAt(0)?.toUpperCase() || 'L' }}
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-baseline mb-1">
+                    <p class="text-sm font-bold text-gray-900 truncate">{{ thread.sellerName }}</p>
+                    <span class="text-[10px] text-gray-400 font-medium">
+                      {{ getFormattedTime(thread.lastMessageAt) }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-500 truncate">
+                    {{ thread.lastMessage || 'Iniciar conversa' }}
+                  </p>
+                </div>
+              </button>
+            }
+          }
+        }
+      </div>
+    </div>
+
+    <div class="hidden md:flex flex-1 flex-col bg-[#F3F4F6] relative">
+
+      @if (!selectedThread && !selectedCustomerThread) {
+        <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50/50 z-10 select-none">
+          <div class="bg-white p-8 rounded-full shadow-sm mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-primary/40" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4.913 2.658c2.075-.27 4.19-.408 6.337-.408 2.147 0 4.262.139 6.337.408 1.922.25 3.291 1.861 3.291 3.814 0 4.738-4.39 8.579-9.808 8.579-2.618 0-5.018-.895-6.828-2.423-.558.974-1.393 1.76-2.43 2.243-1.038.483-2.196.672-3.344.52l-.465-.062a.75.75 0 01-.54-1.015c.29-.687.728-1.296 1.282-1.793.553-.498.924-1.162.924-1.91 0-1.125-.407-2.17-1.082-3.007-.945-1.176-1.51-2.668-1.51-4.29 0-1.953 1.369-3.564 3.29-3.813z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800">Selecione uma conversa</h3>
+          <p class="text-gray-500 mt-2">Escolha um contato para começar a enviar mensagens.</p>
+        </div>
+      }
+
+      @if ((authService.currentUserValue?.role === 'Seller' && selectedThread) || (authService.currentUserValue?.role !== 'Seller' && selectedCustomerThread)) {
+
+        <div class="bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between shadow-sm z-10">
+          <div class="flex items-center gap-4">
+            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
+               @if(authService.currentUserValue?.role === 'Seller') {
+                  {{ selectedThread!.customerName.charAt(0).toUpperCase() }}
+               } @else {
+                  {{ selectedCustomerThread!.sellerName.charAt(0).toUpperCase() }}
+               }
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-800 leading-tight">
+                @if(authService.currentUserValue?.role === 'Seller') {
+                  {{ selectedThread!.customerName }}
+                } @else {
+                  {{ selectedCustomerThread!.sellerName }}
+                }
+              </h3>
+              <p class="text-xs text-green-600 flex items-center gap-1 font-medium">
+                <span class="block w-2 h-2 bg-green-500 rounded-full"></span> Online
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-[url('/assets/chat-bg-pattern.png')] bg-repeat bg-opacity-5">
+
+          @if (messages.length === 0) {
+            <div class="flex justify-center mt-10">
+              <span class="bg-white/80 px-4 py-1 rounded-full text-xs text-gray-500 shadow-sm border border-gray-100">
+                Início da conversa
+              </span>
+            </div>
+          }
+
+          @for (msg of messages; track msg.timestamp) {
+            <div class="flex w-full"
+                 [class.justify-end]="msg.user === authService.currentUserValue?.id">
+
+              <div class="max-w-[70%] relative group">
+
+                <!-- ✅ Nome do remetente acima da mensagem -->
+                @if (msg.user !== authService.currentUserValue?.id) {
+                  <p class="text-xs text-gray-500 font-medium mb-1 ml-1">
+                    @if (authService.currentUserValue?.role === 'Seller') {
+                      {{ selectedThread?.customerName }}
+                    } @else {
+                      {{ selectedCustomerThread?.sellerName || 'Vendedor' }}
+                    }
+                  </p>
+                } @else {
+                  <p class="text-xs text-gray-500 font-medium mb-1 mr-1 text-right">
+                    Você
+                  </p>
+                }
+
+                <div class="px-5 py-3 rounded-2xl shadow-sm text-sm leading-relaxed"
+                     [class.bg-primary]="msg.user === authService.currentUserValue?.id"
+                     [class.text-white]="msg.user === authService.currentUserValue?.id"
+                     [class.rounded-tr-none]="msg.user === authService.currentUserValue?.id"
+                     [class.bg-white]="msg.user !== authService.currentUserValue?.id"
+                     [class.text-gray-800]="msg.user !== authService.currentUserValue?.id"
+                     [class.rounded-tl-none]="msg.user !== authService.currentUserValue?.id"
+                     [class.border]="msg.user !== authService.currentUserValue?.id"
+                     [class.border-gray-100]="msg.user !== authService.currentUserValue?.id">
+
+                  {{ msg.message }}
+
+                  <div class="text-[10px] mt-1 text-right opacity-70 flex items-center justify-end gap-1"
+                       [class.text-blue-100]="msg.user === authService.currentUserValue?.id"
+                       [class.text-gray-400]="msg.user !== authService.currentUserValue?.id">
+                    {{ getFormattedTime(msg.timestamp) }}
+                    @if(msg.user === authService.currentUserValue?.id) {
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="p-4 bg-white border-t border-gray-200">
+          <div class="flex items-end gap-3 max-w-4xl mx-auto">
+
+            <button class="p-2 text-gray-400 hover:text-gray-600 transition rounded-full hover:bg-gray-100">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </button>
+
+            <div class="flex-1 relative">
+              <textarea [(ngModel)]="messageInput"
+                        (keyup.enter)="sendMessage()"
+                        rows="1"
+                        placeholder="Digite sua mensagem..."
+                        class="w-full bg-gray-100 border-0 rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-primary/50 focus:bg-white transition resize-none max-h-32 overflow-y-auto custom-scrollbar"></textarea>
+            </div>
+
+            <button (click)="sendMessage()"
+                    [disabled]="!messageInput.trim()"
+                    class="bg-primary hover:bg-primary-dark text-white p-3 rounded-full shadow-lg transition transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      }
+    </div>
+  </div>
+</div>

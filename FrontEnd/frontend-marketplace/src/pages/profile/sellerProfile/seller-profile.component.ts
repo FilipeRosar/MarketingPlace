@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SellerService } from '../../../services/seller/seller.service';
 import { ProductService } from '../../../services/product/product.service';
@@ -12,6 +12,7 @@ import { LoadingSpinnerComponent } from '../../../components/loading-spinner.com
 import { DomSanitizer } from '@angular/platform-browser';
 import { MomentResponseDto } from '../../../models/moment/moment.model';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { ChatService } from '../../../services/chat/chat.service';
 
 @Component({
   selector: 'app-seller-profile',
@@ -28,13 +29,15 @@ import { NotificationService } from '../../../services/notification/notification
 })
 export class SellerProfileComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private sellerService = inject(SellerService);
   private productService = inject(ProductService);
-  private authService = inject(AuthService);
+  public authService = inject(AuthService);
   private sanitizer = inject(DomSanitizer);
   private userService = inject(UserService);
   private location = inject(Location);
   private notification = inject(NotificationService);
+  private chatService = inject(ChatService);
 
   seller: any | null = null;
   products: Product[] = [];
@@ -53,6 +56,11 @@ export class SellerProfileComponent implements OnInit {
   activeTab: 'products' | 'about' | 'reviews' | 'moments' = 'products';
 
   moments: MomentResponseDto[] = [];
+
+  contactMessage = '';
+  isContactSending = false;
+  contactSuccess = false;
+  contactError = '';
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
@@ -288,7 +296,7 @@ private createMoment(videoUrl: string, thumbUrl: string) {
   });
 }
 private finalizeMoment(videoUrl: string, thumbUrl: string) {
-  const sellerId = this.seller.id; // ← pega o ID do seller carregado
+  const sellerId = this.seller.id; 
 
   const newMomentData = {
     description: this.newMoment.description.trim(),
@@ -316,4 +324,53 @@ private finalizeMoment(videoUrl: string, thumbUrl: string) {
     }
   });
 }
+
+
+  sendContactRequest() {
+    this.contactError = '';
+    if (!this.seller?.userId) {
+      this.notification.warning('Vendedor indisponivel para contato.');
+      return;
+    }
+
+    if (!this.authService.isLoggedIn()) {
+      this.notification.info('Faca login para enviar solicitacoes.');
+      return;
+    }
+
+    const message = this.contactMessage.trim();
+    if (!message) {
+      this.contactError = 'Digite uma mensagem para a solicitacao.';
+      return;
+    }
+
+    this.isContactSending = true;
+    this.chatService.createContactRequest(this.seller.userId, message).subscribe({
+      next: () => {
+        this.contactMessage = '';
+        this.contactSuccess = true;
+        this.isContactSending = false;
+      },
+      error: () => {
+        this.isContactSending = false;
+        this.contactError = 'Erro ao enviar solicitacao. Tente novamente.';
+      }
+    });
+  }
+
+  goToChat() {
+    if (!this.seller?.id || !this.seller?.userId) return;
+    this.router.navigate(['/chat'], {
+      queryParams: {
+        sellerId: this.seller.id,
+        sellerUserId: this.seller.userId,
+        sellerName: this.seller.name
+      }
+    });
+  }
+
+  scrollToContact() {
+    if (typeof document === 'undefined') return;
+    document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }

@@ -11,6 +11,7 @@ import { ShippingService } from '../../services/shipping/shipping.service';
 import { OrderService } from '../../services/order/order.service';
 import { SellerPlan, SellerService, SellerSubscription } from '../../services/seller/seller.service';
 import { PromotionService, Promotion } from '../../services/promotion/promotion.service';
+import { ChatService, ChatMessage, ChatThread, ContactRequestThread } from '../../services/chat/chat.service';
 
 import { Product } from '../../models/product/product.model';
 import { CurrencyBrPipe } from '../../shared/pipes/currency-br-pipe';
@@ -47,14 +48,15 @@ interface DashboardStats {
 export class SellerDashboardComponent implements OnInit {
 
   private productService = inject(ProductService);
-  private authService = inject(AuthService);
+  public authService = inject(AuthService);
   private shippingService = inject(ShippingService);
   private orderService = inject(OrderService);
   private sellerService = inject(SellerService);
   private promotionService = inject(PromotionService);
+  private chatService = inject(ChatService);
   private route = inject(ActivatedRoute);
 
-  activeTab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' = 'overview';
+  activeTab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat' = 'overview';
 
   products: Product[] = [];
   recentOrders: any[] = [];
@@ -91,36 +93,118 @@ export class SellerDashboardComponent implements OnInit {
   isSubscribing = false;
   subscriptionMessage: string | null = null;
 
+  chatThreads: ChatThread[] = [];
+  selectedChatThread: ChatThread | null = null;
+  chatMessages: ChatMessage[] = [];
+  chatMessageInput = '';
+  isChatLoading = false;
+  contactRequests: ContactRequestThread[] = [];
+  contactRequestCount = 0;
+
   sellerPlans: Array<{
     key: SellerPlan;
     name: string;
     price: number;
+    badge?: string;
+    badgeLabel: string;
+    description: string;
     highlights: string[];
+    commissionRate: number;
+    highlightLimit: number;
+    analytics: boolean;
+    prioritySupport: boolean;
+    ctaActive: string;
+    ctaInactive: string;
   }> = [
     {
       key: 'Basic',
       name: 'Basic',
       price: 0,
-      highlights: ['Sem mensalidade', 'Comissao 12%', 'Sem destaque']
+      badgeLabel: 'Sem selo',
+      description: 'Ideal para quem esta comecando a vender.',
+      highlights: [
+        'Sem mensalidade',
+        'Comissao: 12%',
+        'Sem destaque de produtos',
+        'Sem analytics avancado',
+        'Sem suporte prioritario'
+      ],
+      commissionRate: 12,
+      highlightLimit: 0,
+      analytics: false,
+      prioritySupport: false,
+      ctaActive: 'Plano atual',
+      ctaInactive: 'Comecar gratis'
     },
     {
       key: 'Pro',
       name: 'Pro',
       price: 29.99,
-      highlights: ['Comissao 9%', 'Destaques 8', 'Analytics avancado']
+      badge: 'Mais popular',
+      badgeLabel: 'Selo verificado',
+      description: 'Ideal para quem quer vender mais e crescer no marketplace.',
+      highlights: [
+        'Comissao reduzida: 9%',
+        '8 produtos em destaque',
+        'Analytics avancado',
+        'Selo de vendedor verificado'
+      ],
+      commissionRate: 9,
+      highlightLimit: 8,
+      analytics: true,
+      prioritySupport: false,
+      ctaActive: 'Plano atual',
+      ctaInactive: 'Assinar Pro'
     },
     {
       key: 'Premium',
       name: 'Premium',
       price: 59.9,
-      highlights: ['Comissao 5%', 'Destaques 15', 'Suporte prioritario']
+      badgeLabel: 'Selo premium',
+      description: 'Para vendedores profissionais que querem escalar as vendas.',
+      highlights: [
+        'Comissao reduzida: 5%',
+        '15 produtos em destaque',
+        'Analytics avancado',
+        'Suporte prioritario',
+        'Selo premium'
+      ],
+      commissionRate: 5,
+      highlightLimit: 15,
+      analytics: true,
+      prioritySupport: true,
+      ctaActive: 'Plano atual',
+      ctaInactive: 'Assinar Premium'
     }
   ];
+  planComparisonRows = this.buildPlanComparisonRows();
+  isPlanCompareOpen = false;
+  savingsExampleRevenue = 5000;
 
   chartDays: string[] = [];
 
   ngOnInit(): void {
+    this.chatService.privateMessages$.subscribe(messages => {
+      const last = messages[messages.length - 1];
+      if (!last) return;
+      if (!this.selectedChatThread) return;
+
+      const currentUserId = this.authService.currentUserValue?.id;
+      const isFromCustomer = last.user === this.selectedChatThread.customerId;
+      const isFromMe = currentUserId && last.user === currentUserId;
+
+      if (isFromCustomer || isFromMe) {
+        this.chatMessages = [...this.chatMessages, last];
+        if (isFromCustomer) {
+          this.touchThread(last.message);
+        }
+      }
+    });
     this.loadDashboardData();
+    this.loadContactRequests();
+    this.chatService.notifications$.subscribe(() => {
+      this.loadContactRequests();
+    });
     this.route.queryParamMap.subscribe(params => {
       if (params.get('subscription')) {
         this.subscriptionMessage = params.get('subscription') === 'success'
@@ -131,15 +215,44 @@ export class SellerDashboardComponent implements OnInit {
     });
   }
 
-  setActiveTab(tab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription') {
+  setActiveTab(tab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat') {
     this.activeTab = tab;
 
     // Carrega promoções quando abrir a aba
     if (tab === 'promotions' && this.promotions.length === 0) {
       this.loadPromotions();
     }
+
+    if (tab === 'chat') {
+      this.loadChatThreads();
+    }
   }
 
+  loadContactRequests() {
+    this.chatService.getContactRequestThreads().subscribe({
+      next: (threads) => {
+        this.contactRequests = threads;
+        this.contactRequestCount = threads.length;
+      },
+      error: () => {
+        this.contactRequests = [];
+        this.contactRequestCount = 0;
+      }
+    });
+  }
+  loadChatThreads() {
+  this.isChatLoading = true;
+  this.chatService.getThreads().subscribe({
+    next: (threads) => {
+      this.chatThreads = threads;
+      this.isChatLoading = false;
+    },
+    error: (err) => {
+      console.error('Erro ao carregar conversas:', err);
+      this.isChatLoading = false;
+       }
+    });
+  }
   // ==========================
   // PROMOÇÕES
   // ==========================
@@ -535,6 +648,88 @@ export class SellerDashboardComponent implements OnInit {
     });
   }
 
+  openPlanCompareModal() {
+    this.isPlanCompareOpen = true;
+  }
+
+  closePlanCompareModal() {
+    this.isPlanCompareOpen = false;
+  }
+
+  getSavingsText(planKey: SellerPlan): string | null {
+    if (planKey !== 'Pro') return null;
+    const basic = this.sellerPlans.find(p => p.key === 'Basic');
+    const pro = this.sellerPlans.find(p => p.key === 'Pro');
+    if (!basic || !pro) return null;
+
+    const diffPercent = basic.commissionRate - pro.commissionRate;
+    if (diffPercent <= 0) return null;
+
+    const savings = (diffPercent / 100) * this.savingsExampleRevenue;
+    const formatted = savings.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const revenue = this.savingsExampleRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return `Economize ate R$ ${formatted}/mes em comissao (exemplo com R$ ${revenue} em vendas)`;
+  }
+
+  private buildPlanComparisonRows() {
+    const byKey = (key: SellerPlan) => this.sellerPlans.find(p => p.key === key)!;
+    const formatPrice = (price: number) =>
+      price <= 0 ? 'R$ 0' : `R$ ${price.toFixed(2).replace('.', ',')}`;
+    const yesNo = (value: boolean) => (value ? 'Sim' : 'Nao');
+    const formatHighlights = (count: number) => (count > 0 ? `${count}` : 'Sem destaque');
+
+    return [
+      {
+        label: 'Mensalidade',
+        values: {
+          Basic: formatPrice(byKey('Basic').price),
+          Pro: formatPrice(byKey('Pro').price),
+          Premium: formatPrice(byKey('Premium').price)
+        }
+      },
+      {
+        label: 'Comissao',
+        values: {
+          Basic: `${byKey('Basic').commissionRate}%`,
+          Pro: `${byKey('Pro').commissionRate}%`,
+          Premium: `${byKey('Premium').commissionRate}%`
+        }
+      },
+      {
+        label: 'Destaques de produtos',
+        values: {
+          Basic: formatHighlights(byKey('Basic').highlightLimit),
+          Pro: formatHighlights(byKey('Pro').highlightLimit),
+          Premium: formatHighlights(byKey('Premium').highlightLimit)
+        }
+      },
+      {
+        label: 'Analytics avancado',
+        values: {
+          Basic: yesNo(byKey('Basic').analytics),
+          Pro: yesNo(byKey('Pro').analytics),
+          Premium: yesNo(byKey('Premium').analytics)
+        }
+      },
+      {
+        label: 'Suporte prioritario',
+        values: {
+          Basic: yesNo(byKey('Basic').prioritySupport),
+          Pro: yesNo(byKey('Pro').prioritySupport),
+          Premium: yesNo(byKey('Premium').prioritySupport)
+        }
+      },
+      {
+        label: 'Selo',
+        values: {
+          Basic: byKey('Basic').badgeLabel,
+          Pro: byKey('Pro').badgeLabel,
+          Premium: byKey('Premium').badgeLabel
+        }
+      }
+    ];
+  }
+
   isCurrentPlan(plan: SellerPlan): boolean {
     return !!(this.subscription?.isActive && this.subscription.plan === plan);
   }
@@ -594,10 +789,7 @@ export class SellerDashboardComponent implements OnInit {
   }
 
   openEditModal(product: Product) {
-    const discountPercent = product.salePrice && product.price
-      ? Math.max(0, Math.round((1 - product.salePrice / product.price) * 100))
-      : 0;
-    this.editingProduct = { ...product, discountPercent };
+    this.editingProduct = { ...product, boostProduct: false };
     this.isEditing = true;
   }
 
@@ -609,23 +801,20 @@ export class SellerDashboardComponent implements OnInit {
   saveProduct() {
     this.isSaving = true;
 
-    const discountPercent = this.parseNumber(this.editingProduct.discountPercent);
     const price = this.parseNumber(this.editingProduct.price);
-    const normalizedDiscount = Math.min(Math.max(discountPercent, 0), 90);
-    const salePrice = normalizedDiscount > 0 && price > 0
-      ? Number((price * (1 - normalizedDiscount / 100)).toFixed(2))
-      : null;
 
-    const updateData = {
+    const updateData: any = {
       id: this.editingProduct.id,
       name: this.editingProduct.name,
       description: this.editingProduct.description,
       price: price > 0 ? price : null,
       stockQuantity: this.editingProduct.stockQuantity,
-      salePrice,
       maxInstallments: this.editingProduct.maxInstallments,
       maxNoInterestInstallments: this.editingProduct.maxNoInterestInstallments
     };
+    if (this.editingProduct.boostProduct === true) {
+      updateData.boostProduct = true;
+    }
 
     this.productService.updateProduct(this.editingProduct.id, updateData)
       .subscribe({
@@ -646,12 +835,45 @@ export class SellerDashboardComponent implements OnInit {
     return Math.max(0, Math.round((1 - product.salePrice / product.price) * 100));
   }
 
-  getSalePricePreview(): number | null {
-    const price = this.parseNumber(this.editingProduct.price);
-    const discountPercent = this.parseNumber(this.editingProduct.discountPercent);
-    const normalizedDiscount = Math.min(Math.max(discountPercent, 0), 90);
-    if (price <= 0 || normalizedDiscount <= 0) return null;
-    return Number((price * (1 - normalizedDiscount / 100)).toFixed(2));
+  isBoostAvailableForEdit(): boolean {
+    const boostedUntil = this.editingProduct?.boostedUntil;
+    if (!boostedUntil) return true;
+    return new Date(boostedUntil) <= new Date();
+  }
+
+  getBoostAvailabilityLabel(): string {
+    if (!this.subscription || !this.subscription.isActive || !this.subscription.canHighlightProducts) {
+      return 'Disponivel apenas nos planos Pro e Premium';
+    }
+
+    const remaining = this.getBoostRemaining();
+    if (remaining <= 0) {
+      return 'Limite de boosts do plano atingido';
+    }
+
+    const boostedUntil = this.editingProduct?.boostedUntil;
+    if (!boostedUntil) return 'Boost disponivel agora';
+    const date = new Date(boostedUntil);
+    if (date <= new Date()) return 'Boost disponivel agora';
+    return `Disponivel em ${date.toLocaleDateString('pt-BR')}`;
+  }
+
+  isBoostAllowedForEdit(): boolean {
+    if (!this.subscription || !this.subscription.isActive) return false;
+    if (!this.subscription.canHighlightProducts) return false;
+    if (!this.isBoostAvailableForEdit()) return false;
+    return this.getBoostRemaining() > 0;
+  }
+
+  getBoostRemaining(): number {
+    if (!this.subscription) return 0;
+    const limit = this.subscription.highlightLimit || 0;
+    const active = this.getActiveBoostCount();
+    return Math.max(0, limit - active);
+  }
+
+  getActiveBoostCount(): number {
+    return this.products.filter(p => p.isBoosted).length;
   }
 
   private parseNumber(value: unknown): number {
@@ -709,6 +931,18 @@ export class SellerDashboardComponent implements OnInit {
         alert(msg);
       }
     });
+  }
+  private touchThread(lastMessage: string) {
+  if (!this.selectedChatThread) return;
+
+  const thread = this.chatThreads.find(
+    t => t.customerId === this.selectedChatThread!.customerId
+  );
+
+  if (thread) {
+    thread.lastMessage = lastMessage;
+    thread.lastMessageAt = new Date().toISOString();
+   }
   }
 
   private mapChartDays() {

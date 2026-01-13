@@ -89,22 +89,6 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var results = new Dictionary<Guid, ProductPriceResult>();
 
-            // Carrega dados necessários uma vez só (otimização)
-            var productIds = products.Select(p => p.Id).ToList();
-
-            var promotions = await _context.Promotions
-                .Where(p => p.IsActive &&
-                            p.StartDate <= DateTime.UtcNow &&
-                            p.EndDate >= DateTime.UtcNow &&
-                            p.ProductIds.Any(id => productIds.Contains(id)))
-                .ToListAsync();
-
-            var campaigns = await _context.Campaigns
-                .Where(c => c.IsActive &&
-                            c.StartDate <= DateTime.UtcNow &&
-                            c.EndDate >= DateTime.UtcNow)
-                .ToListAsync();
-
             // Calcula preço de cada produto
             foreach (var product in products)
             {

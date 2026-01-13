@@ -255,6 +255,39 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.ToTable("CartItems");
                 });
 
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.ChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SenderUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ChatMessages");
+                });
+
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.Coupon", b =>
                 {
                     b.Property<Guid>("Id")
@@ -471,6 +504,12 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Property<DateTime>("ShippedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ShippingAddressJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("ShippingCost")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -551,6 +590,9 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("BoostedUntil")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Category")
                         .HasColumnType("int");
@@ -965,6 +1007,31 @@ namespace MarketplaceArtesanato.Data.Migrations
                     b.ToTable("SellerSubscriptions");
                 });
 
+            modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.StripeEventLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId")
+                        .IsUnique();
+
+                    b.ToTable("StripeEventLogs");
+                });
+
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.SystemSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1061,27 +1128,30 @@ namespace MarketplaceArtesanato.Data.Migrations
 
             modelBuilder.Entity("MarketplaceArtesanato.Core.Entities.UserFavorite", b =>
                 {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("UserId", "ProductId");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("UserFavorites");
                 });

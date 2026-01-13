@@ -24,24 +24,33 @@ namespace MarketplaceArtesanato.Services.Services
 
         public async Task<bool> AppliesAsync(PriceCalculationContext context)
         {
-            var hasPromotion = await _context.Promotions
-                .AnyAsync(p => p.IsActive &&
-                              p.ProductIds.Contains(context.Product.Id) &&
-                              p.StartDate <= DateTime.UtcNow &&
-                              p.EndDate >= DateTime.UtcNow);
+            var now = DateTime.UtcNow;
 
-            return hasPromotion;
+            var promotions = await _context.Promotions
+                .AsNoTracking()
+                .Where(p => p.IsActive &&
+                            p.StartDate <= now &&
+                            p.EndDate >= now)
+                .ToListAsync();
+
+            return promotions.Any(p => p.ProductIds.Contains(context.Product.Id));
         }
 
         public async Task<PriceAdjustment?> CalculateAdjustmentAsync(PriceCalculationContext context)
         {
-            var promotion = await _context.Promotions
+            var now = DateTime.UtcNow;
+
+            var promotions = await _context.Promotions
+                .AsNoTracking()
                 .Where(p => p.IsActive &&
-                           p.ProductIds.Contains(context.Product.Id) &&
-                           p.StartDate <= DateTime.UtcNow &&
-                           p.EndDate >= DateTime.UtcNow)
+                            p.StartDate <= now &&
+                            p.EndDate >= now)
+                .ToListAsync();
+
+            var promotion = promotions
+                .Where(p => p.ProductIds.Contains(context.Product.Id))
                 .OrderByDescending(p => p.DiscountPercentage)
-                .FirstOrDefaultAsync();
+                .FirstOrDefault();
 
             if (promotion == null) return null;
 

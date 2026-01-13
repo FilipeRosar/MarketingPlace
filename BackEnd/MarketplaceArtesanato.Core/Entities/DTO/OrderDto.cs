@@ -17,21 +17,28 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
         public Guid BuyerId { get; set; }
 
         public string BuyerName { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ShippedAt { get; set; }
 
         [Required]
         public decimal Total { get; set; }
+        public decimal ShippingCost { get; set; }
+        public decimal SubTotal { get; set; }
 
         [Required]
         public OrderStatus Status { get; set; }
-
-        [Required]
-        public DateTime CreatedAt { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
 
         public string? StripeSessionId { get; set; }
         public string? StripePaymentIntentId { get; set; }
-
+        public string? TrackingCode { get; set; }
+        public List<string>? TrackingCodes { get; set; }
+        public ShippingAddressDTO? ShippingAddress { get; set; }
+        public decimal TotalAmount { get; set; }
+        public string StatusText { get; set; }
+        public string Carrier { get; set; }
+        public string? SellerName { get; set; }
         [Required]
         public List<OrderItemDto> Items { get; set; } = new();
         public Dictionary<Guid, decimal>? SellerCommissions { get; set; }

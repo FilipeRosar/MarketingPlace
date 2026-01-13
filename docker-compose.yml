@@ -78,6 +78,8 @@
       - Email__FromEmail=${SMTP_FROM_EMAIL}
       - Email__EnableSsl=${SMTP_ENABLE_SSL:-true}
       - AppUrl=${APP_URL:-http://localhost:4200}
+      - Turnstile__SecretKey=${TURNSTILE_SECRET_KEY}
+
     depends_on:
       db:
         condition: service_healthy

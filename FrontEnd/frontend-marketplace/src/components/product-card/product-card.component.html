@@ -25,6 +25,11 @@
             OFERTA
         </span>
     }
+    @if (product.isBoosted) {
+        <span class="absolute top-12 right-3 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm z-10">
+            Promo
+        </span>
+    }
 
     <button (click)="toggleFavorite($event)"
             class="absolute top-3 right-3 p-2 rounded-full shadow-sm transition-all z-20"
@@ -41,7 +46,13 @@
         <h3 class="text-base font-bold text-gray-900 group-hover:text-primary transition-colors truncate" title="{{ product.name }}">
           {{ product.name }}
         </h3>
-        <p class="text-xs text-gray-500 truncate">{{ product.sellerName || 'Vendedor Parceiro' }}</p>
+        <div class="flex items-center gap-1">
+          <p class="text-xs text-gray-500 truncate">{{ product.sellerName || 'Vendedor Parceiro' }}</p>
+          @if (product.seller?.hasVerifiedBadge) {
+            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700"><span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white"><svg class="w-2.5 h-2.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10l3 3 7-7" /></svg></span><span>Verificado</span></span>
+          }
+        </div>
+
       </div>
     </div>
 

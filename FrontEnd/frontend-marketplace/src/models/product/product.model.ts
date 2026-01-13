@@ -19,6 +19,8 @@ export interface Product {
   averageRating: number;
   totalRatings: number;
   salePrice?: number;
+  boostedUntil?: string;
+  isBoosted?: boolean;
   maxInstallments?: number;
   maxNoInterestInstallments?: number;
   sellerId: string;
@@ -36,6 +38,7 @@ export interface Seller {
   name: string;
   email: string;
   phone: string;
+  hasVerifiedBadge?: boolean;
 }
 export interface CreateProductRequest {
   name: string;

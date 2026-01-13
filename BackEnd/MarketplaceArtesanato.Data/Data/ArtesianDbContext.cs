@@ -29,6 +29,7 @@ public class ArtesianDbContext : DbContext
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<UserFavorite> UserFavorites => Set<UserFavorite>();
     public DbSet<Moment> Moments { get; set; } = null!;
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     // --- DbSets do Sistema de Precificação ---
     public DbSet<Promotion> Promotions => Set<Promotion>();

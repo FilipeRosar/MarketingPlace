@@ -23,13 +23,19 @@ namespace MarketplaceArtesanato.API.Mapping
             CreateMap<Address, AddressResponseDto>();
             CreateMap<ProductImage, ProductImageDto>();
             CreateMap<UpdateProductDto, Product>()
+                .ForMember(dest => dest.BoostedUntil, opt => opt.Ignore())
+                .ForMember(dest => dest.SalePrice, opt => opt.Ignore())
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-            CreateMap<Seller, SellerResponseDto>();
+            CreateMap<Seller, SellerResponseDto>()
+                .ForMember(dest => dest.HasVerifiedBadge, opt => opt.MapFrom(src =>
+                    src.Subscription != null && src.Subscription.IsActive && src.Subscription.HasVerifiedBadge));
 
             CreateMap<Product, ProductResponseDto>()
                 .ForMember(dest => dest.Seller, opt => opt.MapFrom(src => src.Seller))
                 .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller!.StoreName))
+                .ForMember(dest => dest.IsBoosted, opt => opt.MapFrom(src =>
+                    src.BoostedUntil.HasValue && src.BoostedUntil.Value > DateTime.UtcNow))
                 .ForMember(dest => dest.AverageRating, opt => opt.MapFrom(src =>
                     src.Ratings != null && src.Ratings.Any() ? src.Ratings.Average(r => r.Stars) : 0))
                 .ForMember(dest => dest.TotalRatings, opt => opt.MapFrom(src =>

@@ -22,6 +22,7 @@ namespace MarketplaceArtesanato.Core.Entities
         public decimal Price { get; set; }
         public Guid CategoryId { get; set; }
         public decimal? SalePrice { get; set; }
+        public DateTime? BoostedUntil { get; set; }
         public int MaxInstallments { get; set; } = 12;
         public int MaxNoInterestInstallments { get; set; } = 0;
         [Required]

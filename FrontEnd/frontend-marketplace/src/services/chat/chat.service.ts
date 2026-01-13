@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, map } from 'rxjs';
 
 export interface ChatMessage {
   user: string;
@@ -9,15 +10,42 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface ChatThread {
+  customerId: string;
+  customerName: string;
+  customerImageUrl?: string;
+  lastMessage: string;
+  lastMessageAt: string;
+}
+
+export interface ChatCustomerThread {
+  sellerId: string;
+  sellerUserId: string;
+  sellerName: string;
+  sellerImageUrl?: string;
+  lastMessage: string;
+  lastMessageAt: string;
+}
+
+export interface ContactRequestThread {
+  customerId: string;
+  customerName: string;
+  customerImageUrl?: string;
+  lastMessage: string;
+  lastMessageAt: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ChatService {
+  private apiUrl = `${environment.apiUrl}/chat`;
   private hubConnection: signalR.HubConnection | undefined;
   public messages$ = new BehaviorSubject<ChatMessage[]>([]);
+  public privateMessages$ = new BehaviorSubject<ChatMessage[]>([]);
   public notifications$ = new BehaviorSubject<any[]>([]);
 
-  constructor() {}
+  constructor(private http: HttpClient) {}
 
  public startConnection(token: string) {
   this.hubConnection = new signalR.HubConnectionBuilder()
@@ -40,6 +68,11 @@ export class ChatService {
       this.messages$.next([...this.messages$.value, newMsg]);
     });
 
+    this.hubConnection.on('ReceivePrivateMessage', (user, message) => {
+      const newMsg = { user, message, timestamp: new Date() };
+      this.privateMessages$.next([...this.privateMessages$.value, newMsg]);
+    });
+
     // Ouve notificações
     this.hubConnection.on('ReceiveNotification', (title, message) => {
       console.log('Nova Notificação:', title, message);
@@ -52,6 +85,50 @@ export class ChatService {
   public sendMessage(user: string, message: string) {
     this.hubConnection?.invoke('SendMessage', user, message)
       .catch(err => console.error(err));
+  }
+
+  public sendPrivateMessage(userId: string, message: string) {
+    this.hubConnection?.invoke('SendPrivateMessage', userId, message)
+      .catch(err => console.error(err));
+  }
+
+  public sendPrivateMessageHttp(recipientUserId: string, message: string): Observable<ChatMessage> {
+    return this.http.post<any>(`${this.apiUrl}/messages`, { recipientUserId, message }).pipe(
+      map(m => ({
+        user: m.senderUserId,
+        message: m.message,
+        timestamp: new Date(m.createdAt)
+      }))
+    );
+  }
+
+  public getThreads(): Observable<ChatThread[]> {
+    return this.http.get<ChatThread[]>(`${this.apiUrl}/threads`);
+  }
+
+  public getContactRequestThreads(): Observable<ContactRequestThread[]> {
+    return this.http.get<ContactRequestThread[]>(`${this.apiUrl}/threads/contact-requests`);
+  }
+
+  public createContactRequest(sellerUserId: string, message: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/contact-requests`, {
+      sellerUserId,
+      message
+    });
+  }
+
+  public getCustomerThreads(): Observable<ChatCustomerThread[]> {
+    return this.http.get<ChatCustomerThread[]>(`${this.apiUrl}/threads/customer`);
+  }
+
+  public getMessages(sellerId: string, customerId: string): Observable<ChatMessage[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/messages`, { params: { sellerId, customerId } }).pipe(
+      map(messages => messages.map(m => ({
+        user: m.senderUserId,
+        message: m.message,
+        timestamp: new Date(m.createdAt)
+      })))
+    );
   }
 
   public stopConnection() {

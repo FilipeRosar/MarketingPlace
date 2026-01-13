@@ -7,6 +7,7 @@ import { HeaderComponent } from '../components/header/header.component';
 import { FooterComponent } from '../components/footer/footer.component';
 import { AuthService } from '../services/auth/auth.service';
 import { ChatService } from '../services/chat/chat.service';
+import { NotificationService } from '../services/notification/notification.service';
 import { ToastNotificationComponent } from "../components/notification/toast-notification.component";
 
 @Component({
@@ -19,13 +20,16 @@ import { ToastNotificationComponent } from "../components/notification/toast-not
 export class AppComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private chatService = inject(ChatService);
+  private notificationService = inject(NotificationService);
   private platformId = inject(PLATFORM_ID);
 
   isDark = signal(false);
+  private lastChatNotificationCount = 0;
 
   ngOnInit(): void {
     this.setupDarkMode();
     this.setupChatConnection();
+    this.setupChatNotifications();
     this.preloadCriticalAssets();
   }
 
@@ -76,6 +80,26 @@ export class AppComponent implements OnInit, OnDestroy {
       } else {
         this.chatService.stopConnection();
       }
+    });
+  }
+
+  private setupChatNotifications(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    this.chatService.notifications$.subscribe(notifs => {
+      if (notifs.length <= this.lastChatNotificationCount) return;
+
+      const currentUser = this.authService.currentUserValue;
+      if (!currentUser || currentUser.role !== 'Seller') {
+        this.lastChatNotificationCount = notifs.length;
+        return;
+      }
+
+      const newOnes = notifs.slice(this.lastChatNotificationCount);
+      newOnes.forEach(n => {
+        this.notificationService.info(n.message, n.title || 'Chat');
+      });
+      this.lastChatNotificationCount = notifs.length;
     });
   }
 

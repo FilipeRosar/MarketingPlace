@@ -273,7 +273,7 @@ namespace MarketplaceArtesanato.API.Controllers
             var subscription = await _sellerSubscriptionService.GetActiveSubscriptionAsync(seller.Id);
 
             if (subscription == null)
-                return NotFound("Nenhuma assinatura ativa encontrada para este vendedor.");
+                return Ok(null);
 
             return Ok(subscription);
         }

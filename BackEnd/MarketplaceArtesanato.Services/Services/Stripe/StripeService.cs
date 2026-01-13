@@ -56,6 +56,16 @@ namespace MarketplaceArtesanato.Services.Services
                     { "OrderId", order.Id.ToString() },
                     { "CustomerId", customerId.ToString() }
                 },
+                PaymentIntentData = new SessionPaymentIntentDataOptions
+                {
+                    TransferGroup = order.Id.ToString(),
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "Type", "order" },
+                        { "OrderId", order.Id.ToString() },
+                        { "CustomerId", customerId.ToString() }
+                    }
+                },
                 LineItems = order.Items.Select(item => new SessionLineItemOptions
                 {
                     Quantity = item.Quantity,
@@ -76,12 +86,12 @@ namespace MarketplaceArtesanato.Services.Services
         }
 
         // =====================================================
-        // 🔔 WEBHOOK STRIPE (IDEMPOTENTE)
+        // 🔔 WEBHOOK STRIPE (OBRIGATÓRIO)
         // =====================================================
         public async Task HandleWebhookAsync(string json, string stripeSignature)
         {
             var webhookSecret = _config["Stripe:WebhookSecret"];
-            if (string.IsNullOrEmpty(webhookSecret))
+            if (string.IsNullOrWhiteSpace(webhookSecret))
                 throw new InvalidOperationException("Stripe webhook secret não configurado.");
 
             StripeEvent stripeEvent;
@@ -96,19 +106,27 @@ namespace MarketplaceArtesanato.Services.Services
                 throw;
             }
 
-            // 🔐 IDEMPOTÊNCIA
-            if (await _context.StripeEventLogs.AnyAsync(e => e.EventId == stripeEvent.Id))
+            // Idempotência
+            try
             {
-                _logger.LogInformation("Webhook duplicado ignorado: {EventId}", stripeEvent.Id);
-                return;
+                if (await _context.StripeEventLogs.AnyAsync(e => e.EventId == stripeEvent.Id))
+                {
+                    _logger.LogInformation("Webhook duplicado ignorado: {EventId}", stripeEvent.Id);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Falha ao verificar idempotência do webhook Stripe {EventId}", stripeEvent.Id);
             }
 
             try
             {
                 if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)
-                {
                     await HandleCheckoutCompletedAsync(stripeEvent);
-                }
+
+                if (stripeEvent.Type == EventTypes.PaymentIntentSucceeded)
+                    await HandlePaymentIntentSucceededAsync(stripeEvent);
 
                 _context.StripeEventLogs.Add(new StripeEventLog
                 {
@@ -149,8 +167,13 @@ namespace MarketplaceArtesanato.Services.Services
         // =====================================================
         private async Task ProcessOrderPaymentAsync(Session session)
         {
+            if (!string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(session.PaymentStatus, "no_payment_required", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             var orderId = Guid.Parse(session.Metadata["OrderId"]);
-            var customerId = Guid.Parse(session.Metadata["CustomerId"]);
 
             var order = await _context.Orders
                 .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
@@ -159,25 +182,67 @@ namespace MarketplaceArtesanato.Services.Services
             if (order == null || order.Status == OrderStatus.Confirmed)
                 return;
 
+            await ConfirmOrderPaymentAsync(order, session.PaymentIntentId);
+
+            _logger.LogInformation("Pedido {OrderId} confirmado com sucesso", orderId);
+        }
+
+        private async Task HandlePaymentIntentSucceededAsync(StripeEvent stripeEvent)
+        {
+            var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+            if (paymentIntent?.Metadata == null) return;
+
+            if (!paymentIntent.Metadata.TryGetValue("Type", out var type) || type != "order")
+                return;
+
+            if (!paymentIntent.Metadata.TryGetValue("OrderId", out var orderRaw))
+                return;
+
+            if (!Guid.TryParse(orderRaw, out var orderId))
+                return;
+
+            var order = await _context.Orders
+                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null || order.Status == OrderStatus.Confirmed)
+                return;
+
+            await ConfirmOrderPaymentAsync(order, paymentIntent.Id);
+
+            _logger.LogInformation("Pedido {OrderId} confirmado via payment_intent.succeeded", orderId);
+        }
+
+        private async Task ConfirmOrderPaymentAsync(Order order, string? paymentIntentId)
+        {
             order.Status = OrderStatus.Confirmed;
-            order.StripePaymentIntentId = session.PaymentIntentId;
+            order.StripePaymentIntentId = paymentIntentId;
             order.UpdatedAt = DateTime.UtcNow;
 
             foreach (var item in order.Items)
                 item.Product.StockQuantity -= item.Quantity;
 
             await _context.SaveChangesAsync();
-            await ProcessSplitPaymentAsync(order, session.PaymentIntentId);
+
+            if (!string.IsNullOrWhiteSpace(paymentIntentId))
+            {
+                try
+                {
+                    await ProcessSplitPaymentAsync(order, paymentIntentId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Falha ao processar split de pagamento do pedido {OrderId}", order.Id);
+                }
+            }
 
             await _publishEndpoint.Publish(new OrderPaidEvent
             {
                 OrderId = order.Id,
-                CustomerId = customerId,
+                CustomerId = order.BuyerId,
                 Total = order.TotalAmount,
                 PaidAt = DateTime.UtcNow
             });
-
-            _logger.LogInformation("Pedido {OrderId} confirmado com sucesso", orderId);
         }
 
         // =====================================================
@@ -185,13 +250,30 @@ namespace MarketplaceArtesanato.Services.Services
         // =====================================================
         private async Task ProcessSubscriptionAsync(Session session)
         {
-            if (!session.Metadata.TryGetValue("SellerId", out var sellerRaw) ||
-                !session.Metadata.TryGetValue("SellerPlan", out var planRaw))
-                return;
+            var metadata = session.Metadata ?? new Dictionary<string, string>();
 
-            if (!Guid.TryParse(sellerRaw, out var sellerId) ||
-                !Enum.TryParse<SellerPlan>(planRaw, out var plan))
+            if (!metadata.TryGetValue("SellerId", out var sellerRaw))
+            {
+                sellerRaw = session.ClientReferenceId ?? string.Empty;
+            }
+
+            if (!metadata.TryGetValue("SellerPlan", out var planRaw))
+            {
+                _logger.LogWarning("Webhook de assinatura sem SellerPlan. SessionId={SessionId}", session.Id);
                 return;
+            }
+
+            if (!Guid.TryParse(sellerRaw, out var sellerId))
+            {
+                _logger.LogWarning("Webhook de assinatura com SellerId invalido. SessionId={SessionId}", session.Id);
+                return;
+            }
+
+            if (!Enum.TryParse<SellerPlan>(planRaw, out var plan))
+            {
+                _logger.LogWarning("Webhook de assinatura com plano invalido. SessionId={SessionId}", session.Id);
+                return;
+            }
 
             await _subscriptionService.SubscribeAsync(sellerId, plan);
 

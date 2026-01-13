@@ -32,6 +32,7 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var query = _context.Products
                 .Include(p => p.Seller!).ThenInclude(s => s.Address)
+                .Include(p => p.Seller!).ThenInclude(s => s.Subscription)
                 .Include(p => p.Ratings!).ThenInclude(r => r.Customer)
                 .Include(p => p.Images)
                 .Include(p => p.StoryMedia)
@@ -79,6 +80,8 @@ namespace MarketplaceArtesanato.Services.Services
 
             var dtos = _mapper.Map<List<ProductResponseDto>>(products);
 
+            await ApplyActivePromotionsAsync(dtos);
+
             return new PaginatedResult<ProductResponseDto>
             {
                 Data = dtos,
@@ -93,6 +96,7 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var product = await _context.Products
                 .Include(p => p.Seller!).ThenInclude(s => s.Address)
+                .Include(p => p.Seller!).ThenInclude(s => s.Subscription)
                 .Include(p => p.Ratings!).ThenInclude(r => r.Customer)
                 .Include(p => p.Images)
                 .Include(p => p.StoryMedia)
@@ -100,7 +104,11 @@ namespace MarketplaceArtesanato.Services.Services
 
             if (product == null) return null;
 
-            return _mapper.Map<ProductResponseDto>(product);
+            var dto = _mapper.Map<ProductResponseDto>(product);
+
+            await ApplyActivePromotionsAsync(new List<ProductResponseDto> { dto });
+
+            return dto;
         }
 
         public async Task<ProductResponseDto> CreateAsync(Guid sellerId, CreateProductDto dto)
@@ -206,8 +214,37 @@ namespace MarketplaceArtesanato.Services.Services
             }
 
             _mapper.Map(dto, product);
-            product.SalePrice = dto.SalePrice;
             product.UpdatedAt = DateTime.UtcNow;
+            if (dto.BoostProduct == true)
+            {
+                var now = DateTime.UtcNow;
+                if (product.BoostedUntil.HasValue && product.BoostedUntil.Value > now)
+                {
+                    throw new InvalidOperationException("Boost disponivel apenas apos o periodo atual.");
+                }
+
+                var subscription = await _context.SellerSubscriptions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.SellerId == product.SellerId && s.IsActive);
+
+                if (subscription == null || !subscription.CanHighlightProducts || subscription.HighlightLimit <= 0)
+                {
+                    throw new InvalidOperationException("Boost disponivel apenas para planos Pro ou Premium.");
+                }
+
+                var activeBoosts = await _context.Products
+                    .AsNoTracking()
+                    .CountAsync(p => p.SellerId == product.SellerId &&
+                                     p.BoostedUntil.HasValue &&
+                                     p.BoostedUntil.Value > now);
+
+                if (activeBoosts >= subscription.HighlightLimit)
+                {
+                    throw new InvalidOperationException("Limite de boosts do plano atingido.");
+                }
+
+                product.BoostedUntil = now.AddMonths(1);
+            }
 
             await _context.SaveChangesAsync();
             return true;
@@ -246,6 +283,59 @@ namespace MarketplaceArtesanato.Services.Services
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+
+        private async Task ApplyActivePromotionsAsync(List<ProductResponseDto> dtos)
+        {
+            if (dtos.Count == 0) return;
+
+            var productIds = dtos.Select(d => d.Id).ToList();
+            var discounts = await GetActivePromotionDiscountsAsync(productIds);
+
+            foreach (var dto in dtos)
+            {
+                if (!discounts.TryGetValue(dto.Id, out var discount))
+                    continue;
+
+                var promoPrice = Math.Round(dto.Price * (1 - discount / 100m), 2, MidpointRounding.AwayFromZero);
+                if (promoPrice <= 0 || promoPrice >= dto.Price) continue;
+
+                if (!dto.SalePrice.HasValue || promoPrice < dto.SalePrice.Value)
+                {
+                    dto.SalePrice = promoPrice;
+                }
+            }
+        }
+
+        private async Task<Dictionary<Guid, decimal>> GetActivePromotionDiscountsAsync(List<Guid> productIds)
+        {
+            var idSet = productIds.ToHashSet();
+            if (idSet.Count == 0) return new Dictionary<Guid, decimal>();
+
+            var now = DateTime.UtcNow;
+            var promotions = await _context.Promotions
+                .AsNoTracking()
+                .Where(p => p.IsActive &&
+                            p.StartDate <= now &&
+                            p.EndDate >= now)
+                .ToListAsync();
+
+            var discounts = new Dictionary<Guid, decimal>();
+            foreach (var promo in promotions)
+            {
+                foreach (var productId in promo.ProductIds)
+                {
+                    if (!idSet.Contains(productId)) continue;
+
+                    if (!discounts.TryGetValue(productId, out var existing) || promo.DiscountPercentage > existing)
+                    {
+                        discounts[productId] = promo.DiscountPercentage;
+                    }
+                }
+            }
+
+            return discounts;
         }
 
         private bool IsImage(IFormFile file)

@@ -19,6 +19,8 @@ namespace MarketplaceArtesanato.API.Models.Responses
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
         public decimal? SalePrice { get; set; }
+        public DateTime? BoostedUntil { get; set; }
+        public bool IsBoosted { get; set; }
         public int MaxInstallments { get; set; }
         public int MaxNoInterestInstallments { get; set; }
         public decimal Weight { get; set; }

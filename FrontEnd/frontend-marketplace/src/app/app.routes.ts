@@ -15,6 +15,7 @@ import { ForgotPasswordComponent } from '../pages/forgot-password/forgot-passwor
 import { ResetPasswordComponent } from '../pages/reset-password/reset-password.component';
 import { AdminDashboardComponent } from '../pages/admin-dashboard/admin-dashboard.component';
 import { FavoritesComponent } from '../components/favorite/favorite.component';
+import { ChatComponent } from '../pages/chat/chat.component';
 import { adminGuard } from '../guards/admin.guard';
 import { authGuard } from '../guards/auth-guard';
 import { sellerGuard } from '../guards/seller-guard';
@@ -55,6 +56,11 @@ export const routes: Routes = [
   component: OrdersComponent,
   canActivate: [authGuard],
   data: { title: 'orders' }
+  },
+  {
+    path: 'chat',
+    component: ChatComponent,
+    canActivate: [authGuard]
   },
   { path: 'profile', component: ProfileComponent },
   {

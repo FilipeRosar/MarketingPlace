@@ -10,10 +10,13 @@ namespace MarketplaceArtesanato.Core.Entities.DTO
     public class ProductPriceResult
     {
         public Guid ProductId { get; set; }
-        public decimal BasePrice { get; set; }        
-        public decimal FinalPrice { get; set; }       
-        public decimal TotalDiscount { get; set; }    
-        public List<PriceAdjustment> Adjustments { get; set; }  
+
+        public decimal BasePrice { get; set; }
+        public decimal FinalPrice { get; set; }
+        public decimal TotalDiscount { get; set; }
+
+        public List<PriceAdjustment> Adjustments { get; set; } = new();
+
         public bool HasAnyDiscount => Adjustments.Any();
     }
     public class PriceAdjustment

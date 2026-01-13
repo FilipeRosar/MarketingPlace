@@ -1,3 +1,4 @@
+
 <div class="min-h-screen bg-surface flex flex-col justify-center py-12 sm:px-6 lg:px-8">
   <div class="sm:mx-auto sm:w-full sm:max-w-md">
     <!-- Logo Marca -->
@@ -61,7 +62,10 @@
             </div>
           </div>
         </div>
-
+        <div #turnstileContainer class="cf-turnstile"></div>
+        <div *ngIf="captchaError" class="text-red-500 text-xs mt-2">
+          {{ captchaError }}
+        </div>
         <!-- Botão -->
         <div>
           <button type="submit" [disabled]="loginForm.invalid || isLoading"

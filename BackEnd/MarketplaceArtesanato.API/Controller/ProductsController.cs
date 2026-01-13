@@ -88,6 +88,8 @@ namespace MarketplaceArtesanato.API.Controllers
         public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] UpdateProductDto dto)
         {
             if (id != dto.Id) return BadRequest("ID mismatch.");
+            if (dto.SalePrice.HasValue)
+                return BadRequest("Desconto por produto desativado. Use a aba de Promoções.");
 
             try
             {
@@ -99,6 +101,10 @@ namespace MarketplaceArtesanato.API.Controllers
                 if (!success) return NotFound();
 
                 return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (UnauthorizedAccessException)
             {

@@ -6,6 +6,7 @@ namespace MarketplaceArtesanato.API.Models.Responses
     public class SellerResponseDto
     {
         public Guid Id { get; set; }
+        public Guid UserId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
@@ -18,6 +19,7 @@ namespace MarketplaceArtesanato.API.Models.Responses
         public string? Facebook { get; set; }
         public string? Tiktok { get; set; }
         public string? Youtube { get; set; }
+        public bool HasVerifiedBadge { get; set; }
         public List<MomentResponseDto> Moments { get; set; } = new List<MomentResponseDto>();
         public AddressResponseDto Address { get; set; } = new();
 

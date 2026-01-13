@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 namespace MarketplaceArtesanato.Core.Entities
 {
     [Table("UserFavorites")]
-    [PrimaryKey(nameof(UserId), nameof(ProductId))]
     public class UserFavorite : BaseEntity
     {
         public Guid UserId { get; set; }

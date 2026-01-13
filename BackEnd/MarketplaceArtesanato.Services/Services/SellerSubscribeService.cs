@@ -52,20 +52,16 @@ namespace MarketplaceArtesanato.Services.Services
                 .FirstOrDefault(sub => sub.SellerId == sellerId && sub.IsActive);
             if (currentSubscription == null)
             {
-                throw new InvalidOperationException("Vendedor não possui plano ativo.");
+                throw new InvalidOperationException("Vendedor nao possui plano ativo.");
             }
             if (currentSubscription.Plan == newPlan)
             {
-                throw new InvalidOperationException("O vendedor já está inscrito neste plano.");
+                throw new InvalidOperationException("O vendedor ja esta inscrito neste plano.");
             }
-            currentSubscription.IsActive = false;
-            currentSubscription.ExpiresAt = DateTime.UtcNow;
 
-            var newSubscription = CreateSubscription(sellerId, newPlan);
-
-            _context.SellerSubscriptions.Add(newSubscription);
+            ApplyPlan(currentSubscription, newPlan);
             await _context.SaveChangesAsync();
-            return newSubscription;
+            return currentSubscription;
         }
 
         public async Task<SellerSubscription> GetActiveSubscriptionAsync(Guid sellerId)
@@ -81,39 +77,49 @@ namespace MarketplaceArtesanato.Services.Services
 
             try
             {
-                // Verifica se o seller existe
                 var seller = await _context.Sellers
                     .FirstOrDefaultAsync(s => s.Id == sellerId);
 
                 if (seller == null)
                 {
-                    _logger.LogError("[SubscribeAsync] Seller {SellerId} não encontrado", sellerId);
-                    throw new InvalidOperationException($"Seller {sellerId} não encontrado");
+                    _logger.LogError("[SubscribeAsync] Seller {SellerId} nao encontrado", sellerId);
+                    throw new InvalidOperationException($"Seller {sellerId} nao encontrado");
                 }
 
                 _logger.LogInformation("[SubscribeAsync] Seller encontrado: {SellerName}", seller.StoreName);
 
-                // Desativa assinatura atual se existir
                 var current = await _context.SellerSubscriptions
-                    .FirstOrDefaultAsync(sub => sub.SellerId == sellerId && sub.IsActive);
+                    .FirstOrDefaultAsync(sub => sub.SellerId == sellerId);
 
                 if (current != null)
                 {
-                    _logger.LogInformation("[SubscribeAsync] Desativando assinatura atual: {CurrentPlan}", current.Plan);
-                    current.IsActive = false;
-                    current.ExpiresAt = DateTime.UtcNow;
-                }
+                    if (current.Plan == plan && current.IsActive)
+                    {
+                        _logger.LogInformation("[SubscribeAsync] Assinatura ja esta no plano {Plan} para SellerId={SellerId}", plan, sellerId);
+                        return current;
+                    }
 
-                // Cria nova assinatura
-                var newSubscription = CreateSubscription(sellerId, plan);
-                _context.SellerSubscriptions.Add(newSubscription);
+                    _logger.LogInformation("[SubscribeAsync] Atualizando assinatura atual: {CurrentPlan} -> {NewPlan}", current.Plan, plan);
+                    ApplyPlan(current, plan);
+                }
+                else
+                {
+                    var newSubscription = CreateSubscription(sellerId, plan);
+                    _context.SellerSubscriptions.Add(newSubscription);
+                }
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("[SubscribeAsync] Assinatura criada com sucesso: Id={Id}, Plan={Plan}",
-                    newSubscription.Id, newSubscription.Plan);
+                var updated = await _context.SellerSubscriptions
+                    .FirstOrDefaultAsync(sub => sub.SellerId == sellerId && sub.IsActive);
 
-                return newSubscription;
+                if (updated == null)
+                    throw new InvalidOperationException("Falha ao localizar assinatura ativa.");
+
+                _logger.LogInformation("[SubscribeAsync] Assinatura ativa: Id={Id}, Plan={Plan}",
+                    updated.Id, updated.Plan);
+
+                return updated;
             }
             catch (Exception ex)
             {
@@ -159,6 +165,7 @@ namespace MarketplaceArtesanato.Services.Services
                 ClientReferenceId = sellerId.ToString(),
                 Metadata = new Dictionary<string, string>
                 {
+                    { "Type", "subscription" },
                     { "SellerId", sellerId.ToString() },
                     { "SellerPlan", plan.ToString() }
                 },
@@ -191,6 +198,23 @@ namespace MarketplaceArtesanato.Services.Services
                 sellerId, plan, session.Id);
 
             return session.Url;
+        }
+
+
+        private static void ApplyPlan(SellerSubscription subscription, SellerPlan plan)
+        {
+            var template = CreateSubscription(subscription.SellerId, plan);
+            subscription.Plan = template.Plan;
+            subscription.StartedAt = DateTime.UtcNow;
+            subscription.ExpiresAt = null;
+            subscription.IsActive = true;
+            subscription.CommissionRate = template.CommissionRate;
+            subscription.CanHighlightProducts = template.CanHighlightProducts;
+            subscription.MonthlyPrice = template.MonthlyPrice;
+            subscription.HighlightLimit = template.HighlightLimit;
+            subscription.HasVerifiedBadge = template.HasVerifiedBadge;
+            subscription.HasAdvancedAnalytics = template.HasAdvancedAnalytics;
+            subscription.HasPrioritySupport = template.HasPrioritySupport;
         }
 
         private static SellerSubscription CreateSubscription(Guid sellerId, SellerPlan plan)

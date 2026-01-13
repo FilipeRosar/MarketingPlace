@@ -1,5 +1,6 @@
 using MarketplaceArtesanato.API.Hubs;
 using MarketplaceArtesanato.API.Mapping;
+using MarketplaceArtesanato.Core.Entities.DTO;
 using MarketplaceArtesanato.Core.Hubs;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Settings;
@@ -8,6 +9,7 @@ using MarketplaceArtesanato.Data.Seed;
 using MarketplaceArtesanato.Infrastructure.Consumers;
 using MarketplaceArtesanato.Services;
 using MarketplaceArtesanato.Services.Services;
+using MarketplaceArtesanato.Services.Services.Configuration;
 using MarketplaceArtesanato.Services.Services.Stripe;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,6 +20,7 @@ using StackExchange.Redis;
 using Stripe;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,7 +43,14 @@ builder.Services.AddDbContext<ArtesianDbContext>(options =>
             maxRetryDelay: TimeSpan.FromSeconds(10),
             errorNumbersToAdd: null));
 });
-
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "X-CSRF-TOKEN";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
 // Configura Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
@@ -56,6 +66,12 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
     options.InstanceName = "MarketplaceArtesanato:";
 });
+var secretKey = builder.Configuration["Turnstile:SecretKey"];
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "MarketplaceArtesanato:";
+});
 
 // ==========================================
 // 2. SERVIÇOS DA APLICAÇÃO (DI)
@@ -63,6 +79,27 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddAutoMapper(typeof(Program)); // Escaneia perfis
 builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddOptions();
+builder.Services.AddMemoryCache();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ =>
+            new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 // Controllers com Enum Converter
 builder.Services.AddControllers()
@@ -86,7 +123,7 @@ builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
 builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
 builder.Services.AddScoped<ISellerSubscriptionService, SellerSubscribeService>();
 builder.Services.AddScoped<IPlatformFeeService, PlatformFeeService>();
-builder.Services.AddScoped<IPriceCalculationService, PriceCalculationService>();
+builder.Services.AddPricingServices();
 builder.Services.AddScoped<IProductService, MarketplaceArtesanato.Services.Services.ProductService>();
 builder.Services.Configure<AzureBlobSettings>(builder.Configuration.GetSection("Storage:AzureBlob"));
 
@@ -196,7 +233,9 @@ builder.Services.AddSwaggerGen(c =>
     });
     c.MapType<IFormFile>(() => new OpenApiSchema { Type = "string", Format = "binary" });
 });
-
+builder.Services.Configure<TurnstileOptions>(
+    builder.Configuration.GetSection("Turnstile")
+);
 var app = builder.Build();
 
 // ==========================================
@@ -225,6 +264,7 @@ app.UseCors("AllowAngular");
 // 2. Autenticação deve vir ANTES de Autorização
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 
 // 3. Hubs e Controllers
 app.MapHub<ChatHub>("/chatHub");
