@@ -42,29 +42,3 @@ O projeto segue uma arquitetura modular dividida em **camadas independentes**, f
 
 
 
-
----
-
-## Stripe Webhook (local dev)
-
-When running the API via Docker and using Stripe CLI, keep the listener running and update the webhook secret in `.env`.
-
-1) Start the listener (keep this terminal open):
-```
-stripe listen --forward-to http://localhost:5253/api/webhook
-```
-
-2) Update the secret shown by the CLI in `.env`:
-```
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
-
-3) Restart the backend container to reload the `.env`:
-```
-docker compose restart backend
-```
-
-4) (Optional) Send a test event:
-```
-stripe trigger checkout.session.completed
-```
