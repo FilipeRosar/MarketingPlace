@@ -20,7 +20,7 @@ Um marketplace completo desenvolvido para conectar vendedores e compradores de f
 
 ### Testes & Integração Contínua
 - **xUnit** (Back-End)
-- **CI/CD:** Azure DevOps / GitHub Actions
+- **CI/CD:** GitHub Actions
 
 ---
 
