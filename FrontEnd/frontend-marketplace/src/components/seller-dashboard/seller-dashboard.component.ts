@@ -16,6 +16,7 @@ import { ChatService, ChatMessage, ChatThread, ContactRequestThread } from '../.
 import { Product } from '../../models/product/product.model';
 import { CurrencyBrPipe } from '../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
+import { SellerCouponManagementComponent } from '../seller-coupon-management/seller-coupon-management.component';
 
 interface DailyRevenue {
   date: string;
@@ -40,7 +41,8 @@ interface DashboardStats {
     RouterLink,
     FormsModule,
     CurrencyBrPipe,
-    LoadingSpinnerComponent
+    LoadingSpinnerComponent,
+    SellerCouponManagementComponent
   ],
   templateUrl: './seller-dashboard.html',
   styleUrl: './seller-dashboard.css'
@@ -56,7 +58,7 @@ export class SellerDashboardComponent implements OnInit {
   private chatService = inject(ChatService);
   private route = inject(ActivatedRoute);
 
-  activeTab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat' = 'overview';
+  activeTab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat' | 'coupons' = 'overview';
 
   products: Product[] = [];
   recentOrders: any[] = [];
@@ -84,7 +86,10 @@ export class SellerDashboardComponent implements OnInit {
     activeProducts: 0,
     dailyRevenue: []
   };
-
+  showTrackingModal = false;
+  selectedOrder: any = null;
+  trackingCodeInput = '';
+  trackingCodeError = '';
   stripeStatus: { isConnected: boolean; accountId?: string; chargesEnabled?: boolean; detailsSubmitted?: boolean } | null = null;
   isStripeLoading = false;
 
@@ -182,6 +187,7 @@ export class SellerDashboardComponent implements OnInit {
   savingsExampleRevenue = 5000;
 
   chartDays: string[] = [];
+  chartPeriod: '7' | '14' | '30' = '30';
 
   ngOnInit(): void {
     this.chatService.privateMessages$.subscribe(messages => {
@@ -215,7 +221,7 @@ export class SellerDashboardComponent implements OnInit {
     });
   }
 
-  setActiveTab(tab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat') {
+  setActiveTab(tab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat' | 'coupons') {
     this.activeTab = tab;
 
     // Carrega promoções quando abrir a aba
@@ -223,6 +229,7 @@ export class SellerDashboardComponent implements OnInit {
       this.loadPromotions();
     }
 
+    // Carrega conversas quando abrir a aba chat
     if (tab === 'chat') {
       this.loadChatThreads();
     }
@@ -548,7 +555,7 @@ export class SellerDashboardComponent implements OnInit {
     return filtered.map(o => ({
       id: o.id,
       displayId: '#' + o.id.slice(0, 8).toUpperCase(),
-      customer: o.customerName || 'Cliente',
+      customer: o.customer || 'Cliente',
       date: new Date(o.createdAt).toLocaleDateString('pt-BR'),
       total: o.totalAmount,
       status: this.translateStatus(o.status),
@@ -910,27 +917,10 @@ export class SellerDashboardComponent implements OnInit {
     });
   }
 
-  addTrackingManual(order: any) {
-    const code = prompt('Codigo de rastreio:');
-    if (!code) return;
-
-    const carrier = prompt('Transportadora:', 'Correios');
-    if (!carrier) return;
-
-    this.isLoading = true;
-    this.orderService.updateTracking(order.id, code, carrier).subscribe({
-      next: () => {
-        order.trackingCode = code;
-        order.carrier = carrier;
-        order.status = 'Enviado';
-        this.loadDashboardData();
-      },
-      error: (err) => {
-        this.isLoading = false;
-        const msg = err?.error?.message || 'Erro ao atualizar rastreio.';
-        alert(msg);
-      }
-    });
+  addTrackingManual(order: any): void {
+  this.selectedOrder = order;
+  this.trackingCodeInput = '';
+  this.showTrackingModal = true;
   }
   private touchThread(lastMessage: string) {
   if (!this.selectedChatThread) return;
@@ -944,7 +934,55 @@ export class SellerDashboardComponent implements OnInit {
     thread.lastMessageAt = new Date().toISOString();
    }
   }
+  closeTrackingModal(): void {
+    this.showTrackingModal = false;
+    this.selectedOrder = null;
+    this.trackingCodeInput = '';
+    this.trackingCodeError = '';
+  }
 
+  isValidTrackingCode(): boolean {
+    const code = this.trackingCodeInput.trim();
+
+    // Validar: apenas caracteres alfanuméricos
+    if (!/^[A-Z0-9]+$/.test(code)) {
+      this.trackingCodeError = 'Código inválido. Use apenas letras (A-Z) e números (0-9).';
+      return false;
+    }
+
+    if (code.length < 8 || code.length > 14) {
+      this.trackingCodeError = 'Código deve ter entre 8 e 14 caracteres.';
+      return false;
+    }
+
+    this.trackingCodeError = '';
+    return true;
+  }
+
+  submitTrackingCode(): void {
+    if (!this.isValidTrackingCode()) {
+      return;
+    }
+
+    const trackingCode = this.trackingCodeInput.trim().toUpperCase();
+    const carrier = this.selectedOrder.carrier || 'Correios'; // ✅ Do checkout
+
+    this.orderService.updateTracking(
+      this.selectedOrder.id,
+      trackingCode,
+      carrier
+    ).subscribe({
+      next: () => {
+        // Atualizar lista
+        this.recentOrders = this.recentOrders.map(o =>
+          o.id === this.selectedOrder.id
+            ? { ...o, trackingCode, carrier, status: 'Enviado' }
+            : o
+        );
+        this.closeTrackingModal();
+      }
+    });
+  }
   private mapChartDays() {
     this.chartDays = this.stats.dailyRevenue.map(d =>
       new Date(d.date).toLocaleDateString('pt-BR', { weekday: 'short' })
@@ -961,5 +999,32 @@ export class SellerDashboardComponent implements OnInit {
 
   getRevenueForDay(index: number): number {
     return this.stats.dailyRevenue[index].revenue;
+  }
+
+  getTotalRevenue(): number {
+    return this.stats.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
+  }
+
+  getAverageRevenue(): number {
+    if (this.stats.dailyRevenue.length === 0) return 0;
+    return this.getTotalRevenue() / this.stats.dailyRevenue.length;
+  }
+
+  getMinRevenue(): number {
+    return Math.min(...this.stats.dailyRevenue.map(d => d.revenue), 0);
+  }
+
+  getMaxRevenue(): number {
+    return Math.max(...this.stats.dailyRevenue.map(d => d.revenue), 1);
+  }
+
+  getBarColor(index: number): string {
+    const revenue = this.stats.dailyRevenue[index].revenue;
+    const average = this.getAverageRevenue();
+
+    if (revenue >= average * 1.2) return '#10b981'; // Green - Excellent
+    if (revenue >= average) return '#3b82f6'; // Blue - Good
+    if (revenue >= average * 0.5) return '#f59e0b'; // Amber - Fair
+    return '#ef4444'; // Red - Low
   }
 }

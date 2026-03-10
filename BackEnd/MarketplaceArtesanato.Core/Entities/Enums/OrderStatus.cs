@@ -14,6 +14,7 @@ namespace MarketplaceArtesanato.Core.Entities.Enums
         Sent = 3,
         Delivered = 4,
         Canceled = 5,
-        Refunded = 6
+        Refunded = 6,
+        PaymentFailed = 7
     }
 }

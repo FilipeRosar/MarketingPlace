@@ -13,6 +13,7 @@ import { SellerDashboardComponent } from '../components/seller-dashboard/seller-
 import { ProfileComponent } from '../pages/profile/profile/profile.component';
 import { ForgotPasswordComponent } from '../pages/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from '../pages/reset-password/reset-password.component';
+import { ConfirmEmailComponent } from '../pages/confirm-email/confirm-email.component';
 import { AdminDashboardComponent } from '../pages/admin-dashboard/admin-dashboard.component';
 import { FavoritesComponent } from '../components/favorite/favorite.component';
 import { ChatComponent } from '../pages/chat/chat.component';
@@ -39,6 +40,7 @@ export const routes: Routes = [
   { path: 'register-seller', component: RegisterSellerComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'confirm-email', component: ConfirmEmailComponent },
   {
   path: 'admin',
   canActivate: [adminGuard],

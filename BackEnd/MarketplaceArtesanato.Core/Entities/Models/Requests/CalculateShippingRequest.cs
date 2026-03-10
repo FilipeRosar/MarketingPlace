@@ -9,11 +9,12 @@ namespace MarketplaceArtesanato.Core.Entities.Models.Requests
 {
     public class CalculateShippingRequest
     {
-        [Required]
         public string ZipCodeFrom { get; set; } = string.Empty; 
 
         [Required]
-        public string ZipCodeTo { get; set; } = string.Empty;   
+        public string ZipCodeTo { get; set; } = string.Empty;
+        
+        public Guid? SellerId { get; set; }
 
         public List<ShippingItemDto> Items { get; set; } = new();
     }

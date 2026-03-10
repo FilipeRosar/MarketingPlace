@@ -1,0 +1,35 @@
+/* Banner Carousel Styles */
+
+:host {
+  display: block;
+}
+
+/* Smooth transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.opacity-100 {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .aspect-video {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* Button hover effects */
+button:hover {
+  transform: scale(1.1);
+}
+
+button {
+  transition: transform 150ms ease-in-out;
+}

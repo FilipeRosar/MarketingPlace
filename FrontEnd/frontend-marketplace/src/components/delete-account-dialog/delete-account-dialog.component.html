@@ -1,0 +1,79 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg max-w-md w-full shadow-2xl border border-red-200">
+    <!-- Header -->
+    <div class="bg-red-50 px-6 py-4 border-b border-red-200 flex items-start gap-3">
+      <div class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100">
+        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2M8 5h8m-1-1V3a1 1 0 00-1-1h-4a1 1 0 00-1 1v1m6 0a2 2 0 00-2-2h-4a2 2 0 00-2 2m10 0H4a2 2 0 00-2 2v14a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2z"></path>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-gray-900">Deletar Conta</h3>
+        <p class="text-sm text-gray-600">Esta ação é irreversível</p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="px-6 py-4 space-y-4">
+      <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p class="text-sm text-red-800">
+          <strong>Atenção!</strong> Ao deletar sua conta:
+        </p>
+        <ul class="mt-2 text-sm text-red-700 space-y-1 ml-4">
+          <li>• Todos os seus dados serão permanentemente removidos</li>
+          <li>• Seus pedidos serão desassociados de você</li>
+          <li>• Esta ação não pode ser desfeita</li>
+        </ul>
+      </div>
+
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-900 mb-2">
+          Confirme sua senha para continuar
+        </label>
+        <div class="relative">
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            id="password"
+            [(ngModel)]="password"
+            placeholder="Digite sua senha"
+            [disabled]="isLoading()"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed">
+          <button
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [disabled]="isLoading()"
+            class="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700 disabled:text-gray-300">
+            <svg *ngIf="!showPassword()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+            <svg *ngIf="showPassword()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex gap-3">
+      <button
+        (click)="onCancel()"
+        [disabled]="isLoading()"
+        class="flex-1 px-4 py-2 border border-gray-300 text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+        Cancelar
+      </button>
+      <button
+        (click)="onConfirmDelete()"
+        [disabled]="isLoading() || !password.trim()"
+        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+        @if (isLoading()) {
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          <span>Deletando...</span>
+        } @else {
+          <span>Deletar Minha Conta</span>
+        }
+      </button>
+    </div>
+  </div>
+</div>

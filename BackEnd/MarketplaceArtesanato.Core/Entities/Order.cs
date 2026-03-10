@@ -14,9 +14,23 @@ public class Order : BaseEntity
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalAmount { get; set; }
-
+    public int ShippingDeadlineDays { get; set; }
+    public string ShippingCarrier { get; set; } = null!; 
+    public string ShippingService { get; set; } = null!;
     [Column(TypeName = "decimal(18,2)")]
     public decimal ShippingCost { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal ServiceFee { get; set; } = 0m;
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal PlatformRevenue { get; set; } = 0m;
+
+    // Coupon integration
+    public Guid? CouponId { get; set; }
+    public Coupon? Coupon { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal CouponDiscount { get; set; } = 0m;
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal FinalTotal { get; set; } = 0m;
 
     public string? StripeSessionId { get; set; }
     public string? StripePaymentIntentId { get; set; }

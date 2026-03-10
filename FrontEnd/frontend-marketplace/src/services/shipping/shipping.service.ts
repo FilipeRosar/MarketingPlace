@@ -14,8 +14,8 @@ export class ShippingService {
 
   /**
    * Chama o backend para gerar a etiqueta de envio no Melhor Envio.
-   * @param orderId ID do pedido que serÃ¡ enviado
-   * @param serviceId ID do serviÃ§o de frete (ex: '1' para SEDEX, '2' para PAC) - Opcional se o backend jÃ¡ tiver lÃ³gica padrÃ£o
+   * @param orderId ID do pedido que será enviado
+   * @param serviceId ID do serviço de frete (ex: '1' para SEDEX, '2' para PAC) - Opcional se o backend já tiver lógica padrão
    */
   generateLabel(orderId: string, serviceId?: string, agencyId?: string): Observable<{ labelUrl: string; warning?: string }> {
     const payload = {
@@ -28,10 +28,10 @@ export class ShippingService {
   }
 
   /**
-   * (Futuro) MÃ©todo para calcular frete no carrinho
+   * Método para calcular frete no carrinho
    * @param zipCodeFrom CEP de origem
    * @param zipCodeTo CEP de destino
-   * @param items Lista de itens com peso/dimensÃµes
+   * @param items Lista de itens com peso/dimensões
    */
   calculateShipping(zipCodeFrom: string, zipCodeTo: string, items: any[]): Observable<any[]> {
     const payload = {
@@ -40,6 +40,17 @@ export class ShippingService {
       items
     };
     return this.http.post<any[]>(`${this.apiUrl}/calculate`, payload);
+  }
+
+  calculateShippingBySeller(itemsBySeller: Array<{ sellerId: string; items: any[] }>, zipCodeTo: string): Observable<Record<string, any[]>> {
+    const payload = {
+      itemsBySeller: itemsBySeller.map(item => ({
+        sellerId: item.sellerId,
+        items: item.items
+      })),
+      zipCodeTo
+    };
+    return this.http.post<Record<string, any[]>>(`${this.apiUrl}/calculate-by-seller`, payload);
   }
 }
 

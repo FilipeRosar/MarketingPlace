@@ -36,7 +36,10 @@
               </span>
             </div>
           </div>
-          <div class="mt-6 sm:mt-0">
+          <div class="mt-6 sm:mt-0 flex gap-2">
+            <button (click)="openDeleteDialog()" class="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 transition-colors">
+              Deletar Conta
+            </button>
             <button (click)="logout()" class="inline-flex items-center px-4 py-2 border border-stone-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-stone-50 transition-colors">
               Sair da Conta
             </button>
@@ -164,4 +167,9 @@
       </form>
     </div>
   </div>
+
+  <!-- Delete Account Dialog -->
+  @if (showDeleteDialog()) {
+    <app-delete-account-dialog (close)="closeDeleteDialog()"></app-delete-account-dialog>
+  }
 </div>

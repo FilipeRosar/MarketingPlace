@@ -22,6 +22,9 @@ public class User : BaseEntity
 
     public UserRole Role { get; set; } = UserRole.Customer;
     public bool IsApproved { get; set; } = true;
+    public bool IsEmailConfirmed { get; set; } = false;
+    public string? EmailConfirmationToken { get; set; }
+    public DateTime? EmailConfirmationTokenExpires { get; set; }
 
     public Seller? SellerProfile { get; set; }
     public Customer? CustomerProfile { get; set; }

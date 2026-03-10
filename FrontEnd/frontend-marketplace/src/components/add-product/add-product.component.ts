@@ -1,9 +1,10 @@
-﻿import { Component, inject } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductService } from '../../services/product/product.service';
 import { NotificationService } from '../../services/notification/notification.service';
+import { SellerService, SellerSubscription } from '../../services/seller/seller.service';
 
 @Component({
   selector: 'app-add-product',
@@ -12,11 +13,13 @@ import { NotificationService } from '../../services/notification/notification.se
   templateUrl: './add-product.component.html',
   styleUrl: './add-product.component.css'
 })
-export class AddProductComponent {
+export class AddProductComponent implements OnInit {
   private fb = inject(FormBuilder);
   private productService = inject(ProductService);
   private router = inject(Router);
   private notificationService = inject(NotificationService);
+  private sellerService = inject(SellerService);
+  
   selectedFiles: File[] = [];
   imagePreviews: string[] = [];
   storyFiles: File[] = [];
@@ -25,6 +28,8 @@ export class AddProductComponent {
   tags: string[] = [];
   productForm: FormGroup;
   isLoading = false;
+  subscription: SellerSubscription | null = null;
+  isLoadingSubscription = false;
 
   categories = [
     { label: 'Decoração', value: '0' },
@@ -195,6 +200,29 @@ export class AddProductComponent {
       this.subcategoryOptions = this.subcategoriesByCategory[value] || [];
       this.productForm.get('subcategory')?.setValue('');
     });
+  }
+
+  ngOnInit() {
+    this.loadSubscription();
+  }
+
+  private loadSubscription() {
+    this.isLoadingSubscription = true;
+    this.sellerService.getSubscription().subscribe({
+      next: (subscription) => {
+        this.subscription = subscription;
+        this.isLoadingSubscription = false;
+      },
+      error: () => {
+        this.subscription = null;
+        this.isLoadingSubscription = false;
+      }
+    });
+  }
+
+  isStoryAvailable(): boolean {
+    return !!(this.subscription && this.subscription.isActive && 
+      (this.subscription.plan === 'Pro' || this.subscription.plan === 'Premium'));
   }
 
   onFileSelected(event: any) {

@@ -144,27 +144,27 @@ namespace MarketplaceArtesanato.Services.Services
             var coupon = await _context.Coupons
                 .FirstOrDefaultAsync(c => c.Code == couponCode &&
                                          c.IsActive &&
-                                         c.ExpiresAt > DateTime.UtcNow);
+                                         c.ValidUntil > DateTime.UtcNow);
 
             if (coupon == null) return null;
 
-            // Verifica se o usuário já usou o cupom (se for de uso único)
-            if (coupon.MaxUsesPerUser.HasValue)
+            // Verifica se o usuário já usou o cupom (se houver limite)
+            if (coupon.UsageLimitPerUser > 0)
             {
                 var usageCount = await _context.CouponUsages
                     .CountAsync(u => u.CouponId == coupon.Id && u.UserId == userId);
 
-                if (usageCount >= coupon.MaxUsesPerUser.Value)
+                if (usageCount >= coupon.UsageLimitPerUser)
                     return null;
             }
 
-            decimal discountAmount = coupon.DiscountType == "Percentage"
+            decimal discountAmount = coupon.DiscountType == DiscountType.Percentage
                 ? subtotal * (coupon.DiscountValue / 100m)
                 : coupon.DiscountValue;
 
-            if (coupon.MaxDiscountAmount.HasValue)
+            if (coupon.MaxDiscount.HasValue)
             {
-                discountAmount = Math.Min(discountAmount, coupon.MaxDiscountAmount.Value);
+                discountAmount = Math.Min(discountAmount, coupon.MaxDiscount.Value);
             }
 
             return new PriceAdjustment
@@ -172,7 +172,7 @@ namespace MarketplaceArtesanato.Services.Services
                 Type = PriceAdjustmentType.Coupon,
                 Description = $"Cupom: {coupon.Code}",
                 Amount = discountAmount,
-                Percentage = coupon.DiscountType == "Percentage" ? coupon.DiscountValue : 0,
+                Percentage = coupon.DiscountType == DiscountType.Percentage ? coupon.DiscountValue : 0,
                 Priority = 100
             };
         }

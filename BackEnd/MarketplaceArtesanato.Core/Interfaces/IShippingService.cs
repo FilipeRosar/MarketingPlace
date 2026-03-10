@@ -11,6 +11,7 @@ namespace MarketplaceArtesanato.Core.Interfaces
     public interface IShippingService
     {
         Task<List<ShippingOptionDto>> CalculateShippingAsync(CalculateShippingRequest request);
+        Task<Dictionary<string, List<ShippingOptionDto>>> GetShippingOptionsBySellerAsync(Dictionary<string, List<ShippingItemDto>> itemsBySeller, string zipCodeTo);
         Task<GenerateLabelResponseDto> GenerateLabelAsync(GenerateLabelRequest request);
     }
 }

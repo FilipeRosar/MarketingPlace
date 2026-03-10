@@ -50,28 +50,27 @@ namespace MarketplaceArtesanato.API.Controllers
             }
         }
 
-        [HttpPut("profile")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
+        [HttpDelete("account")]
+        public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (userId == null || role == null) return Unauthorized("Token inválido.");
+            if (userId == null) return Unauthorized("Token inválido.");
 
             try
             {
-                var success = await _userService.UpdateProfileAsync(Guid.Parse(userId), role, dto);
+                var success = await _userService.DeleteAccountAsync(Guid.Parse(userId), dto.Password);
 
-                if (!success) return NotFound("Usuário não encontrado.");
+                if (!success) return BadRequest("Senha incorreta ou erro ao deletar conta.");
 
-                return NoContent(); 
+                return NoContent();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERRO UPDATE PERFIL] {ex.Message}");
-                return StatusCode(500, new { message = "Erro interno ao atualizar perfil." });
+                Console.WriteLine($"[ERRO DELETE CONTA] {ex.Message}");
+                return StatusCode(500, new { message = "Erro interno ao deletar conta." });
             }
         }
     }

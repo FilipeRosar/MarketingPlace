@@ -7,6 +7,7 @@ import { SeoService } from '../../services/SEO/seo.service';
 import { Product } from '../../models/product/product.model';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
+import { BannerCarouselComponent } from '../../components/banner-carousel/banner-carousel.component';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 
 @Component({
@@ -16,7 +17,8 @@ import { trigger, transition, style, animate, query, stagger } from '@angular/an
     CommonModule,
     RouterLink,
     ProductCardComponent,
-    LoadingSpinnerComponent
+    LoadingSpinnerComponent,
+    BannerCarouselComponent
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',

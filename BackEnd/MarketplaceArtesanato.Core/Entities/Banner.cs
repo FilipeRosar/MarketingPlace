@@ -23,6 +23,19 @@ namespace MarketplaceArtesanato.Core.Entities
 
         public bool IsActive { get; set; } = true;
 
-        public int DisplayOrder { get; set; } 
+        public int DisplayOrder { get; set; }
+
+        // Styling fields
+        public string? BackgroundColor { get; set; } = "#ffffff";
+        public string? BackgroundImage { get; set; }
+        public string? FontFamily { get; set; } = "Arial, sans-serif";
+        public string? FontColor { get; set; } = "#1f2937";
+        public int? FontSizeTitle { get; set; } = 48;
+        public int? FontSizeSubtitle { get; set; } = 18;
+
+        // Image dimensions
+        public int? ImageWidth { get; set; } = 1200;
+        public int? ImageHeight { get; set; } = 400;
+        public string? ImageObjectFit { get; set; } = "cover"; // cover, contain, fill, etc
     }
 }

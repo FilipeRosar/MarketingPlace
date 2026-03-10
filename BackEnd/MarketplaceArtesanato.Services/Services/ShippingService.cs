@@ -45,9 +45,23 @@ namespace MarketplaceArtesanato.Services.Services
 
         public async Task<List<ShippingOptionDto>> CalculateShippingAsync(CalculateShippingRequest request)
         {
+            string zipCodeFrom = request.ZipCodeFrom;
+
+            if (request.SellerId.HasValue && request.SellerId != Guid.Empty)
+            {
+                var seller = await _context.Sellers
+                    .Include(s => s.Address)
+                    .FirstOrDefaultAsync(s => s.Id == request.SellerId);
+
+                if (seller?.Address?.ZipCode != null)
+                {
+                    zipCodeFrom = NormalizeZip(seller.Address.ZipCode);
+                }
+            }
+
             var payload = new
             {
-                from = new { postal_code = request.ZipCodeFrom },
+                from = new { postal_code = zipCodeFrom },
                 to = new { postal_code = request.ZipCodeTo },
                 products = request.Items.Select(i => new
                 {
@@ -86,6 +100,34 @@ namespace MarketplaceArtesanato.Services.Services
             return options ?? new List<ShippingOptionDto>();
         }
 
+        public async Task<Dictionary<string, List<ShippingOptionDto>>> GetShippingOptionsBySellerAsync(
+            Dictionary<string, List<ShippingItemDto>> itemsBySeller, 
+            string zipCodeTo)
+        {
+            var result = new Dictionary<string, List<ShippingOptionDto>>();
+
+            foreach (var kvp in itemsBySeller)
+            {
+                var sellerId = kvp.Key;
+                var items = kvp.Value;
+
+                if (Guid.TryParse(sellerId, out var sellerGuid))
+                {
+                    var request = new CalculateShippingRequest
+                    {
+                        SellerId = sellerGuid,
+                        ZipCodeTo = zipCodeTo,
+                        Items = items
+                    };
+
+                    var options = await CalculateShippingAsync(request);
+                    result[sellerId] = options;
+                }
+            }
+
+            return result;
+        }
+
         public async Task<GenerateLabelResponseDto> GenerateLabelAsync(GenerateLabelRequest request)
         {
             try
@@ -98,7 +140,7 @@ namespace MarketplaceArtesanato.Services.Services
                     .FirstOrDefaultAsync(o => o.Id == request.OrderId);
 
                 if (order == null)
-                    throw new InvalidOperationException("Pedido n�o encontrado.");
+                    throw new InvalidOperationException("Pedido n�o encontrado.");
 
                 if (order.Items == null || !order.Items.Any())
                     throw new InvalidOperationException("Pedido nao possui itens.");
@@ -221,7 +263,7 @@ namespace MarketplaceArtesanato.Services.Services
                     complement = seller.Address.Complement ?? "",
                     district = seller.Address.District ?? "Centro",
                     city = seller.Address.City ?? "Cidade",
-                    state_abbr = seller.Address.State ?? "SP",
+                    state_abbr = GetStateAbbreviation(seller.Address.State),
                     country_id = "BR",
                     postal_code = sellerZip,
                     note = $"Pedido Mitrama #{order.Id.ToString().Substring(0, 8).ToUpper()}"
@@ -238,7 +280,7 @@ namespace MarketplaceArtesanato.Services.Services
                     complement = order.Buyer.Address.Complement ?? "",
                     district = order.Buyer.Address.District ?? "Centro",
                     city = order.Buyer.Address.City ?? "Cidade",
-                    state_abbr = order.Buyer.Address.State ?? "SP",
+                    state_abbr = GetStateAbbreviation(order.Buyer.Address.State),
                     country_id = "BR",
                     postal_code = buyerZip,
                     note = "Entregar com cuidado - Produto artesanal"
@@ -276,7 +318,7 @@ namespace MarketplaceArtesanato.Services.Services
                 }
 
                 if (string.IsNullOrWhiteSpace(serviceId))
-                    throw new InvalidOperationException("Servi�o de frete n�o definido ou indispon�vel.");
+                    throw new InvalidOperationException("Servi�o de frete n�o definido ou indispon�vel.");
 
                 var cartPayload = new
                 {
@@ -335,7 +377,7 @@ namespace MarketplaceArtesanato.Services.Services
 
                 var cartJson = JsonDocument.Parse(cartContent);
                 var orderIdME = cartJson.RootElement.GetProperty("id").GetString()
-                    ?? throw new InvalidOperationException("ID do pedido no Melhor Envio n�o retornado.");
+                    ?? throw new InvalidOperationException("ID do pedido no Melhor Envio n�o retornado.");
 
                 // 8. Checkout
                 var checkoutPayload = new { orders = new[] { orderIdME } };
@@ -358,7 +400,7 @@ namespace MarketplaceArtesanato.Services.Services
                 var url = printJson.RootElement.GetProperty("url").GetString();
 
                 if (string.IsNullOrEmpty(url))
-                    throw new InvalidOperationException("URL da etiqueta n�o foi gerada.");
+                    throw new InvalidOperationException("URL da etiqueta n�o foi gerada.");
 
                 return new GenerateLabelResponseDto
                 {
@@ -368,7 +410,7 @@ namespace MarketplaceArtesanato.Services.Services
             }
             catch (Exception ex)
             {
-                // Log detalhado (use ILogger em produ��o)
+                // Log detalhado (use ILogger em produ��o)
                 Console.WriteLine($"[ERRO GERAR ETIQUETA] {ex.Message}\n{ex.StackTrace}");
                 throw new InvalidOperationException($"Falha ao gerar etiqueta: {ex.Message}");
             }
@@ -386,6 +428,53 @@ namespace MarketplaceArtesanato.Services.Services
             var digits = NormalizeZip(zip);
             if (digits.Length != 8) return digits;
             return $"{digits.Substring(0, 5)}-{digits.Substring(5, 3)}";
+        }
+
+
+        private static string GetStateAbbreviation(string? state)
+        {
+            if (string.IsNullOrWhiteSpace(state))
+                return "SP"; 
+
+            state = state.Trim().ToUpper();
+
+            // Se já é uma abreviação (2 letras), retorna como está
+            if (state.Length == 2 && state.All(char.IsLetter))
+                return state;
+
+            // Mapeamento de nomes completos para abreviações
+            var stateMap = new Dictionary<string, string>
+            {
+                { "ACRE", "AC" },
+                { "ALAGOAS", "AL" },
+                { "AMAPÁ", "AP" },
+                { "AMAZONAS", "AM" },
+                { "BAHIA", "BA" },
+                { "CEARÁ", "CE" },
+                { "DISTRITO FEDERAL", "DF" },
+                { "ESPÍRITO SANTO", "ES" },
+                { "GOIÁS", "GO" },
+                { "MARANHÃO", "MA" },
+                { "MATO GROSSO", "MT" },
+                { "MATO GROSSO DO SUL", "MS" },
+                { "MINAS GERAIS", "MG" },
+                { "PARÁ", "PA" },
+                { "PARAÍBA", "PB" },
+                { "PARANÁ", "PR" },
+                { "PERNAMBUCO", "PE" },
+                { "PIAUÍ", "PI" },
+                { "RIO DE JANEIRO", "RJ" },
+                { "RIO GRANDE DO NORTE", "RN" },
+                { "RIO GRANDE DO SUL", "RS" },
+                { "RONDÔNIA", "RO" },
+                { "RORAIMA", "RR" },
+                { "SANTA CATARINA", "SC" },
+                { "SÃO PAULO", "SP" },
+                { "SERGIPE", "SE" },
+                { "TOCANTINS", "TO" }
+            };
+
+            return stateMap.TryGetValue(state, out var abbr) ? abbr : "SP";
         }
 
         public class MelhorEnvioOption

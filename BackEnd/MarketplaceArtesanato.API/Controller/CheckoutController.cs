@@ -22,21 +22,25 @@ namespace MarketplaceArtesanato.API.Controllers
         private readonly IConfiguration _config;
         private readonly IPlatformFeeService _platformFeeService;
         private readonly IPriceCalculationService _priceCalculationService;
-
-        private const long SERVICE_FEE_CENTS = 299; 
+        private readonly ICommissionCalculationService _commissionCalculationService;
+        private readonly ICouponService _couponService;
 
         public CheckoutController(
             ArtesianDbContext context,
             IPublishEndpoint publishEndpoint,
             IConfiguration config,
             IPlatformFeeService platformFeeService,
-            IPriceCalculationService priceCalculationService)
+            IPriceCalculationService priceCalculationService,
+            ICommissionCalculationService commissionCalculationService,
+            ICouponService couponService)
         {
             _context = context;
             _publishEndpoint = publishEndpoint;
             _config = config;
             _platformFeeService = platformFeeService;
             _priceCalculationService = priceCalculationService;
+            _commissionCalculationService = commissionCalculationService;
+            _couponService = couponService;
         }
 
         [HttpPost("create-session")]
@@ -54,7 +58,9 @@ namespace MarketplaceArtesanato.API.Controllers
                 BuyerId = customerId,
                 Status = Core.Entities.Enums.OrderStatus.Pending,
                 CreatedAt = DateTime.UtcNow,
-                SellerCommissions = new Dictionary<Guid, decimal>()
+                SellerCommissions = new Dictionary<Guid, decimal>(),
+                ShippingCarrier = string.Empty,
+                ShippingService = string.Empty
             };
 
             var lineItems = new List<SessionLineItemOptions>();
@@ -94,6 +100,10 @@ namespace MarketplaceArtesanato.API.Controllers
                 sellerRates[sellerId] = rate;
             }
 
+            decimal serviceFeePercentage = await _commissionCalculationService.GetServiceFeePercentageAsync();
+            decimal serviceFeeAmount = totalProductAmount * serviceFeePercentage;
+            long serviceFeeAmountCents = (long)(serviceFeeAmount * 100);
+
             foreach (var cartItem in cartItems)
             {
                 var product = cartItem.Product;
@@ -126,9 +136,12 @@ namespace MarketplaceArtesanato.API.Controllers
                 {
                     Id = Guid.NewGuid(),
                     ProductId = product.Id,
+                    ProductName = product.Name,
+                    ProductImage = product.Images?.FirstOrDefault()?.Url,
                     Quantity = itemDto.Quantity,
                     UnitPrice = itemTotal / itemDto.Quantity,
-                    OrderId = order.Id
+                    OrderId = order.Id,
+                    SellerName = product.Seller?.StoreName ?? string.Empty
                 });
 
                 eventItems.Add(new CheckoutItemEvent
@@ -150,7 +163,7 @@ namespace MarketplaceArtesanato.API.Controllers
                         Name = "Taxa de Serviço",
                         Description = "Manutenção da plataforma e segurança",
                     },
-                    UnitAmount = SERVICE_FEE_CENTS
+                    UnitAmount = serviceFeeAmountCents
                 },
                 Quantity = 1
             });
@@ -172,7 +185,57 @@ namespace MarketplaceArtesanato.API.Controllers
                 });
             }
 
-            order.TotalAmount = totalProductAmount + (SERVICE_FEE_CENTS / 100m) + shippingFee;
+            order.TotalAmount = totalProductAmount + serviceFeeAmount + shippingFee;
+            order.ShippingCost = shippingFee;
+            order.ServiceFee = serviceFeeAmount;
+            order.PlatformRevenue = serviceFeeAmount + order.SellerCommissions.Sum(x => x.Value);
+
+            // Processar cupom se fornecido
+            decimal couponDiscount = 0m;
+            if (!string.IsNullOrWhiteSpace(request.CouponCode))
+            {
+                var productIds = cartItems.Select(c => c.Product.Id).ToList();
+                var couponValidation = await _couponService.ValidateCouponAsync(
+                    request.CouponCode,
+                    customerId,
+                    order.TotalAmount,
+                    productIds);
+
+                if (couponValidation.IsValid && couponValidation.Coupon != null)
+                {
+                    order.CouponId = couponValidation.Coupon.Id;
+                    couponDiscount = couponValidation.DiscountAmount;
+                    order.CouponDiscount = couponDiscount;
+
+                    // Ajustar receita da plataforma e comissões dos sellers baseado em quem paga
+                    if (couponValidation.PaidBy == MarketplaceArtesanato.Core.Entities.DiscountPaidBy.Platform)
+                    {
+                        order.PlatformRevenue -= couponDiscount;
+                    }
+                    else if (couponValidation.PaidBy == MarketplaceArtesanato.Core.Entities.DiscountPaidBy.Seller)
+                    {
+                        // Distribuir desconto proporcionalmente entre sellers
+                        var totalSellerCommission = order.SellerCommissions.Sum(x => x.Value);
+                        foreach (var sellerId in order.SellerCommissions.Keys.ToList())
+                        {
+                            var proportion = order.SellerCommissions[sellerId] / totalSellerCommission;
+                            order.SellerCommissions[sellerId] -= (couponDiscount * proportion);
+                        }
+                    }
+                    else if (couponValidation.PaidBy == MarketplaceArtesanato.Core.Entities.DiscountPaidBy.Hybrid && couponValidation.PlatformPays.HasValue)
+                    {
+                        order.PlatformRevenue -= couponValidation.PlatformPays.Value;
+                        var totalSellerCommission = order.SellerCommissions.Sum(x => x.Value);
+                        foreach (var sellerId in order.SellerCommissions.Keys.ToList())
+                        {
+                            var proportion = order.SellerCommissions[sellerId] / totalSellerCommission;
+                            order.SellerCommissions[sellerId] -= (couponValidation.SellerPays.GetValueOrDefault(0) * proportion);
+                        }
+                    }
+                }
+            }
+
+            order.FinalTotal = order.TotalAmount - couponDiscount;
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -212,7 +275,7 @@ namespace MarketplaceArtesanato.API.Controllers
                 order.StripeSessionId = session.Id;
                 await _context.SaveChangesAsync();
 
-                decimal totalPlatformCommission = eventItems.Sum(i => i.CommissionAmount) + (SERVICE_FEE_CENTS / 100m);
+                decimal totalPlatformCommission = eventItems.Sum(i => i.CommissionAmount) + serviceFeeAmount;
 
                 var @event = new CheckoutInitiatedEvent
                 {

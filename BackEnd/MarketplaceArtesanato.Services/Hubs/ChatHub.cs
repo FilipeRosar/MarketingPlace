@@ -34,7 +34,6 @@ namespace MarketplaceArtesanato.API.Hubs
             if (string.IsNullOrWhiteSpace(message)) return;
             if (!Guid.TryParse(userId, out var recipientId)) return;
 
-            // Obtém o ID do usuário autenticado a partir das claims
             var senderIdClaim = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var senderId = Guid.TryParse(senderIdClaim, out var parsedSenderId) ? parsedSenderId : Guid.Empty;
             if (senderId == Guid.Empty) return;

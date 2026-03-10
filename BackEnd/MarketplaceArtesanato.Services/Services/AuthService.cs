@@ -65,6 +65,9 @@ namespace MarketplaceArtesanato.Services.Services
                 Phone = dto.Phone,
                 CPF = dto.CPF,
                 IsApproved = true,
+                IsEmailConfirmed = false,
+                EmailConfirmationToken = Guid.NewGuid().ToString(),
+                EmailConfirmationTokenExpires = DateTime.UtcNow.AddHours(24),
                 CreatedAt = DateTime.UtcNow,
                 Address = address,
                 AddressId = address.Id
@@ -83,6 +86,9 @@ namespace MarketplaceArtesanato.Services.Services
                 _context.Users.Add(user);
                 _context.Customers.Add(customerProfile);
                 await _context.SaveChangesAsync();
+
+                var confirmationLink = $"http://localhost:4200/confirm-email?token={user.EmailConfirmationToken}&email={dto.Email}";
+                await _emailService.SendEmailConfirmationAsync(user.Email, user.Name, confirmationLink);
             }
             catch (Exception ex)
             {
@@ -94,7 +100,7 @@ namespace MarketplaceArtesanato.Services.Services
             return new AuthResponseDto
             {
                 Success = true,
-                Message = "Cadastro realizado com sucesso! Bem-vindo à Trama.",
+                Message = "Cadastro realizado com sucesso! Verifique seu email para confirmar sua conta.",
                 Token = token,
                 User = MapToUserDto(user)
             };
@@ -127,6 +133,9 @@ namespace MarketplaceArtesanato.Services.Services
                 Role = UserRole.Seller,
                 Phone = dto.Phone,
                 CPF = dto.CPF,
+                IsEmailConfirmed = false,
+                EmailConfirmationToken = Guid.NewGuid().ToString(),
+                EmailConfirmationTokenExpires = DateTime.UtcNow.AddHours(24),
                 CreatedAt = DateTime.UtcNow,
                 Address = address,
                 AddressId = address.Id
@@ -156,6 +165,9 @@ namespace MarketplaceArtesanato.Services.Services
                 _context.Users.Add(user);
                 _context.Sellers.Add(seller);
                 await _context.SaveChangesAsync();
+
+                var confirmationLink = $"http://localhost:4200/confirm-email?token={user.EmailConfirmationToken}&email={dto.Email}";
+                await _emailService.SendEmailConfirmationAsync(user.Email, user.Name, confirmationLink);
 
                 await _hubContext.Clients.Group("Admins")
                     .SendAsync("ReceiveNotification", new
@@ -217,9 +229,7 @@ namespace MarketplaceArtesanato.Services.Services
                 User = MapToUserDto(user)
             };
 
-            // Add store approval status if applicable (this requires AuthResponseDto or UserDto to have this field)
-            // Assuming UserDto is flexible or you can add it to the generic User object in AuthResponseDto
-            // For now, mapping directly what was in the controller:
+
             responseDto.User = new UserDto
             {
                 Id = user.Id,
@@ -343,6 +353,47 @@ namespace MarketplaceArtesanato.Services.Services
                 IsApproved = user.IsApproved,
                 StoreApproved = user.SellerProfile?.IsApproved
             };
+        }
+
+        public async Task<AuthResponseDto> ConfirmEmailAsync(ConfirmEmailDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null)
+                return new AuthResponseDto { Success = false, Message = "Usuário não encontrado." };
+
+            if (user.IsEmailConfirmed)
+                return new AuthResponseDto { Success = true, Message = "Email já foi confirmado." };
+
+            if (user.EmailConfirmationToken != dto.Token || user.EmailConfirmationTokenExpires < DateTime.UtcNow)
+                return new AuthResponseDto { Success = false, Message = "Token inválido ou expirado." };
+
+            user.IsEmailConfirmed = true;
+            user.EmailConfirmationToken = null;
+            user.EmailConfirmationTokenExpires = null;
+
+            await _context.SaveChangesAsync();
+
+            return new AuthResponseDto { Success = true, Message = "Email confirmado com sucesso!" };
+        }
+
+        public async Task<AuthResponseDto> ResendConfirmationEmailAsync(string email)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null)
+                return new AuthResponseDto { Success = false, Message = "Usuário não encontrado." };
+
+            if (user.IsEmailConfirmed)
+                return new AuthResponseDto { Success = true, Message = "Email já foi confirmado." };
+
+            user.EmailConfirmationToken = Guid.NewGuid().ToString();
+            user.EmailConfirmationTokenExpires = DateTime.UtcNow.AddHours(24);
+
+            await _context.SaveChangesAsync();
+
+            var confirmationLink = $"http://localhost:4200/confirm-email?token={user.EmailConfirmationToken}&email={email}";
+            await _emailService.SendEmailConfirmationAsync(user.Email, user.Name, confirmationLink);
+
+            return new AuthResponseDto { Success = true, Message = "Email de confirmação reenviado." };
         }
 
         private string GenerateSlug(string phrase)

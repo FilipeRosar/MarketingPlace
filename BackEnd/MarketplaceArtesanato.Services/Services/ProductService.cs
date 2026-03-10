@@ -2,6 +2,7 @@
 using MarketplaceArtesanato.API.Models.Responses;
 using MarketplaceArtesanato.Core.Entities;
 using MarketplaceArtesanato.Core.Entities.DTO;
+using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Data.Data;
 using Microsoft.AspNetCore.Http;
@@ -113,11 +114,25 @@ namespace MarketplaceArtesanato.Services.Services
 
         public async Task<ProductResponseDto> CreateAsync(Guid sellerId, CreateProductDto dto)
         {
-            var seller = await _context.Sellers.FirstOrDefaultAsync(s => s.UserId == sellerId);
+            var seller = await _context.Sellers
+                .Include(s => s.Subscription)
+                .FirstOrDefaultAsync(s => s.UserId == sellerId);
             if (seller == null) throw new KeyNotFoundException("Vendedor não encontrado.");
 
             if (!seller.IsApproved)
                 throw new UnauthorizedAccessException("Sua loja ainda está em análise. Aguarde a aprovação para publicar produtos.");
+
+            // Validar acesso à feature de história
+            if (dto.StoryEnabled)
+            {
+                var hasSubscription = seller.Subscription != null && seller.Subscription.IsActive;
+                var isProOrPremium = hasSubscription && (seller.Subscription.Plan == SellerPlan.Pro || seller.Subscription.Plan == SellerPlan.Premium);
+                
+                if (!isProOrPremium)
+                {
+                    throw new UnauthorizedAccessException("Apenas vendedores com plano Pro ou Premium podem criar histórias de produtos. Atualize seu plano para desbloquear essa funcionalidade.");
+                }
+            }
 
             var storyMediaUrls = new List<string>();
             if (dto.StoryEnabled && dto.StoryMedia != null)
@@ -206,11 +221,23 @@ namespace MarketplaceArtesanato.Services.Services
             if (userRole != "Admin")
             {
                 var seller = await _context.Sellers
-                    .AsNoTracking()
+                    .Include(s => s.Subscription)
                     .FirstOrDefaultAsync(s => s.UserId == userId);
 
                 if (seller == null || product.SellerId != seller.Id)
                     throw new UnauthorizedAccessException("Sem permissao para editar este produto.");
+
+                // Validar acesso à feature de história
+                if (dto.StoryEnabled.HasValue && dto.StoryEnabled.Value && !product.StoryEnabled)
+                {
+                    var hasSubscription = seller.Subscription != null && seller.Subscription.IsActive;
+                    var isProOrPremium = hasSubscription && (seller.Subscription.Plan == SellerPlan.Pro || seller.Subscription.Plan == SellerPlan.Premium);
+                    
+                    if (!isProOrPremium)
+                    {
+                        throw new UnauthorizedAccessException("Apenas vendedores com plano Pro ou Premium podem criar histórias de produtos. Atualize seu plano para desbloquear essa funcionalidade.");
+                    }
+                }
             }
 
             _mapper.Map(dto, product);

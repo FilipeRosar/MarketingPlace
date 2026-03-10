@@ -65,6 +65,59 @@ namespace MarketplaceArtesanato.Services.Services
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
         }
+
+        public async Task SendEmailConfirmationAsync(string toEmail, string userName, string confirmationLink)
+        {
+            var email = new MimeMessage();
+
+            var fromName = _configuration["Email:FromName"];
+            var fromEmail = _configuration["Email:FromEmail"];
+
+            email.From.Add(new MailboxAddress(fromName, fromEmail));
+            email.To.Add(MailboxAddress.Parse(toEmail));
+            email.Subject = "✉️ Confirme seu email - Trama Artesanato";
+
+            var builder = new BodyBuilder();
+            builder.HtmlBody = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 4px solid #fb923c; border-radius: 20px; background: linear-gradient(to bottom, #fff7ed, #fff);'>
+                    <div style='text-align: center; padding: 20px;'>
+                        <h1 style='color: #ea580c; font-size: 36px;'>✉️ Confirme seu Email</h1>
+                    </div>
+                    <div style='padding: 20px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);'>
+                        <p style='font-size: 18px; color: #1f2937;'>Olá <strong>{userName}</strong>,</p>
+                        <p style='font-size: 18px; color: #1f2937;'>
+                            Bem-vindo à <span style='color: #ea580c; font-weight: bold;'>Trama Artesanato!</span>
+                        </p>
+                        <p style='font-size: 16px; color: #4b5563; line-height: 1.6;'>
+                            Para completar seu cadastro, clique no botão abaixo para confirmar seu endereço de email.
+                        </p>
+                        <div style='text-align: center; margin: 30px 0;'>
+                            <a href='{confirmationLink}' 
+                               style='background: linear-gradient(to right, #fb923c, #ea580c); color: white; padding: 16px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 18px; box-shadow: 0 10px 20px rgba(251, 146, 60, 0.4);'>
+                                Confirmar Email
+                            </a>
+                        </div>
+                        <p style='color: #6b7280; font-size: 12px; text-align: center;'>Este link expira em 24 horas.</p>
+                        <p style='color: #6b7280; font-size: 12px; text-align: center;'>Se não criou uma conta, ignore este email.</p>
+                    </div>
+                </div>";
+
+            email.Body = builder.ToMessageBody();
+
+            var smtpServer = _configuration["Email:SmtpServer"];
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"]);
+            var smtpUser = _configuration["Email:Username"];
+            var smtpPass = _configuration["Email:Password"];
+
+            using var smtp = new SmtpClient();
+
+            await smtp.ConnectAsync(smtpServer, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+
+            await smtp.AuthenticateAsync(smtpUser, smtpPass);
+            await smtp.SendAsync(email);
+            await smtp.DisconnectAsync(true);
+        }
+
         public async Task SendPasswordResetEmailAsync(string toEmail, string userName, string resetLink)
         {
             var email = new MimeMessage();

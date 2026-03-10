@@ -6,6 +6,8 @@ import { ChartConfiguration, ChartData, ChartOptions } from 'chart.js';
 import { AdminService, DashboardStats, PendingSeller, CommissionReportItem } from '../../services/admin/admin.service';
 import { NotificationService } from '../../services/notification/notification.service';
 import { CurrencyBrPipe } from '../../shared/pipes/currency-br-pipe';
+import { BannerManagementComponent } from './banner-management/banner-management.component';
+import { CouponManagementComponent } from './coupon-management/coupon-management.component';
 
 interface Notification {
   id: number;
@@ -17,7 +19,7 @@ interface Notification {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, BaseChartDirective, CurrencyBrPipe],
+  imports: [CommonModule, FormsModule, BaseChartDirective, CurrencyBrPipe, BannerManagementComponent, CouponManagementComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css'
 })
@@ -42,7 +44,7 @@ export class AdminDashboardComponent implements OnInit {
   notifications = signal<Notification[]>([]);
 
   // --- UI STATE ---
-  activeTab: 'overview' | 'customers' | 'pending' | 'commissions' | 'settings' = 'overview';
+  activeTab: 'overview' | 'customers' | 'pending' | 'commissions' | 'settings' | 'banners' | 'coupons' = 'overview';
 
   // Buscas
   userSearch = '';

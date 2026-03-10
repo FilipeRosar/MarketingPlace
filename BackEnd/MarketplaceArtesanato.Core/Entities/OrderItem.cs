@@ -29,7 +29,10 @@ namespace MarketplaceArtesanato.Core.Entities
         [StringLength(200)]
         public string ProductName { get; set; } = string.Empty;
 
-        public string? ProductImage { get; set; } 
+        public string? ProductImage { get; set; }
+
+        [StringLength(200)]
+        public string SellerName { get; set; } = string.Empty;
 
         [NotMapped]
         public decimal Subtotal => UnitPrice * Quantity;

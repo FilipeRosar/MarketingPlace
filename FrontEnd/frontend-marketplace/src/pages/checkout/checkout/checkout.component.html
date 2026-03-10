@@ -64,16 +64,7 @@
                 <div class="rounded-xl border border-stone-100 bg-stone-50 p-4">
                   <p class="text-sm font-medium text-gray-800 mb-3">Calcular frete</p>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs text-gray-500 mb-1">CEP de origem</label>
-                      <input
-                        type="text"
-                        maxlength="9"
-                        [(ngModel)]="zipCodeFrom"
-                        placeholder="00000-000"
-                        class="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:ring-primary focus:border-primary">
-                    </div>
+                  <div class="grid grid-cols-1 gap-3">
                     <div>
                       <label class="block text-xs text-gray-500 mb-1">CEP de destino</label>
                       <input
@@ -88,47 +79,59 @@
                   <button
                     type="button"
                     (click)="calculateShipping()"
-                    [disabled]="isCalculatingShipping"
+                    [disabled]="hasAnyShippingCalculating()"
                     class="mt-3 w-full rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-stone-100 disabled:opacity-60 disabled:cursor-not-allowed">
-                    <span *ngIf="!isCalculatingShipping">Calcular frete</span>
-                    <span *ngIf="isCalculatingShipping">Calculando...</span>
+                    <span *ngIf="!hasAnyShippingCalculating()">Calcular frete</span>
+                    <span *ngIf="hasAnyShippingCalculating()">Calculando...</span>
                   </button>
 
-                  @if (shippingError) {
-                    <p class="mt-2 text-xs text-red-500">{{ shippingError }}</p>
-                  }
-                  @if (shippingNotice) {
-                    <p class="mt-2 text-xs text-amber-600">{{ shippingNotice }}</p>
-                  }
+                  <!-- Fretes por vendedor -->
+                  @if (itemsBySeller().length > 0) {
+                    <div class="mt-4 space-y-4">
+                      @for (seller of itemsBySeller(); track seller.sellerId) {
+                        <div class="border-t border-stone-200 pt-4">
+                          <p class="text-sm font-medium text-gray-700 mb-3">{{ seller.sellerName }}</p>
+                          
+                          @if (seller.shippingOptions.length === 0 && !seller.isCalculating) {
+                            <p class="text-xs text-amber-600 mb-3">Calcule o frete para ver as opções</p>
+                          }
+                          
+                          @if (seller.isCalculating) {
+                            <p class="text-xs text-gray-500">Calculando opções de frete...</p>
+                          }
 
-                  @if (shippingOptions().length > 0) {
-                    <div class="mt-4 space-y-2">
-                      @for (option of shippingOptions(); track $index) {
-                        <label class="flex items-start gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm cursor-pointer">
-                          <input
-                            type="radio"
-                            name="shippingOption"
-                            class="mt-1"
-                            [checked]="selectedShipping()?.name === option.name && selectedShipping()?.price === option.price"
-                            (change)="selectShipping(option)">
-                          <div class="flex-1">
-                            <div class="flex items-center justify-between gap-2">
-                              <span class="font-medium text-gray-800">{{ option.name }}</span>
-                              <span class="font-semibold text-gray-900">{{ option.price | currencyBr }}</span>
+                          @if (seller.shippingOptions.length > 0) {
+                            <div class="space-y-2">
+                              @for (option of seller.shippingOptions; track $index) {
+                                <label class="flex items-start gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm cursor-pointer hover:bg-stone-50">
+                                  <input
+                                    type="radio"
+                                    [name]="'shipping_' + seller.sellerId"
+                                    class="mt-1"
+                                    [checked]="seller.selectedShipping?.name === option.name && seller.selectedShipping?.price === option.price"
+                                    (change)="selectShipping(seller.sellerId, option)">
+                                  <div class="flex-1">
+                                    <div class="flex items-center justify-between gap-2">
+                                      <span class="font-medium text-gray-800">{{ option.name }}</span>
+                                      <span class="font-semibold text-gray-900">{{ option.price | currencyBr }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500">Entrega em até {{ option.deliveryTime || 0 }} dias</p>
+                                  </div>
+                                </label>
+                              }
                             </div>
-                            <p class="text-xs text-gray-500">Entrega em ate {{ option.deliveryTime || 0 }} dias</p>
-                          </div>
-                        </label>
+                          }
+                        </div>
                       }
                     </div>
                   }
                 </div>
 
-                <!-- Frete -->
+                <!-- Frete Total -->
                 <div class="flex items-center justify-between">
-                  <dt class="text-sm text-gray-600">Frete ({{ selectedShipping()?.name || 'Não selecionado' }})</dt>
-                  <dd class="text-sm font-medium" [class.text-green-600]="shippingFee() === 0" [class.text-gray-900]="shippingFee() > 0">
-                    {{ shippingFee() > 0 ? (shippingFee() | currencyBr) : 'Grátis' }}
+                  <dt class="text-sm text-gray-600">Frete Total</dt>
+                  <dd class="text-sm font-medium" [class.text-green-600]="totalShippingFee() === 0" [class.text-gray-900]="totalShippingFee() > 0">
+                    {{ totalShippingFee() > 0 ? (totalShippingFee() | currencyBr) : 'Grátis' }}
                   </dd>
                 </div>
 
@@ -140,6 +143,51 @@
                   </dt>
                   <dd class="text-sm font-medium text-gray-900">{{ serviceFee() | currencyBr }}</dd>
                 </div>
+
+                <!-- Seção de Cupom -->
+                <div class="rounded-xl border border-stone-100 bg-stone-50 p-4">
+                  <p class="text-sm font-medium text-gray-800 mb-3">Cupom de Desconto</p>
+                  @if (!couponDiscount()) {
+                    <div class="space-y-3">
+                      <input
+                        type="text"
+                        [(ngModel)]="couponCode"
+                        placeholder="Digite o código do cupom"
+                        class="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                      <button
+                        (click)="validateCoupon()"
+                        [disabled]="validatingCoupon() || !couponCode"
+                        class="w-full rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-stone-100 disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span *ngIf="!validatingCoupon()">Aplicar Cupom</span>
+                        <span *ngIf="validatingCoupon()">Validando...</span>
+                      </button>
+                      @if (couponValidation()?.error) {
+                        <p class="text-xs text-red-600">{{ couponValidation()?.error }}</p>
+                      }
+                    </div>
+                  } @else {
+                    <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div>
+                        <p class="text-sm font-medium text-green-900">Cupom aplicado!</p>
+                        <p class="text-xs text-green-700">{{ couponCode }}</p>
+                      </div>
+                      <button
+                        (click)="removeCoupon()"
+                        class="text-green-600 hover:text-red-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                @if (couponDiscount() > 0) {
+                  <div class="flex items-center justify-between pt-2 pb-4 border-b border-stone-100">
+                    <dt class="text-sm text-green-600 font-medium">Desconto (Cupom)</dt>
+                    <dd class="text-sm font-medium text-green-600">-{{ couponDiscount() | currencyBr }}</dd>
+                  </div>
+                }
 
                 <!-- Total Final -->
                 <div class="flex items-center justify-between pt-2">
@@ -158,9 +206,13 @@
               <div class="mt-8">
                 <button
                   (click)="onCheckout()"
-                  [disabled]="isLoading"
+                  [disabled]="isLoading || isMissingShipping()"
                   class="w-full flex items-center justify-center px-6 py-4 border border-transparent rounded-xl shadow-lg shadow-orange-500/20 text-base font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0">
-                  Ir para Pagamento Seguro
+                  @if (isMissingShipping()) {
+                    <span>Selecione frete para continuar</span>
+                  } @else {
+                    <span>Ir para Pagamento Seguro</span>
+                  }
                   <svg class="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                 </button>
 

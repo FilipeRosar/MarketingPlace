@@ -1,0 +1,60 @@
+/* Product Detail Styles */
+
+.product-image-container {
+  width: 100%;
+}
+
+/* Gallery main image */
+.product-image-container > div:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .product-image-container > div:last-child {
+    min-height: 500px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-image-container > div:last-child {
+    min-height: 600px;
+  }
+}
+
+/* Ensure images scale properly and maintain aspect ratio */
+.product-image-container img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: auto;
+}
+
+/* Smooth transitions for zoom */
+.product-image-container img {
+  transition: transform 0.2s ease-out;
+}
+
+/* Thumbnail gallery scrollbar styling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Responsive product info */
+.product-info {
+  padding: 0;
+}
+
+@media (max-width: 1023px) {
+  .product-info {
+    margin-top: 2rem;
+  }
+}

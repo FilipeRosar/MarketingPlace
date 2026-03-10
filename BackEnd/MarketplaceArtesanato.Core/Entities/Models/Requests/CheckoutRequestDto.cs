@@ -21,6 +21,7 @@ namespace MarketplaceArtesanato.Core.Models.Requests
         public string? Carrier { get; set; }
         [Required]
         public string CancelUrl { get; set; } = string.Empty;
+        public string? CouponCode { get; set; }
     }
 
     public class CheckoutItemDto

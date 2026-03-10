@@ -24,9 +24,7 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================================
-// 1. CONFIGURAÇÃO DE AMBIENTE E BANCO
-// ==========================================
+
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddEnvironmentVariables();
@@ -34,7 +32,6 @@ builder.Configuration
 // Configura Stripe
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
-// Configura Banco de Dados (SQL Server)
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -74,9 +71,9 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 // ==========================================
-// 2. SERVIÇOS DA APLICAÇÃO (DI)
+// 2. SERVIï¿½OS DA APLICAï¿½ï¿½O (DI)
 // ==========================================
-builder.Services.AddAutoMapper(typeof(Program)); // Escaneia perfis
+builder.Services.AddAutoMapper(typeof(Program)); 
 builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -101,14 +98,13 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
-// Controllers com Enum Converter
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-// Injeção de Dependência dos Serviços
+// Injeï¿½ï¿½o de Dependï¿½ncia dos Serviï¿½os
 builder.Services.AddScoped<ISellerService, SellerService>();
 builder.Services.AddScoped<IStorageService, BlobService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
@@ -123,11 +119,17 @@ builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
 builder.Services.AddScoped<IStripeConnectService, StripeConnectService>();
 builder.Services.AddScoped<ISellerSubscriptionService, SellerSubscribeService>();
 builder.Services.AddScoped<IPlatformFeeService, PlatformFeeService>();
+builder.Services.AddScoped<ICommissionCalculationService, CommissionCalculationService>();
+builder.Services.AddScoped<ICouponService, MarketplaceArtesanato.Services.Services.CouponService>();
+builder.Services.AddScoped<ICouponAnalyticsService, MarketplaceArtesanato.Services.Services.CouponAnalyticsService>();
+builder.Services.AddScoped<ICouponAutomationService, MarketplaceArtesanato.Services.Services.CouponAutomationService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddPricingServices();
 builder.Services.AddScoped<IProductService, MarketplaceArtesanato.Services.Services.ProductService>();
+builder.Services.AddScoped<IBannerService, BannerService>();
 builder.Services.Configure<AzureBlobSettings>(builder.Configuration.GetSection("Storage:AzureBlob"));
 
-// Serviços do Stripe SDK
+// Serviï¿½os do Stripe SDK
 builder.Services.AddScoped<Stripe.BillingPortal.SessionService>();
 builder.Services.AddScoped<Stripe.Checkout.SessionService>();
 
@@ -158,7 +160,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // ==========================================
-// 4. CORS (CONFIGURAÇÃO CORRIGIDA)
+// 4. CORS (CONFIGURAï¿½ï¿½O CORRIGIDA)
 // ==========================================
 builder.Services.AddCors(options =>
 {
@@ -239,7 +241,7 @@ builder.Services.Configure<TurnstileOptions>(
 var app = builder.Build();
 
 // ==========================================
-// 7. PIPELINE DE REQUISIÇÃO (MIDDLEWARE)
+// 7. PIPELINE DE REQUISIï¿½ï¿½O (MIDDLEWARE)
 // ==========================================
 
 // Swagger (Development)
@@ -261,7 +263,7 @@ app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api/webhook"), appBuil
 // 1. CORS deve vir ANTES de Auth e ANTES dos Controllers
 app.UseCors("AllowAngular");
 
-// 2. Autenticação deve vir ANTES de Autorização
+// 2. Autenticaï¿½ï¿½o deve vir ANTES de Autorizaï¿½ï¿½o
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();

@@ -20,19 +20,22 @@ namespace MarketplaceArtesanato.Services.Services
         private readonly ArtesianDbContext _context;
         private readonly ILogger<StripePaymentService> _logger;
         private readonly ISellerSubscriptionService _subscriptionService;
+        private readonly ICommissionCalculationService _commissionCalculationService;
 
         public StripePaymentService(
             IConfiguration config,
             IPublishEndpoint publishEndpoint,
             ArtesianDbContext context,
             ILogger<StripePaymentService> logger,
-            ISellerSubscriptionService subscriptionService)
+            ISellerSubscriptionService subscriptionService,
+            ICommissionCalculationService commissionCalculationService)
         {
             _config = config;
             _publishEndpoint = publishEndpoint;
             _context = context;
             _logger = logger;
             _subscriptionService = subscriptionService;
+            _commissionCalculationService = commissionCalculationService;
 
             StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
         }
@@ -215,15 +218,7 @@ namespace MarketplaceArtesanato.Services.Services
 
         private async Task ConfirmOrderPaymentAsync(Order order, string? paymentIntentId)
         {
-            order.Status = OrderStatus.Confirmed;
-            order.StripePaymentIntentId = paymentIntentId;
-            order.UpdatedAt = DateTime.UtcNow;
-
-            foreach (var item in order.Items)
-                item.Product.StockQuantity -= item.Quantity;
-
-            await _context.SaveChangesAsync();
-
+            // Tentar processar split de pagamento ANTES de confirmar
             if (!string.IsNullOrWhiteSpace(paymentIntentId))
             {
                 try
@@ -232,9 +227,23 @@ namespace MarketplaceArtesanato.Services.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Falha ao processar split de pagamento do pedido {OrderId}", order.Id);
+                    _logger.LogError(ex, "Falha ao processar split de pagamento do pedido {OrderId}. Revertendo status.", order.Id);
+                    order.Status = OrderStatus.PaymentFailed;
+                    order.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    throw; // Propagar erro para evitar confirmar pedido sem transferência
                 }
             }
+
+            // Só confirmar após split bem-sucedido
+            order.Status = OrderStatus.Confirmed;
+            order.StripePaymentIntentId = paymentIntentId;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            foreach (var item in order.Items)
+                item.Product.StockQuantity -= item.Quantity;
+
+            await _context.SaveChangesAsync();
 
             await _publishEndpoint.Publish(new OrderPaidEvent
             {
@@ -299,12 +308,16 @@ namespace MarketplaceArtesanato.Services.Services
                     continue;
 
                 var gross = group.Sum(i => i.UnitPrice * i.Quantity);
-                var commission = gross * (seller.CommissionRate / 100m);
-                var net = gross - commission;
+                
+                // Usar serviço unificado para calcular comissão
+                var (sellerCommission, serviceFee, _) = 
+                    await _commissionCalculationService.CalculateFeesAsync(gross, seller);
+                
+                var net = gross - sellerCommission;
 
                 if (net <= 0) continue;
 
-                await transferService.CreateAsync(new TransferCreateOptions
+                var result = await transferService.CreateAsync(new TransferCreateOptions
                 {
                     Amount = (long)(net * 100),
                     Currency = "brl",
@@ -312,6 +325,10 @@ namespace MarketplaceArtesanato.Services.Services
                     SourceTransaction = paymentIntentId,
                     TransferGroup = order.Id.ToString()
                 });
+
+                _logger.LogInformation(
+                    "Split de pagamento processado. OrderId={OrderId}, SellerId={SellerId}, Gross={Gross}, Commission={Commission}, Net={Net}, TransferId={TransferId}",
+                    order.Id, seller.Id, gross, sellerCommission, net, result.Id);
             }
         }
     }

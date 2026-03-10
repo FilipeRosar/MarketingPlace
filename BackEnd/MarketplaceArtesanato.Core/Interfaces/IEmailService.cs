@@ -10,5 +10,6 @@ namespace MarketplaceArtesanato.Core.Interfaces
     {
         Task SendApprovalEmailAsync(string toEmail, string sellerName);
         Task SendPasswordResetEmailAsync(string toEmail, string userName, string resetLink);
+        Task SendEmailConfirmationAsync(string toEmail, string userName, string confirmationLink);
     }
 }

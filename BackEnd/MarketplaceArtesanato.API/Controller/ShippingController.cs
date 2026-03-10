@@ -24,6 +24,20 @@ namespace MarketplaceArtesanato.API.Controller
             return Ok(options);
         }
 
+        [HttpPost("calculate-by-seller")]
+        public async Task<IActionResult> CalculateBySeller([FromBody] CalculateBySellerRequest request)
+        {
+            var itemsBySeller = new Dictionary<string, List<ShippingItemDto>>();
+            
+            foreach (var sellerItem in request.ItemsBySeller)
+            {
+                itemsBySeller[sellerItem.SellerId] = sellerItem.Items;
+            }
+
+            var options = await _shippingService.GetShippingOptionsBySellerAsync(itemsBySeller, request.ZipCodeTo);
+            return Ok(options);
+        }
+
         [Authorize(Roles = "Seller,Admin")] 
         [HttpPost("generate-label")]
         public async Task<IActionResult> GenerateLabel([FromBody] GenerateLabelRequest request)

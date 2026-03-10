@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,11 +8,12 @@ import { User } from '../../../models/user/user.model';
 import { HttpClient } from '@angular/common/http';
 import { debounceTime, filter, switchMap } from 'rxjs';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { DeleteAccountDialogComponent } from '../../../components/delete-account-dialog/delete-account-dialog.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, DeleteAccountDialogComponent],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
@@ -28,6 +29,7 @@ export class ProfileComponent implements OnInit {
   isEditing = false;
   isLoading = false;
   isUploadingPhoto = false;
+  showDeleteDialog = signal(false);
 
   constructor() {
     this.profileForm = this.fb.group({
@@ -239,5 +241,13 @@ export class ProfileComponent implements OnInit {
 
   private normalizePhone(value: string): string {
     return (value || '').replace(/\D/g, '').slice(0, 11);
+  }
+
+  openDeleteDialog() {
+    this.showDeleteDialog.set(true);
+  }
+
+  closeDeleteDialog() {
+    this.showDeleteDialog.set(false);
   }
 }

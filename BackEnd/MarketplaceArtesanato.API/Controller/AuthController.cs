@@ -116,6 +116,44 @@ namespace MarketplaceArtesanato.API.Controllers
             }
             return Ok(new { message = result.Message });
         }
+
+        [HttpPost("confirm-email")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var result = await _authService.ConfirmEmailAsync(dto);
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Message });
+            }
+            return Ok(new { message = result.Message });
+        }
+
+        [HttpPost("resend-confirmation-email")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ResendConfirmationEmail([FromBody] dynamic request)
+        {
+            var email = request.email?.ToString();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest(new { message = "Email é obrigatório." });
+            }
+            
+            var result = await _authService.ResendConfirmationEmailAsync(email);
+            if (!result.Success)
+            {
+                return NotFound(new { message = result.Message });
+            }
+            return Ok(new { message = result.Message });
+        }
         //[HttpGet("me")]
         //[Authorize]
         //[ProducesResponseType(StatusCodes.Status200OK)]

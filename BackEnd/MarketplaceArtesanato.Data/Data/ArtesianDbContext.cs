@@ -11,7 +11,6 @@ public class ArtesianDbContext : DbContext
 {
     public ArtesianDbContext(DbContextOptions<ArtesianDbContext> options) : base(options) { }
 
-    // --- DbSets Existentes ---
     public DbSet<User> Users => Set<User>();
     public DbSet<Seller> Sellers => Set<Seller>();
     public DbSet<Customer> Customers => Set<Customer>();
@@ -30,8 +29,6 @@ public class ArtesianDbContext : DbContext
     public DbSet<UserFavorite> UserFavorites => Set<UserFavorite>();
     public DbSet<Moment> Moments { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
-
-    // --- DbSets do Sistema de Precificação ---
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<Coupon> Coupons => Set<Coupon>();
@@ -42,7 +39,6 @@ public class ArtesianDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-        // --- Configurações Existentes ---
         modelBuilder.Entity<User>()
             .HasOne(u => u.SellerProfile)
             .WithOne(s => s.User)
@@ -143,7 +139,6 @@ public class ArtesianDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // --- Configurações de Precisão Existentes ---
         modelBuilder.Entity<Seller>().Property(p => p.CommissionRate).HasPrecision(18, 2);
         modelBuilder.Entity<Seller>().Property(p => p.RatingAverage).HasPrecision(2, 1);
 
@@ -159,11 +154,7 @@ public class ArtesianDbContext : DbContext
             .HasColumnType("nvarchar(max)")
             .IsRequired(false);
 
-        // ================================================================================
-        // CONFIGURAÇÕES DO SISTEMA DE PRECIFICAÇÃO DINÂMICA
-        // ================================================================================
 
-        // --- Product: Campos de Desconto ---
         modelBuilder.Entity<Product>(entity =>
         {
             entity.Property(p => p.OriginalPrice)
@@ -175,7 +166,6 @@ public class ArtesianDbContext : DbContext
                 .IsRequired();
         });
 
-        // --- Seller: Campo de Desconto do Plano ---
         modelBuilder.Entity<Seller>(entity =>
         {
             entity.Property(s => s.PlanDiscountPercentage)
@@ -184,7 +174,6 @@ public class ArtesianDbContext : DbContext
                 .IsRequired();
         });
 
-        // --- Promotion ---
         modelBuilder.Entity<Promotion>(entity =>
         {
             entity.HasKey(p => p.Id);
@@ -200,7 +189,6 @@ public class ArtesianDbContext : DbContext
                 .HasPrecision(5, 2)
                 .IsRequired();
 
-            // Converte List<Guid> para JSON
             entity.Property(p => p.ProductIds)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
@@ -219,13 +207,11 @@ public class ArtesianDbContext : DbContext
             entity.Property(p => p.EndDate)
                 .IsRequired();
 
-            // Relacionamento com Seller
             entity.HasOne(p => p.Seller)
                 .WithMany()
                 .HasForeignKey(p => p.SellerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Índices para performance
             entity.HasIndex(p => p.SellerId)
                 .HasDatabaseName("IX_Promotions_SellerId");
 
@@ -236,7 +222,6 @@ public class ArtesianDbContext : DbContext
                 .HasDatabaseName("IX_Promotions_IsActive_Dates");
         });
 
-        // --- Campaign ---
         modelBuilder.Entity<Campaign>(entity =>
         {
             entity.HasKey(c => c.Id);
@@ -252,7 +237,6 @@ public class ArtesianDbContext : DbContext
                 .HasPrecision(5, 2)
                 .IsRequired();
 
-            // Converte List<Guid> para JSON
             entity.Property(c => c.CategoryIds)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
@@ -277,7 +261,6 @@ public class ArtesianDbContext : DbContext
             entity.Property(c => c.EndDate)
                 .IsRequired();
 
-            // Índices para performance
             entity.HasIndex(c => c.IsActive)
                 .HasDatabaseName("IX_Campaigns_IsActive");
 
@@ -285,7 +268,6 @@ public class ArtesianDbContext : DbContext
                 .HasDatabaseName("IX_Campaigns_IsActive_Dates");
         });
 
-        // --- Coupon ---
         modelBuilder.Entity<Coupon>(entity =>
         {
             entity.HasKey(c => c.Id);
@@ -297,37 +279,88 @@ public class ArtesianDbContext : DbContext
             entity.Property(c => c.Description)
                 .HasMaxLength(500);
 
+            entity.Property(c => c.Type)
+                .IsRequired()
+                .HasDefaultValue(CouponType.Platform);
+
             entity.Property(c => c.DiscountType)
                 .IsRequired()
-                .HasMaxLength(20)
-                .HasDefaultValue("Percentage");
+                .HasDefaultValue(DiscountType.Percentage);
 
             entity.Property(c => c.DiscountValue)
                 .HasPrecision(18, 2)
                 .IsRequired();
 
-            entity.Property(c => c.MaxDiscountAmount)
+            entity.Property(c => c.MaxDiscount)
                 .HasPrecision(18, 2)
                 .IsRequired(false);
 
-            entity.Property(c => c.MinPurchaseAmount)
+            entity.Property(c => c.MinOrderValue)
                 .HasPrecision(18, 2)
+                .HasDefaultValue(0);
+
+            entity.Property(c => c.Scope)
+                .IsRequired()
+                .HasDefaultValue(CouponScope.EntireOrder);
+
+            entity.Property(c => c.PlatformSharePercentage)
+                .HasPrecision(5, 2)
                 .IsRequired(false);
+
+            entity.Property(c => c.ValidFrom)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(c => c.ValidUntil)
+                .IsRequired();
+
+            entity.Property(c => c.UsageLimit)
+                .HasDefaultValue(0);
+
+            entity.Property(c => c.UsageCount)
+                .HasDefaultValue(0);
+
+            entity.Property(c => c.UsageLimitPerUser)
+                .HasDefaultValue(1);
 
             entity.Property(c => c.IsActive)
                 .HasDefaultValue(true)
                 .IsRequired();
 
-            // Índice único no código do cupom
+            entity.Property(c => c.PreventsCombination)
+                .HasDefaultValue(true)
+                .IsRequired();
+
+            entity.Property(c => c.OnlyWithoutPromotion)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            entity.Property(c => c.OnlyFirstPurchase)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            entity.Property(c => c.CreatedAt)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(c => c.IsDeleted)
+                .HasDefaultValue(false)
+                .IsRequired();
+
             entity.HasIndex(c => c.Code)
                 .IsUnique()
                 .HasDatabaseName("IX_Coupons_Code");
 
-            entity.HasIndex(c => new { c.IsActive, c.ExpiresAt })
-                .HasDatabaseName("IX_Coupons_IsActive_ExpiresAt");
+            entity.HasIndex(c => new { c.IsActive, c.ValidUntil })
+                .HasDatabaseName("IX_Coupons_IsActive_ValidUntil");
+
+            entity.HasIndex(c => c.Type)
+                .HasDatabaseName("IX_Coupons_Type");
+
+            entity.HasIndex(c => c.CreatorSellerId)
+                .HasDatabaseName("IX_Coupons_CreatorSellerId");
         });
 
-        // --- CouponUsage ---
         modelBuilder.Entity<CouponUsage>(entity =>
         {
             entity.HasKey(cu => cu.Id);
@@ -336,16 +369,36 @@ public class ArtesianDbContext : DbContext
                 .HasPrecision(18, 2)
                 .IsRequired();
 
-            entity.Property(cu => cu.UsedAt)
+            entity.Property(cu => cu.PaidBy)
+                .IsRequired()
+                .HasDefaultValue(DiscountPaidBy.Platform);
+
+            entity.Property(cu => cu.PlatformPaid)
+                .HasPrecision(18, 2)
+                .IsRequired(false);
+
+            entity.Property(cu => cu.SellerPaid)
+                .HasPrecision(18, 2)
+                .IsRequired(false);
+
+            entity.Property(cu => cu.CreatedAt)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(cu => cu.IsDeleted)
+                .HasDefaultValue(false)
                 .IsRequired();
 
-            // Relacionamento com Coupon
             entity.HasOne(cu => cu.Coupon)
                 .WithMany(c => c.Usages)
                 .HasForeignKey(cu => cu.CouponId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Índices para performance
+            entity.HasOne(cu => cu.User)
+                .WithMany()
+                .HasForeignKey(cu => cu.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasIndex(cu => new { cu.CouponId, cu.UserId })
                 .HasDatabaseName("IX_CouponUsages_CouponId_UserId");
 
@@ -356,9 +409,6 @@ public class ArtesianDbContext : DbContext
                 .HasDatabaseName("IX_CouponUsages_OrderId");
         });
 
-        // ================================================================================
-
-        // --- FILTRO DE SOFT DELETE GLOBAL ---
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))

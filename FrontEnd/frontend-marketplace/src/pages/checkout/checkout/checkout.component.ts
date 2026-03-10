@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CartService } from '../../../services/cart/cart.service';
 import { CheckoutService } from '../../../services/checkout/checkout.service';
+import { CouponService } from '../../../services/coupon/coupon.service';
 import { CurrencyBrPipe } from '../../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../../components/loading-spinner.component/loading-spinner.component';
 import { AuthService } from '../../../services/auth/auth.service';
@@ -12,6 +13,21 @@ import { ShippingService } from '../../../services/shipping/shipping.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Subject, interval, startWith, switchMap, takeUntil } from 'rxjs';
+
+export interface ShippingSelection {
+  sellerId: string;
+  sellerName: string;
+  selectedOption: any | null;
+}
+
+interface ItemBySeller {
+  sellerId: string;
+  sellerName: string;
+  items: any[];
+  shippingOptions: any[];
+  selectedShipping: any | null;
+  isCalculating: boolean;
+}
 
 @Component({
   selector: 'app-checkout',
@@ -25,7 +41,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private checkoutService = inject(CheckoutService);
   private authService = inject(AuthService);
   private router = inject(Router);
-  private notificationService = inject(NotificationService); // Injetar
+  private notificationService = inject(NotificationService);
   private shippingService = inject(ShippingService);
   private destroy$ = new Subject<void>();
 
@@ -34,17 +50,26 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   subtotal = this.cartService.total;
   serviceFee = signal(0);
-  shippingOptions = signal<any[]>([]);
-  selectedShipping = signal<any | null>(null);
-  shippingError = '';
-  shippingNotice = '';
-  isCalculatingShipping = false;
-  zipCodeFrom = '';
+  couponCode = '';
+  couponDiscount = signal(0);
+  couponValidation = signal<any>(null);
+  validatingCoupon = signal(false);
   zipCodeTo = '';
 
-  shippingFee = computed(() => this.selectedShipping()?.price ?? 0);
-  total = computed(() => this.subtotal() + this.serviceFee() + this.shippingFee());
+  // Itens agrupados por vendedor
+  itemsBySeller = signal<ItemBySeller[]>([]);
+
+  // Calcula frete total (soma de todos os vendedores)
+  totalShippingFee = computed(() => {
+    return this.itemsBySeller().reduce((acc, seller) => {
+      return acc + (seller.selectedShipping?.price ?? 0);
+    }, 0);
+  });
+
+  total = computed(() => this.subtotal() + this.serviceFee() + this.totalShippingFee() - this.couponDiscount());
+
   private http = inject(HttpClient);
+
   ngOnInit() {
     interval(30000)
       .pipe(
@@ -56,6 +81,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         next: (response) => this.serviceFee.set(response.fee),
         error: () => this.serviceFee.set(2.99)
       });
+
     if (!this.authService.currentUserValue) {
       this.notificationService.info('Faça login para finalizar a compra.', 'Atenção');
       this.router.navigate(['/login']);
@@ -65,6 +91,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (this.cartItems().length === 0) {
       this.router.navigate(['/']);
     }
+
+    this.groupItemsBySeller();
   }
 
   ngOnDestroy(): void {
@@ -72,83 +100,95 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  calculateShipping() {
-    this.shippingError = '';
-    this.shippingNotice = '';
+  private groupItemsBySeller(): void {
+    const grouped = new Map<string, ItemBySeller>();
 
-    const zipFrom = this.normalizeZip(this.zipCodeFrom);
-    const zipTo = this.normalizeZip(this.zipCodeTo);
+    for (const item of this.cartItems()) {
+      const sellerId = item.product.sellerId || 'unknown';
+      const sellerName = item.product.sellerName || 'Vendedor Desconhecido';
 
-    if (zipFrom.length !== 8 || zipTo.length !== 8) {
-      this.shippingError = 'Informe CEPs validos (8 digitos).';
+      if (!grouped.has(sellerId)) {
+        grouped.set(sellerId, {
+          sellerId,
+          sellerName,
+          items: [],
+          shippingOptions: [],
+          selectedShipping: null,
+          isCalculating: false
+        });
+      }
+
+      grouped.get(sellerId)!.items.push(item);
+    }
+
+    this.itemsBySeller.set(Array.from(grouped.values()));
+  }
+
+  calculateShipping(): void {
+    this.zipCodeTo = this.normalizeZip(this.zipCodeTo);
+
+    if (this.zipCodeTo.length !== 8) {
+      this.notificationService.error('Informe um CEP valido (8 dígitos).', 'Erro');
       return;
     }
 
-    const { items, usedFallback } = this.buildShippingItems();
-    if (items.length === 0) {
-      this.shippingError = 'Nao foi possivel montar os itens para calculo de frete.';
+    const sellers = this.itemsBySeller();
+    if (sellers.length === 0) {
+      this.notificationService.error('Nenhum item no carrinho.', 'Erro');
       return;
     }
 
-    if (usedFallback) {
-      this.shippingNotice = 'Alguns produtos estao sem dimensoes. Usando valores padrao para o frete.';
-    }
+    // Marcar todos como calculando
+    sellers.forEach(s => s.isCalculating = true);
+    this.itemsBySeller.set([...sellers]);
 
-    this.isCalculatingShipping = true;
-    this.shippingService.calculateShipping(zipFrom, zipTo, items).subscribe({
-      next: (options: any[]) => {
-        const customOptions = [
-          { name: 'Retirada no local', price: 0, deliveryTime: 0, companyLogo: '' },
-          { name: 'Entrega combinada com o vendedor', price: 0, deliveryTime: 0, companyLogo: '' }
-        ];
-        const normalized = (options || []).map(o => ({
-          name: o.name ?? 'Frete',
-          price: Number(o.price) || 0,
-          deliveryTime: o.deliveryTime ?? 0,
-          companyLogo: o.companyLogo ?? ''
-        }));
-        const all = [...customOptions, ...normalized];
-        this.shippingOptions.set(all);
-        this.selectedShipping.set(all[0] ?? null);
-        this.isCalculatingShipping = false;
+    const itemsBySeller = sellers.map(seller => ({
+      sellerId: seller.sellerId,
+      items: this.buildShippingItems(seller.items)
+    }));
+
+    this.shippingService.calculateShippingBySeller(itemsBySeller, this.zipCodeTo).subscribe({
+      next: (result: Record<string, any[]>) => {
+        const updated = sellers.map(seller => {
+          const options = result[seller.sellerId] || [];
+          return {
+            ...seller,
+            shippingOptions: options,
+            selectedShipping: options.length > 0 ? options[0] : null,
+            isCalculating: false
+          };
+        });
+        this.itemsBySeller.set(updated);
       },
       error: () => {
-        this.shippingError = 'Erro ao calcular frete. Tente novamente.';
-        this.shippingOptions.set([]);
-        this.selectedShipping.set(null);
-        this.isCalculatingShipping = false;
+        this.notificationService.error('Erro ao calcular frete. Tente novamente.', 'Erro');
+        sellers.forEach(s => s.isCalculating = false);
+        this.itemsBySeller.set([...sellers]);
       }
     });
   }
 
-  selectShipping(option: any) {
-    this.selectedShipping.set(option);
+  selectShipping(sellerId: string, option: any): void {
+    const updated = this.itemsBySeller().map(seller =>
+      seller.sellerId === sellerId
+        ? { ...seller, selectedShipping: option }
+        : seller
+    );
+    this.itemsBySeller.set(updated);
   }
 
   private normalizeZip(value: string): string {
     return (value || '').replace(/\D/g, '');
   }
 
-  private buildShippingItems(): { items: any[]; usedFallback: boolean } {
-    let usedFallback = false;
-    const items = this.cartItems().map(item => {
-      const weight = item.product.weight && item.product.weight > 0 ? item.product.weight : 0.3;
-      const width = item.product.width && item.product.width > 0 ? item.product.width : 11;
-      const height = item.product.height && item.product.height > 0 ? item.product.height : 2;
-      const length = item.product.length && item.product.length > 0 ? item.product.length : 16;
-      if (!item.product.weight || !item.product.width || !item.product.height || !item.product.length) {
-        usedFallback = true;
-      }
-      return {
-        weight,
-        width,
-        height,
-        length,
-        quantity: item.quantity
-      };
-    });
-
-    return { items, usedFallback };
+  private buildShippingItems(items: any[]): any[] {
+    return items.map(item => ({
+      weight: item.product.weight && item.product.weight > 0 ? item.product.weight : 0.3,
+      width: item.product.width && item.product.width > 0 ? item.product.width : 11,
+      height: item.product.height && item.product.height > 0 ? item.product.height : 2,
+      length: item.product.length && item.product.length > 0 ? item.product.length : 16,
+      quantity: item.quantity
+    }));
   }
 
   getMaxInstallmentsForCart(): number {
@@ -179,20 +219,27 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Verificar se todos os vendedores têm frete selecionado
+    const sellers = this.itemsBySeller();
+    const missingShipping = sellers.some(s => !s.selectedShipping);
+    if (missingShipping) {
+      this.notificationService.error('Selecione uma opção de frete para todos os vendedores.', 'Erro');
+      return;
+    }
+
     this.isLoading = true;
 
     const itemsToBuy = this.cartItems();
-    const selected = this.selectedShipping();
-    const shippingFee = selected?.price ?? 0;
-    const shippingName = selected?.name ?? 'Frete';
+    const shippingData = sellers.map(s => ({
+      sellerId: s.sellerId,
+      shippingOption: s.selectedShipping
+    }));
 
-    this.checkoutService.createCheckoutSession(itemsToBuy, shippingFee, shippingName).subscribe({
+    // Enviar dados de frete com o checkout
+    this.checkoutService.createCheckoutSessionWithShipping(itemsToBuy, shippingData, this.couponCode).subscribe({
       next: (response: any) => {
         if (response.url) {
-          // SUCESSO: Limpa o carrinho local antes de ir para o Stripe
           this.cartService.clearCart();
-
-          // Redireciona
           window.location.href = response.url;
         } else {
           console.error('URL de pagamento não encontrada');
@@ -207,5 +254,56 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         this.notificationService.error(msg, 'Erro no Checkout');
       }
     });
+  }
+
+  validateCoupon() {
+    if (!this.couponCode.trim()) {
+      this.notificationService.warning('Digite um código de cupom', 'Atenção');
+      return;
+    }
+
+    this.validatingCoupon.set(true);
+    const couponService = inject(CouponService);
+    const productIds = this.cartItems().map(item => item.product.id);
+
+    couponService.validateCoupon(this.couponCode, this.total(), productIds)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => {
+          if (result.isValid) {
+            this.couponValidation.set(result);
+            this.couponDiscount.set(result.discountAmount);
+            this.notificationService.success(`Cupom aplicado! Desconto: R$ ${result.discountAmount.toFixed(2)}`, 'Sucesso');
+          } else {
+            this.notificationService.error(result.errorMessage || 'Cupom inválido', 'Erro');
+            this.couponValidation.set(null);
+            this.couponDiscount.set(0);
+          }
+          this.validatingCoupon.set(false);
+        },
+        error: (err) => {
+          console.error('Erro ao validar cupom:', err);
+          this.notificationService.error('Erro ao validar cupom', 'Erro');
+          this.validatingCoupon.set(false);
+        }
+      });
+  }
+
+  removeCoupon() {
+    this.couponCode = '';
+    this.couponDiscount.set(0);
+    this.couponValidation.set(null);
+  }
+
+  isCalculating(): boolean {
+    return this.itemsBySeller().some(s => s.isCalculating);
+  }
+
+  hasAnyShippingCalculating(): boolean {
+    return this.itemsBySeller().some(s => s.isCalculating);
+  }
+
+  isMissingShipping(): boolean {
+    return this.itemsBySeller().some(s => !s.selectedShipping);
   }
 }

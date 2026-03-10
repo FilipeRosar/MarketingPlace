@@ -1,0 +1,38 @@
+/* Banner Management Component Styles */
+
+:host {
+  display: block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* File input styling */
+input[type='file']::file-selector-button {
+  cursor: pointer;
+}
+
+/* Form animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fixed {
+  animation: slideIn 0.3s ease-out;
+}

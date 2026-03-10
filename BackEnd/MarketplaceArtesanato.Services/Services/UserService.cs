@@ -116,5 +116,30 @@ namespace MarketplaceArtesanato.Services.Services
                 return false;
             }
         }
+
+        public async Task<bool> DeleteAccountAsync(Guid userId, string password)
+        {
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null) return false;
+
+            // Verify password using BCrypt
+            if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            {
+                return false;
+            }
+
+            try
+            {
+                _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting account: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

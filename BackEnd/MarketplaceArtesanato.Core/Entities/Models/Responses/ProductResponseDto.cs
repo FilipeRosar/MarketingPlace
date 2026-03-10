@@ -34,7 +34,9 @@ namespace MarketplaceArtesanato.API.Models.Responses
         public int StockQuantity { get; set; } = 0;
         public List<ProductImageDto> Images { get; set; } = new();
         public string ImageUrl => Images.FirstOrDefault()?.Url ?? "";
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public ProductCategory Category { get; set; }
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public ProductStatus Status { get; set; }
         public double AverageRating { get; set; }  
         public int TotalRatings { get; set; }

@@ -17,7 +17,14 @@ export class UserService {
 
     return this.http.post<{ imageUrl: string }>(`${this.apiUrl}/upload-photo`, formData);
   }
+
   updateProfile(data: any): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/profile`, data);
+  }
+
+  deleteAccount(password: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/account`, {
+      body: { password }
+    });
   }
 }

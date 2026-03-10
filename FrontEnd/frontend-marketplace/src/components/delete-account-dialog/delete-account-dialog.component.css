@@ -1,0 +1,27 @@
+/* Delete Account Dialog Styles */
+
+:host {
+  display: block;
+}
+
+/* Modal animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fixed {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Input focus styles */
+input:focus {
+  border-color: rgb(239, 68, 68);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
