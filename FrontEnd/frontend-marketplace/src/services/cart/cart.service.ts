@@ -5,6 +5,7 @@ import { Product } from '../../models/product/product.model';
 import { AuthService } from '../auth/auth.service';
 import { environment } from '../../environments/environment';
 import { NotificationService } from '../notification/notification.service';
+import { EventTrackingService } from '../analytics/event-tracking.service';
 import { firstValueFrom } from 'rxjs';
 
 export interface CartItem {
@@ -19,6 +20,7 @@ export class CartService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  private eventTrackingService = inject(EventTrackingService);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.apiUrl}/carts`;
 
@@ -82,18 +84,24 @@ export class CartService {
 
   async removeFromCart(productId: string) {
     const previousItems = this.cartItems();
+    const removedItem = previousItems.find(i => i.product.id === productId);
 
     this.cartItems.set(this.cartItems().filter(i => i.product.id !== productId));
     this.saveLocal();
+    
+    if (removedItem) {
+      this.eventTrackingService.trackRemoveFromCart(removedItem.product, removedItem.quantity);
+    }
 
     if (this.authService.currentUserValue) {
       this.http.delete(`${this.apiUrl}/remove/${productId}`).subscribe({
         error: (err) => {
             console.error('Erro ao remover item', err);
-            // Rollback
             this.cartItems.set(previousItems);
             this.saveLocal();
             this.notificationService.error('Erro ao remover item.');
+            
+            this.eventTrackingService.trackError('Failed to remove from cart', 'CartError', 'removeFromCart');
         }
       });
     }

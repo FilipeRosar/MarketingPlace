@@ -1,0 +1,191 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+    <!-- Header -->
+    <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 border-b border-blue-200 flex items-start justify-between">
+      <div>
+        <h3 class="text-lg font-bold text-white">Detalhes do Cliente</h3>
+        <p class="text-blue-100 text-sm mt-1">ID: {{ customer.id }}</p>
+      </div>
+      <button 
+        (click)="onCancel()"
+        class="text-white hover:bg-blue-600 rounded-full p-2 transition-colors"
+        aria-label="Fechar">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="px-6 py-6 space-y-6">
+      <!-- Loading State -->
+      @if (detailLoading()) {
+        <div class="flex items-center justify-center py-8">
+          <div class="animate-spin">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V2m0 20v-4m9-4h-4m-20 0h-4m15.364 2.636l-2.828-2.828m4.242-4.242l2.828 2.828m-4.242 4.242l2.828 2.828m-4.242-4.242l-2.828-2.828"></path>
+            </svg>
+          </div>
+          <span class="ml-2 text-gray-500">Carregando detalhes...</span>
+        </div>
+      }
+
+      <!-- Error State -->
+      @if (detailError()) {
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p class="text-red-800 text-sm">{{ detailError() }}</p>
+        </div>
+      }
+
+      <!-- Content -->
+      @if (customerDetail() && !detailLoading()) {
+        <div class="space-y-6">
+          <!-- Profile Section -->
+          <div class="flex gap-6">
+            <!-- Avatar -->
+            <div class="flex-shrink-0">
+              <img 
+                [src]="customerDetail().profileImageUrl || '/assets/default-avatar.png'"
+                alt="{{ customerDetail().name }}"
+                class="w-20 h-20 rounded-full object-cover border-2 border-blue-200">
+            </div>
+            <!-- Basic Info -->
+            <div class="flex-1">
+              <h4 class="text-xl font-bold text-gray-900">{{ customerDetail().name }}</h4>
+              <p class="text-gray-500 text-sm">{{ customerDetail().email }}</p>
+              @if (customerDetail().isBanned) {
+                <div class="mt-2 inline-block bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">
+                  🚫 BANIDO
+                </div>
+              } @else {
+                <div class="mt-2 inline-block bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full">
+                  ✓ ATIVO
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Key Metrics -->
+          <div class="grid grid-cols-3 gap-4 bg-gray-50 rounded-lg p-4">
+            <div class="text-center">
+              <p class="text-2xl font-bold text-blue-600">{{ customerDetail().orderCount || 0 }}</p>
+              <p class="text-xs text-gray-500 mt-1">Pedidos</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-green-600">{{ formatCurrency(customerDetail().totalSpent) }}</p>
+              <p class="text-xs text-gray-500 mt-1">Total Gasto</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-yellow-600">{{ customerDetail().loyaltyPoints }}</p>
+              <p class="text-xs text-gray-500 mt-1">Pontos</p>
+            </div>
+          </div>
+
+          <!-- Details Grid -->
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Contact -->
+            <div>
+              <h5 class="font-semibold text-gray-900 mb-3">Contato</h5>
+              <div class="space-y-3 text-sm">
+                <div>
+                  <p class="text-gray-500">Email</p>
+                  <p class="text-gray-900 font-medium break-all">{{ customerDetail().email }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-500">Telefone</p>
+                  <p class="text-gray-900 font-medium">{{ customerDetail().phone || '-' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Account Info -->
+            <div>
+              <h5 class="font-semibold text-gray-900 mb-3">Conta</h5>
+              <div class="space-y-3 text-sm">
+                <div>
+                  <p class="text-gray-500">Criado em</p>
+                  <p class="text-gray-900 font-medium">{{ formatDate(customerDetail().createdAt) }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-500">Newsletter</p>
+                  <p class="text-gray-900 font-medium">
+                    @if (customerDetail().newsletterSubscribed) {
+                      ✓ Inscrito
+                    } @else {
+                      Não inscrito
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purchase Info -->
+          <div class="border-t pt-4">
+            <h5 class="font-semibold text-gray-900 mb-3">Histórico de Compras</h5>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="bg-blue-50 rounded-lg p-3">
+                <p class="text-gray-500 text-xs mb-1">Último Pedido</p>
+                @if (customerDetail().lastOrderDate) {
+                  <p class="text-gray-900 font-medium">{{ formatDate(customerDetail().lastOrderDate) }}</p>
+                } @else {
+                  <p class="text-gray-500">Nenhum pedido</p>
+                }
+              </div>
+              <div class="bg-green-50 rounded-lg p-3">
+                <p class="text-gray-500 text-xs mb-1">Total Gasto</p>
+                <p class="text-gray-900 font-medium text-lg">{{ formatCurrency(customerDetail().totalSpent) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ban Status -->
+          @if (customerDetail().bannedAt) {
+            <div class="bg-red-50 border-l-4 border-red-500 rounded p-4">
+              <p class="text-red-900 font-semibold">Cliente Banido</p>
+              <p class="text-red-700 text-sm mt-1">Banido em: {{ formatDate(customerDetail().bannedAt) }}</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex gap-3 sticky bottom-0">
+      <button 
+        (click)="onCancel()"
+        class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-medium transition-colors">
+        Cancelar
+      </button>
+      @if (!customerDetail()?.isBanned) {
+        <button 
+          (click)="onBanCustomer()"
+          [disabled]="isBanning()"
+          class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+          @if (isBanning()) {
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V2m0 20v-4m9-4h-4m-20 0h-4m15.364 2.636l-2.828-2.828m4.242-4.242l2.828 2.828m-4.242 4.242l2.828 2.828m-4.242-4.242l-2.828-2.828"></path>
+            </svg>
+            Banindo...
+          } @else {
+            🚫 Banir Cliente
+          }
+        </button>
+      } @else {
+        <button 
+          (click)="onUnbanCustomer()"
+          [disabled]="isUnbanning()"
+          class="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+          @if (isUnbanning()) {
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V2m0 20v-4m9-4h-4m-20 0h-4m15.364 2.636l-2.828-2.828m4.242-4.242l2.828 2.828m-4.242 4.242l2.828 2.828m-4.242-4.242l-2.828-2.828"></path>
+            </svg>
+            Desbannindo...
+          } @else {
+            ✓ Desbannir Cliente
+          }
+        </button>
+      }
+    </div>
+  </div>
+</div>

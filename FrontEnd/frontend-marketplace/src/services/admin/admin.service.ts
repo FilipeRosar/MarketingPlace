@@ -83,6 +83,18 @@ export class AdminService {
     if (end) params = params.set('end', end);
     return this.http.get<any[]>(`${this.apiUrl}/sales-by-month`, { params });
   }
+
+  getCustomerDetail(customerId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/customers/${customerId}`);
+  }
+
+  banCustomer(customerId: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/customers/${customerId}/ban`, {});
+  }
+
+  unbanCustomer(customerId: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/customers/${customerId}/unban`, {});
+  }
 }
 
 

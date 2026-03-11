@@ -7,6 +7,7 @@ import { CartService } from '../../services/cart/cart.service';
 import { FavoritesService } from '../../services/favorites/favorite.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { NotificationService } from '../../services/notification/notification.service';
+import { EventTrackingService } from '../../services/analytics/event-tracking.service';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 
@@ -24,21 +25,21 @@ export class ProductCardComponent implements OnInit, OnDestroy {
   private favoritesService = inject(FavoritesService);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  private eventTrackingService = inject(EventTrackingService);
 
   isFavorite = false;
 
-  // Variável para guardar a imagem tratada (String limpa)
   displayImage: string | null = null;
 
   private favSub?: Subscription;
 
   ngOnInit() {
-    // 1. Lógica de Favoritos
+    this.eventTrackingService.trackProductView(this.product);
+    
     this.favSub = this.favoritesService.favoriteProductIds$.subscribe(ids => {
       this.isFavorite = ids.includes(this.product.id);
     });
 
-    // 2. Lógica da Imagem (IGUAL AO DETALHE)
     this.normalizeImage();
   }
 
@@ -82,9 +83,11 @@ export class ProductCardComponent implements OnInit, OnDestroy {
 
   addToCart(event: Event, product: Product) {
     event.stopPropagation();
-    // Garante que o produto vai pro carrinho com a imagem correta
     const productToAdd = { ...product, imageUrl: this.displayImage || product.imageUrl };
     this.cartService.addToCart(productToAdd);
+    
+    this.eventTrackingService.trackAddToCart(product, 1);
+    
     this.notificationService.success(`"${product.name}" adicionado ao carrinho!`);
   }
 
@@ -107,13 +110,25 @@ export class ProductCardComponent implements OnInit, OnDestroy {
     action.pipe(take(1)).subscribe({
       next: () => {
         if (!previousState) {
-             this.notificationService.success('Produto salvo nos favoritos!');
+          this.eventTrackingService.trackCustomEvent('add_to_wishlist', {
+            productId: this.product.id,
+            productName: this.product.name,
+            price: this.product.price
+          });
+          this.notificationService.success('Produto salvo nos favoritos!');
+        } else {
+          this.eventTrackingService.trackCustomEvent('remove_from_wishlist', {
+            productId: this.product.id,
+            productName: this.product.name
+          });
         }
       },
       error: (err) => {
         console.error("Erro ao favoritar:", err);
         this.isFavorite = previousState;
         this.notificationService.error('Erro ao atualizar favoritos.');
+        
+        this.eventTrackingService.trackError('Favorite toggle failed', 'FavoriteError', 'toggleFavorite');
       }
     });
   }

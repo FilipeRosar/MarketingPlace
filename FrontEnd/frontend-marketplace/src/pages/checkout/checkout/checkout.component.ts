@@ -10,6 +10,7 @@ import { LoadingSpinnerComponent } from '../../../components/loading-spinner.com
 import { AuthService } from '../../../services/auth/auth.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { ShippingService } from '../../../services/shipping/shipping.service';
+import { EventTrackingService } from '../../../services/analytics/event-tracking.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Subject, interval, startWith, switchMap, takeUntil } from 'rxjs';
@@ -43,6 +44,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private notificationService = inject(NotificationService);
   private shippingService = inject(ShippingService);
+  private eventTrackingService = inject(EventTrackingService);
   private destroy$ = new Subject<void>();
 
   isLoading = false;
@@ -71,6 +73,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient);
 
   ngOnInit() {
+    this.eventTrackingService.trackPageView('Checkout Page');
+    this.eventTrackingService.trackBeginCheckout(this.subtotal(), this.cartItems().length);
+    
     interval(30000)
       .pipe(
         startWith(0),
@@ -138,7 +143,16 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Marcar todos como calculando
+    if (sellers.length > 1) {
+      this.notificationService.info(`Você tem itens de ${sellers.length} vendedores. O frete será calculado separadamente para cada vendedor.`, 'Atenção');
+    }
+
+    this.eventTrackingService.trackCustomEvent('shipping_calculation_started', {
+      zipCodeTo: this.zipCodeTo,
+      numberOfSellers: sellers.length,
+      cartTotal: this.subtotal()
+    });
+
     sellers.forEach(s => s.isCalculating = true);
     this.itemsBySeller.set([...sellers]);
 
@@ -159,11 +173,18 @@ export class CheckoutComponent implements OnInit, OnDestroy {
           };
         });
         this.itemsBySeller.set(updated);
+        
+        this.eventTrackingService.trackCustomEvent('shipping_calculation_completed', {
+          numberOfSellers: sellers.length,
+          optionsAvailable: updated.reduce((sum, s) => sum + s.shippingOptions.length, 0)
+        });
       },
       error: () => {
         this.notificationService.error('Erro ao calcular frete. Tente novamente.', 'Erro');
         sellers.forEach(s => s.isCalculating = false);
         this.itemsBySeller.set([...sellers]);
+        
+        this.eventTrackingService.trackError('Shipping calculation failed', 'ShippingError', 'calculateShipping');
       }
     });
   }
@@ -182,13 +203,25 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
   private buildShippingItems(items: any[]): any[] {
-    return items.map(item => ({
-      weight: item.product.weight && item.product.weight > 0 ? item.product.weight : 0.3,
-      width: item.product.width && item.product.width > 0 ? item.product.width : 11,
-      height: item.product.height && item.product.height > 0 ? item.product.height : 2,
-      length: item.product.length && item.product.length > 0 ? item.product.length : 16,
-      quantity: item.quantity
-    }));
+    return items.map(item => {
+      const hasValidDimensions = 
+        item.product.weight && item.product.weight > 0 &&
+        item.product.width && item.product.width > 0 &&
+        item.product.height && item.product.height > 0 &&
+        item.product.length && item.product.length > 0;
+      
+      if (!hasValidDimensions) {
+        console.warn(`[AVISO] Produto "${item.product.name}" usando dimensões padrão`);
+      }
+      
+      return {
+        weight: item.product.weight && item.product.weight > 0 ? item.product.weight : 0.3,
+        width: item.product.width && item.product.width > 0 ? item.product.width : 11,
+        height: item.product.height && item.product.height > 0 ? item.product.height : 2,
+        length: item.product.length && item.product.length > 0 ? item.product.length : 16,
+        quantity: item.quantity
+      };
+    });
   }
 
   getMaxInstallmentsForCart(): number {
@@ -219,7 +252,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Verificar se todos os vendedores têm frete selecionado
     const sellers = this.itemsBySeller();
     const missingShipping = sellers.some(s => !s.selectedShipping);
     if (missingShipping) {
@@ -227,7 +259,19 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const invalidShipping = sellers.some(s => !s.selectedShipping || (s.selectedShipping.price ?? 0) <= 0);
+    if (invalidShipping) {
+      this.notificationService.error('Frete com valor inválido. Por favor, selecione novamente.', 'Erro');
+      return;
+    }
+
     this.isLoading = true;
+    
+    this.eventTrackingService.trackShippingInfoAdded(
+      this.totalShippingFee(),
+      sellers.map(s => s.selectedShipping?.name).join(', '),
+      sellers.length
+    );
 
     const itemsToBuy = this.cartItems();
     const shippingData = sellers.map(s => ({
@@ -235,16 +279,24 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       shippingOption: s.selectedShipping
     }));
 
-    // Enviar dados de frete com o checkout
     this.checkoutService.createCheckoutSessionWithShipping(itemsToBuy, shippingData, this.couponCode).subscribe({
       next: (response: any) => {
         if (response.url) {
+          this.eventTrackingService.trackPurchase(
+            'pending-' + Date.now(),
+            this.total(),
+            itemsToBuy,
+            'BRL'
+          );
+          
           this.cartService.clearCart();
           window.location.href = response.url;
         } else {
           console.error('URL de pagamento não encontrada');
           this.isLoading = false;
           this.notificationService.error('Erro ao processar pagamento. Tente novamente.', 'Erro');
+          
+          this.eventTrackingService.trackError('Payment URL not returned', 'CheckoutError', 'onCheckout');
         }
       },
       error: (err) => {
@@ -252,6 +304,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         const msg = err.error?.message || 'Erro ao iniciar pagamento. Tente novamente.';
         this.notificationService.error(msg, 'Erro no Checkout');
+        
+        this.eventTrackingService.trackError(msg, 'CheckoutError', 'onCheckout');
       }
     });
   }
@@ -274,6 +328,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
             this.couponValidation.set(result);
             this.couponDiscount.set(result.discountAmount);
             this.notificationService.success(`Cupom aplicado! Desconto: R$ ${result.discountAmount.toFixed(2)}`, 'Sucesso');
+            
+            this.eventTrackingService.trackCouponApplied(this.couponCode, result.discountAmount);
           } else {
             this.notificationService.error(result.errorMessage || 'Cupom inválido', 'Erro');
             this.couponValidation.set(null);
@@ -285,6 +341,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
           console.error('Erro ao validar cupom:', err);
           this.notificationService.error('Erro ao validar cupom', 'Erro');
           this.validatingCoupon.set(false);
+          
+          this.eventTrackingService.trackError('Coupon validation failed', 'CouponError', 'validateCoupon');
         }
       });
   }

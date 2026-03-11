@@ -8,6 +8,7 @@ import { NotificationService } from '../../services/notification/notification.se
 import { CurrencyBrPipe } from '../../shared/pipes/currency-br-pipe';
 import { BannerManagementComponent } from './banner-management/banner-management.component';
 import { CouponManagementComponent } from './coupon-management/coupon-management.component';
+import { CustomerDetailModalComponent, CustomerDetailModalData } from '../../components/customer-detail-modal/customer-detail-modal.component';
 
 interface Notification {
   id: number;
@@ -19,7 +20,7 @@ interface Notification {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, BaseChartDirective, CurrencyBrPipe, BannerManagementComponent, CouponManagementComponent],
+  imports: [CommonModule, FormsModule, BaseChartDirective, CurrencyBrPipe, BannerManagementComponent, CouponManagementComponent, CustomerDetailModalComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css'
 })
@@ -62,6 +63,9 @@ export class AdminDashboardComponent implements OnInit {
   // Paginacao de clientes
   customerPage = signal(1);
   customerPageSize = 8;
+
+  // Modal de detalhes
+  selectedCustomer = signal<CustomerDetailModalData | null>(null);
 
   // --- CHART CONFIG ---
   salesChartData: ChartData<'line'> = { labels: [], datasets: [] };
@@ -311,6 +315,28 @@ export class AdminDashboardComponent implements OnInit {
 
   prevCustomerPage() {
     this.goToCustomerPage(this.customerPage() - 1);
+  }
+
+  // Modal de Detalhes do Cliente
+  openCustomerDetailModal(customer: any) {
+    this.selectedCustomer.set({
+      id: customer.id,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      profileImageUrl: customer.profileImageUrl,
+      createdAt: customer.createdAt,
+      totalSpent: customer.totalSpent
+    });
+  }
+
+  closeCustomerDetailModal() {
+    this.selectedCustomer.set(null);
+  }
+
+  onCustomerBanned() {
+    // Recarrega a lista de clientes
+    this.loadCustomers();
   }
 
   // Sistema simples de Toast Notifications
