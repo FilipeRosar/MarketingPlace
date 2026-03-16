@@ -17,6 +17,7 @@ import { Product } from '../../models/product/product.model';
 import { CurrencyBrPipe } from '../../shared/pipes/currency-br-pipe';
 import { LoadingSpinnerComponent } from '../../components/loading-spinner.component/loading-spinner.component';
 import { SellerCouponManagementComponent } from '../seller-coupon-management/seller-coupon-management.component';
+import { SellerAnalyticsComponent } from '../seller-analytics/seller-analytics.component';
 
 interface DailyRevenue {
   date: string;
@@ -42,7 +43,8 @@ interface DashboardStats {
     FormsModule,
     CurrencyBrPipe,
     LoadingSpinnerComponent,
-    SellerCouponManagementComponent
+    SellerCouponManagementComponent,
+    SellerAnalyticsComponent
   ],
   templateUrl: './seller-dashboard.html',
   styleUrl: './seller-dashboard.css'
@@ -58,7 +60,7 @@ export class SellerDashboardComponent implements OnInit {
   private chatService = inject(ChatService);
   private route = inject(ActivatedRoute);
 
-  activeTab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat' | 'coupons' = 'overview';
+  activeTab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat' | 'coupons' | 'analytics' = 'overview';
 
   products: Product[] = [];
   recentOrders: any[] = [];
@@ -221,7 +223,7 @@ export class SellerDashboardComponent implements OnInit {
     });
   }
 
-  setActiveTab(tab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat' | 'coupons') {
+  setActiveTab(tab: 'overview' | 'products' | 'promotions' | 'orders' | 'subscription' | 'chat' | 'coupons' | 'analytics') {
     this.activeTab = tab;
 
     // Carrega promoções quando abrir a aba

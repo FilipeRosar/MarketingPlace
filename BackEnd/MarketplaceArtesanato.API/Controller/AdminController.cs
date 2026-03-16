@@ -216,6 +216,105 @@ namespace MarketplaceArtesanato.API.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("customers/{id}")]
+        public async Task<ActionResult<CustomerDetailResponseDto>> GetCustomerDetail(Guid id)
+        {
+            var paidStatuses = new[] { OrderStatus.Confirmed, OrderStatus.Sent, OrderStatus.Delivered };
+
+            var customer = await _context.Customers
+                .AsNoTracking()
+                .Include(c => c.User)
+                .Where(c => !c.IsDeleted && c.Id == id)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.UserId,
+                    c.User.Name,
+                    c.User.Email,
+                    c.User.Phone,
+                    c.User.CPF,
+                    ProfileImageUrl = c.User.ProfileImageUrl ?? "/assets/default-avatar.png",
+                    c.CreatedAt,
+                    c.BirthDate,
+                    c.NewsletterSubscribed,
+                    c.LoyaltyPoints,
+                    c.BannedAt,
+                    LastOrderDate = _context.Orders
+                        .Where(o => o.BuyerId == c.UserId && paidStatuses.Contains(o.Status))
+                        .OrderByDescending(o => o.CreatedAt)
+                        .Select(o => (DateTime?)o.CreatedAt)
+                        .FirstOrDefault(),
+                    TotalSpent = _context.Orders
+                        .Where(o => o.BuyerId == c.UserId && paidStatuses.Contains(o.Status))
+                        .Sum(o => (decimal?)o.TotalAmount) ?? 0m,
+                    OrderCount = _context.Orders
+                        .Where(o => o.BuyerId == c.UserId && paidStatuses.Contains(o.Status))
+                        .Count()
+                })
+                .FirstOrDefaultAsync();
+
+            if (customer == null)
+                return NotFound(new { message = "Cliente não encontrado." });
+
+            var customerDto = new CustomerDetailResponseDto
+            {
+                Id = customer.Id,
+                Name = customer.Name,
+                Email = customer.Email,
+                Phone = customer.Phone,
+                CPF = customer.CPF,
+                ProfileImageUrl = customer.ProfileImageUrl,
+                CreatedAt = customer.CreatedAt,
+                BirthDate = customer.BirthDate,
+                NewsletterSubscribed = customer.NewsletterSubscribed,
+                LoyaltyPoints = customer.LoyaltyPoints,
+                LastOrderDate = customer.LastOrderDate?.ToString("O"),
+                TotalSpent = customer.TotalSpent,
+                OrderCount = customer.OrderCount,
+                BannedAt = customer.BannedAt
+            };
+
+            return Ok(customerDto);
+        }
+
+        [HttpPatch("customers/{id}/ban")]
+        public async Task<IActionResult> BanCustomer(Guid id)
+        {
+            var customer = await _context.Customers
+                .Include(c => c.User)
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+
+            if (customer == null)
+                return NotFound(new { message = "Cliente não encontrado." });
+
+            if (customer.BannedAt.HasValue)
+                return BadRequest(new { message = "Cliente já está banido." });
+
+            customer.BannedAt = DateTime.UtcNow;
+            _context.Customers.Update(customer);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Cliente banido com sucesso.", bannedAt = customer.BannedAt });
+        }
+
+        [HttpPatch("customers/{id}/unban")]
+        public async Task<IActionResult> UnbanCustomer(Guid id)
+        {
+            try
+            {
+                await _adminService.UnbanCustomerAsync(id);
+                return Ok(new { message = "Cliente desbannido com sucesso." });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { message = "Cliente não encontrado." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 
     public class CustomerResponseDto

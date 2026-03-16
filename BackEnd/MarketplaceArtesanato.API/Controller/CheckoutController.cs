@@ -67,7 +67,12 @@ namespace MarketplaceArtesanato.API.Controllers
             decimal totalProductAmount = 0;
             var shippingFee = request.ShippingFee;
             var shippingName = string.IsNullOrWhiteSpace(request.ShippingName) ? "Frete" : request.ShippingName.Trim();
-            // Lista para o evento
+            
+            if (shippingFee < 0)
+            {
+                return BadRequest(new { message = "Valor de frete inválido." });
+            }
+            
             var eventItems = new List<CheckoutItemEvent>();
 
             var cartItems = new List<(MarketplaceArtesanato.Core.Entities.Product Product, CheckoutItemDto Item, decimal ItemTotal)>();

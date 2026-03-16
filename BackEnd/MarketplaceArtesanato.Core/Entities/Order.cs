@@ -8,6 +8,7 @@ namespace MarketplaceArtesanato.Core.Entities;
 public class Order : BaseEntity
 {
     public Guid BuyerId { get; set; }
+    public Guid SellerId { get; set; }
     public User Buyer { get; set; } = null!;
     public DateTime ShippedAt { get; set; }
     public List<OrderItem> Items { get; set; } = new();

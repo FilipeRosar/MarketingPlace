@@ -59,6 +59,12 @@ namespace MarketplaceArtesanato.Services.Services
                 }
             }
 
+            decimal totalProductValue = request.Items.Sum(i => i.InsuranceValue ?? 0);
+            if (totalProductValue <= 0)
+            {
+                totalProductValue = 10.0m;
+            }
+
             var payload = new
             {
                 from = new { postal_code = zipCodeFrom },
@@ -70,7 +76,7 @@ namespace MarketplaceArtesanato.Services.Services
                     height = (int)i.Height,
                     length = (int)i.Length,
                     weight = i.Weight,
-                    insurance_value = 10.0,
+                    insurance_value = (double)(i.InsuranceValue ?? 10.0m),
                     quantity = i.Quantity
                 }).ToArray()
             };
@@ -81,14 +87,16 @@ namespace MarketplaceArtesanato.Services.Services
 
             if (!response.IsSuccessStatusCode)
             {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[ERRO CALCULAR FRETE] Status: {response.StatusCode} | CEP De: {zipCodeFrom} | CEP Para: {request.ZipCodeTo} | Resposta: {content}");
                 return new List<ShippingOptionDto>();
             }
 
-            var content = await response.Content.ReadAsStringAsync();
-            var meOptions = JsonSerializer.Deserialize<List<MelhorEnvioOption>>(content);
+            var content2 = await response.Content.ReadAsStringAsync();
+            var meOptions = JsonSerializer.Deserialize<List<MelhorEnvioOption>>(content2);
 
             var options = meOptions?
-                .Where(o => string.IsNullOrEmpty(o.Error))
+                .Where(o => string.IsNullOrEmpty(o.Error) && ValidateShippingPrice(o.Price))
                 .Select(o => new ShippingOptionDto
                 {
                     Name = $"{o.Company.Name} ({o.Name})",
@@ -98,6 +106,11 @@ namespace MarketplaceArtesanato.Services.Services
                 }).ToList();
 
             return options ?? new List<ShippingOptionDto>();
+        }
+
+        private bool ValidateShippingPrice(string price)
+        {
+            return decimal.TryParse(price, NumberStyles.Any, CultureInfo.InvariantCulture, out var p) && p > 0;
         }
 
         public async Task<Dictionary<string, List<ShippingOptionDto>>> GetShippingOptionsBySellerAsync(
@@ -161,7 +174,7 @@ namespace MarketplaceArtesanato.Services.Services
                 var sellerZip = NormalizeZip(seller.Address?.ZipCode);
                 var buyerZipMasked = FormatZip(buyerZip);
                 var sellerZipMasked = FormatZip(sellerZip);
-                // Sandbox do Melhor Envio aceita apenas CEPs de teste.
+                
                 var isSandbox = _httpClient.BaseAddress != null &&
                                 _httpClient.BaseAddress.Host.Contains("sandbox", StringComparison.OrdinalIgnoreCase);
                 if (isSandbox)
@@ -176,6 +189,8 @@ namespace MarketplaceArtesanato.Services.Services
 
                     sellerZipMasked = FormatZip(sellerZip);
                     buyerZipMasked = FormatZip(buyerZip);
+                    
+                    Console.WriteLine($"[SANDBOX MODE] CEPs substituídos para teste - De: {sellerZipMasked} | Para: {buyerZipMasked}");
                 }
                 if (sellerZip == "00000000")
                     missingFields.Add("CEP do vendedor (valor 00000000)");
@@ -243,13 +258,18 @@ namespace MarketplaceArtesanato.Services.Services
 
                 const decimal maxNonCommercialInsurance = 1000m;
                 var nonCommercial = true;
-                var insuranceValue = order.TotalAmount;
+                var insuranceValue = order.Items.Sum(i => i.UnitPrice * i.Quantity);
                 string? warning = null;
 
                 if (nonCommercial && insuranceValue > maxNonCommercialInsurance)
                 {
                     insuranceValue = maxNonCommercialInsurance;
                     warning = "Seguro limitado a R$ 1.000,00 para envios nao comerciais.";
+                }
+                
+                if (insuranceValue <= 0)
+                {
+                    insuranceValue = 10.0m;
                 }
 
                 var from = new
@@ -304,6 +324,8 @@ namespace MarketplaceArtesanato.Services.Services
                             quantity = i.Quantity
                         }).ToArray()
                     };
+
+                    LogDimensionWarnings(order);
 
                     var calcContent = new StringContent(JsonSerializer.Serialize(calculatePayload), Encoding.UTF8, "application/json");
                     var calcResponse = await _httpClient.PostAsync("/api/v2/me/shipment/calculate", calcContent);
@@ -475,6 +497,20 @@ namespace MarketplaceArtesanato.Services.Services
             };
 
             return stateMap.TryGetValue(state, out var abbr) ? abbr : "SP";
+        }
+
+        private void LogDimensionWarnings(Core.Entities.Order order)
+        {
+            var itemsWithMissingDimensions = order.Items
+                .Where(i => i.Product.Width <= 0 || i.Product.Height <= 0 || 
+                           i.Product.Length <= 0 || i.Product.Weight <= 0)
+                .ToList();
+
+            if (itemsWithMissingDimensions.Any())
+            {
+                var productNames = string.Join(", ", itemsWithMissingDimensions.Select(i => i.Product.Name));
+                Console.WriteLine($"[AVISO DIMENSÕES] Produtos usando dimensões padrão: {productNames}");
+            }
         }
 
         public class MelhorEnvioOption

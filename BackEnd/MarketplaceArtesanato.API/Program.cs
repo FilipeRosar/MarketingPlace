@@ -1,6 +1,8 @@
+using MarketplaceArtesanato.API.Authorization;
 using MarketplaceArtesanato.API.Hubs;
 using MarketplaceArtesanato.API.Mapping;
 using MarketplaceArtesanato.Core.Entities.DTO;
+using MarketplaceArtesanato.Core.Entities.Enums;
 using MarketplaceArtesanato.Core.Hubs;
 using MarketplaceArtesanato.Core.Interfaces;
 using MarketplaceArtesanato.Core.Settings;
@@ -13,6 +15,7 @@ using MarketplaceArtesanato.Services.Services.Configuration;
 using MarketplaceArtesanato.Services.Services.Stripe;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -124,6 +127,8 @@ builder.Services.AddScoped<ICouponService, MarketplaceArtesanato.Services.Servic
 builder.Services.AddScoped<ICouponAnalyticsService, MarketplaceArtesanato.Services.Services.CouponAnalyticsService>();
 builder.Services.AddScoped<ICouponAutomationService, MarketplaceArtesanato.Services.Services.CouponAutomationService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<ISellerAnalyticsService, SellerAnalyticsService>();
+builder.Services.AddScoped<ISellerAnalyticsAdvancedService, SellerAnalyticsAdvancedService>();
 builder.Services.AddPricingServices();
 builder.Services.AddScoped<IProductService, MarketplaceArtesanato.Services.Services.ProductService>();
 builder.Services.AddScoped<IBannerService, BannerService>();
@@ -157,7 +162,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("SellerProPremium", policy =>
+    {
+        policy.Requirements.Add(new SellerPlanRequirement(SellerPlan.Pro));
+    });
+});
+
+builder.Services.AddScoped<IAuthorizationHandler, SellerPlanRequirementHandler>();
 
 // ==========================================
 // 4. CORS (CONFIGURA��O CORRIGIDA)

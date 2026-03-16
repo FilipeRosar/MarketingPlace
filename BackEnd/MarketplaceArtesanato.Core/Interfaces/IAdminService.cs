@@ -21,5 +21,6 @@ namespace MarketplaceArtesanato.Core.Interfaces
         Task UpdateCommissionRateAsync(decimal rate);
         Task UpdateServiceFeeAsync(decimal fee);
         Task SetSellerCommissionAsync(Guid sellerId, decimal? rate);
+        Task UnbanCustomerAsync(Guid customerId);
     }
 }

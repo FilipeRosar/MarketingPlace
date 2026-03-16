@@ -1,0 +1,300 @@
+<div class="space-y-6">
+  <!-- Loading -->
+  @if (isLoading) {
+    <app-loading-spinner></app-loading-spinner>
+  }
+
+  <!-- Error Message -->
+  @if (errorMessage) {
+    <div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg flex items-center">
+      <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd"
+              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+              clip-rule="evenodd"></path>
+      </svg>
+      <span>{{ errorMessage }}</span>
+    </div>
+  }
+
+  @if (!isLoading && !errorMessage && analyticsData) {
+    <!-- Period Selector -->
+    <div class="flex gap-2">
+      <button (click)="changePeriod('week')"
+              [class.bg-primary]="selectedPeriod === 'week'"
+              [class.text-white]="selectedPeriod === 'week'"
+              [class.bg-stone-200]="selectedPeriod !== 'week'"
+              [class.text-gray-700]="selectedPeriod !== 'week'"
+              class="px-4 py-2 rounded-lg font-medium transition-all">
+        Esta semana
+      </button>
+      <button (click)="changePeriod('month')"
+              [class.bg-primary]="selectedPeriod === 'month'"
+              [class.text-white]="selectedPeriod === 'month'"
+              [class.bg-stone-200]="selectedPeriod !== 'month'"
+              [class.text-gray-700]="selectedPeriod !== 'month'"
+              class="px-4 py-2 rounded-lg font-medium transition-all">
+        Este mês
+      </button>
+      <button (click)="changePeriod('quarter')"
+              [class.bg-primary]="selectedPeriod === 'quarter'"
+              [class.text-white]="selectedPeriod === 'quarter'"
+              [class.bg-stone-200]="selectedPeriod !== 'quarter'"
+              [class.text-gray-700]="selectedPeriod !== 'quarter'"
+              class="px-4 py-2 rounded-lg font-medium transition-all">
+        Este trimestre
+      </button>
+    </div>
+
+    <!-- Main KPIs Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Total Revenue -->
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <div class="text-sm text-gray-500 mb-2">Receita Total</div>
+        <div class="text-3xl font-bold text-gray-900">{{ formatCurrency(analyticsData.totalRevenue) }}</div>
+        @if (analyticsData.periodComparison && analyticsData.periodComparison.revenueChangePercent) {
+          <div [class.text-green-600]="analyticsData.periodComparison.revenueChangePercent > 0"
+               [class.text-red-600]="analyticsData.periodComparison.revenueChangePercent < 0"
+               class="text-sm mt-2">
+            @if (analyticsData.periodComparison.revenueChangePercent > 0) {
+              ↑
+            } @else {
+              ↓
+            }
+            {{ (analyticsData.periodComparison.revenueChangePercent * 100).toFixed(1) }}% vs período anterior
+          </div>
+        }
+      </div>
+
+      <!-- Total Orders -->
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <div class="text-sm text-gray-500 mb-2">Total de Pedidos</div>
+        <div class="text-3xl font-bold text-gray-900">{{ analyticsData.totalOrders }}</div>
+        @if (analyticsData.periodComparison && analyticsData.periodComparison.ordersChange) {
+          <div [class.text-green-600]="analyticsData.periodComparison.ordersChange > 0"
+               [class.text-red-600]="analyticsData.periodComparison.ordersChange < 0"
+               class="text-sm mt-2">
+            @if (analyticsData.periodComparison.ordersChange > 0) {
+              ↑
+            } @else {
+              ↓
+            }
+            {{ analyticsData.periodComparison.ordersChange }} pedidos vs período anterior
+          </div>
+        }
+      </div>
+
+      <!-- Total Customers -->
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <div class="text-sm text-gray-500 mb-2">Total de Clientes</div>
+        <div class="text-3xl font-bold text-gray-900">{{ analyticsData.totalCustomers }}</div>
+        @if (analyticsData.periodComparison && analyticsData.periodComparison.customersChange) {
+          <div [class.text-green-600]="analyticsData.periodComparison.customersChange > 0"
+               [class.text-red-600]="analyticsData.periodComparison.customersChange < 0"
+               class="text-sm mt-2">
+            @if (analyticsData.periodComparison.customersChange > 0) {
+              ↑
+            } @else {
+              ↓
+            }
+            {{ analyticsData.periodComparison.customersChange }} clientes vs período anterior
+          </div>
+        }
+      </div>
+
+      <!-- Conversion Rate -->
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <div class="text-sm text-gray-500 mb-2">Taxa de Conversão</div>
+        <div class="text-3xl font-bold text-gray-900">{{ formatPercent(analyticsData.conversionRate) }}</div>
+        @if (analyticsData.periodComparison && analyticsData.periodComparison.conversionChange) {
+          <div [class.text-green-600]="analyticsData.periodComparison.conversionChange > 0"
+               [class.text-red-600]="analyticsData.periodComparison.conversionChange < 0"
+               class="text-sm mt-2">
+            @if (analyticsData.periodComparison.conversionChange > 0) {
+              ↑
+            } @else {
+              ↓
+            }
+            {{ (analyticsData.periodComparison.conversionChange * 100).toFixed(2) }}% vs período anterior
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Additional Metrics (Pro & Premium) -->
+    @if (isPro || isPremium) {
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Average Order Value -->
+        <div class="bg-white rounded-lg border border-stone-200 p-6">
+          <div class="text-sm text-gray-500 mb-2">Ticket Médio</div>
+          <div class="text-3xl font-bold text-gray-900">{{ formatCurrency(analyticsData.averageOrderValue) }}</div>
+          @if (analyticsData.periodComparison && analyticsData.periodComparison.aovChange) {
+            <div [class.text-green-600]="analyticsData.periodComparison.aovChange > 0"
+                 [class.text-red-600]="analyticsData.periodComparison.aovChange < 0"
+                 class="text-sm mt-2">
+              {{ formatCurrency(analyticsData.periodComparison.aovChange) }} vs período anterior
+            </div>
+          }
+        </div>
+
+        <!-- Total Profit -->
+        <div class="bg-white rounded-lg border border-stone-200 p-6">
+          <div class="text-sm text-gray-500 mb-2">Lucro Total</div>
+          <div class="text-3xl font-bold text-gray-900">{{ formatCurrency(analyticsData.totalProfit) }}</div>
+          <div class="text-sm text-gray-500 mt-2">
+            Margem: {{ formatPercent(analyticsData.roiMetrics?.profitMargin) }}
+          </div>
+        </div>
+
+        <!-- ROI -->
+        @if (analyticsData.roiMetrics) {
+          <div class="bg-white rounded-lg border border-stone-200 p-6">
+            <div class="text-sm text-gray-500 mb-2">ROI</div>
+            <div class="text-3xl font-bold text-gray-900">{{ formatPercent(analyticsData.roiMetrics.roiPercent) }}</div>
+            <div class="text-sm text-gray-500 mt-2">
+              Lucro: {{ formatCurrency(analyticsData.roiMetrics.netProfit) }}
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Conversion Metrics (Pro & Premium) -->
+    @if ((isPro || isPremium) && analyticsData.conversionMetrics) {
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">📊 Métricas de Conversão</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <div class="text-sm text-gray-500">Cliques</div>
+            <div class="text-2xl font-bold text-gray-900">{{ analyticsData.conversionMetrics.clickCount }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Compras</div>
+            <div class="text-2xl font-bold text-gray-900">{{ analyticsData.conversionMetrics.purchaseCount }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Carrinhos Abandonados</div>
+            <div class="text-2xl font-bold text-gray-900">{{ analyticsData.conversionMetrics.abandonedCarts }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Taxa de Abandono</div>
+            <div class="text-2xl font-bold text-gray-900">{{ formatPercent(analyticsData.conversionMetrics.cartAbandonmentRate) }}</div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Top Products (Pro & Premium) -->
+    @if ((isPro || isPremium) && analyticsData.topProducts && analyticsData.topProducts.length > 0) {
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">🏆 Top Produtos</h3>
+        <div class="space-y-3">
+          @for (product of analyticsData.topProducts.slice(0, 5); let i = $index; track product.productId) {
+            <div class="flex items-center justify-between border-b border-stone-100 pb-3 last:border-0">
+              <div>
+                <div class="font-medium text-gray-900">#{{ i + 1 }} {{ product.productName }}</div>
+                <div class="text-sm text-gray-500">{{ product.salesCount }} vendas</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-gray-900">{{ formatCurrency(product.revenue) }}</div>
+                <div class="text-sm text-gray-500">{{ formatPercent(product.profitMargin) }} margem</div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Customer Cohort Analysis (Premium Only) -->
+    @if (isPremium && analyticsData.customerCohortAnalysis) {
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">👥 Análise de Clientes</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <div class="text-sm text-gray-500">Total de Clientes</div>
+            <div class="text-2xl font-bold text-gray-900">{{ analyticsData.customerCohortAnalysis.totalCustomers }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Taxa de Retenção</div>
+            <div class="text-2xl font-bold text-gray-900">{{ formatPercent(analyticsData.customerCohortAnalysis.retentionRate) }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Taxa de Churn</div>
+            <div class="text-2xl font-bold text-gray-900">{{ formatPercent(analyticsData.customerCohortAnalysis.churnRate) }}</div>
+          </div>
+        </div>
+        @if (analyticsData.customerCohortAnalysis.cohorts && analyticsData.customerCohortAnalysis.cohorts.length > 0) {
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-stone-50 border-b border-stone-200">
+                <tr>
+                  <th class="text-left px-4 py-2 font-semibold text-gray-700">Coorte</th>
+                  <th class="text-left px-4 py-2 font-semibold text-gray-700">Clientes</th>
+                  <th class="text-left px-4 py-2 font-semibold text-gray-700">Valor Médio</th>
+                  <th class="text-left px-4 py-2 font-semibold text-gray-700">Retenção Semana 1</th>
+                  <th class="text-left px-4 py-2 font-semibold text-gray-700">Retenção Semana 4</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cohort of analyticsData.customerCohortAnalysis.cohorts; let last = $last; track cohort.cohortName) {
+                  <tr [class.border-b]="!last" class="border-stone-100">
+                    <td class="text-left px-4 py-2 text-gray-900">{{ cohort.cohortName }}</td>
+                    <td class="text-left px-4 py-2 text-gray-700">{{ cohort.customerCount }}</td>
+                    <td class="text-left px-4 py-2 text-gray-700">{{ formatCurrency(cohort.avgValue) }}</td>
+                    <td class="text-left px-4 py-2 text-gray-700">{{ formatPercent(cohort.retentionWeek1) }}</td>
+                    <td class="text-left px-4 py-2 text-gray-700">{{ formatPercent(cohort.retentionWeek4) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Sales Forecast (Premium Only) -->
+    @if (isPremium && analyticsData.salesForecast) {
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">🔮 Previsão de Vendas</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="text-sm text-gray-500">Período da Previsão</div>
+            <div class="text-sm text-gray-700 mt-1">
+              {{ analyticsData.salesForecast.forecastStart }} até {{ analyticsData.salesForecast.forecastEnd }}
+            </div>
+            <div class="text-2xl font-bold text-gray-900 mt-4">{{ formatCurrency(analyticsData.salesForecast.expectedRevenue) }}</div>
+            <div class="text-sm text-gray-500 mt-1">Receita esperada</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Nível de Confiança</div>
+            <div class="text-2xl font-bold text-gray-900 mt-4">{{ formatPercent(analyticsData.salesForecast.confidenceLevel) }}</div>
+            <div class="bg-stone-100 rounded-full h-2 mt-4">
+              <div class="bg-primary h-full rounded-full"
+                   [style.width.%]="(analyticsData.salesForecast.confidenceLevel || 0) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Lifetime Value (Premium Only) -->
+    @if (isPremium && analyticsData.lifetimeValueAnalysis) {
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">💎 Valor do Cliente</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <div class="text-sm text-gray-500">LTV Médio</div>
+            <div class="text-2xl font-bold text-gray-900">{{ formatCurrency(analyticsData.lifetimeValueAnalysis.averageLTV) }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">LTV Máximo</div>
+            <div class="text-2xl font-bold text-gray-900">{{ formatCurrency(analyticsData.lifetimeValueAnalysis.maxLTV) }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">LTV Mediano</div>
+            <div class="text-2xl font-bold text-gray-900">{{ formatCurrency(analyticsData.lifetimeValueAnalysis.medianLTV) }}</div>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

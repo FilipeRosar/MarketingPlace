@@ -60,7 +60,7 @@
       <!-- ROI -->
       <div class="bg-white rounded-lg shadow p-6">
         <p class="text-gray-600 text-sm font-semibold mb-2">Return on Investment</p>
-        <p class="text-3xl font-bold text-green-600">{{ roiAnalysis?.roi.toFixed(2) }}%</p>
+        <p class="text-3xl font-bold text-green-600">{{ roiAnalysis?.performanceScore?.toFixed(0) }}%</p>
         <p class="text-gray-600 text-xs mt-2">{{ getROITrendIcon() }} {{ roiAnalysis?.trend }}</p>
       </div>
 
@@ -74,7 +74,7 @@
       <!-- Payback Period -->
       <div class="bg-white rounded-lg shadow p-6">
         <p class="text-gray-600 text-sm font-semibold mb-2">Payback Period</p>
-        <p class="text-3xl font-bold text-gray-900">{{ roiAnalysis?.paybackPeriod.toFixed(1) }}mo</p>
+        <p class="text-3xl font-bold text-gray-900">{{ roiAnalysis?.paybackPeriod?.toFixed(1) }}mo</p>
         <p class="text-green-600 text-xs mt-2">✅ Break even: {{ roiAnalysis?.breakEvenDate }}</p>
       </div>
     </div>
@@ -291,3 +291,5 @@
 
   </div>
 </div>
+
+

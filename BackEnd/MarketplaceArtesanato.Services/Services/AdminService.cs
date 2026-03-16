@@ -227,5 +227,22 @@ namespace MarketplaceArtesanato.Services.Services
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task UnbanCustomerAsync(Guid customerId)
+        {
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Id == customerId && !c.IsDeleted);
+
+            if (customer == null)
+                throw new KeyNotFoundException("Cliente não encontrado.");
+
+            if (!customer.BannedAt.HasValue)
+                throw new InvalidOperationException("Cliente não está banido.");
+
+            customer.BannedAt = null;
+            customer.UpdatedAt = DateTime.UtcNow;
+            _context.Customers.Update(customer);
+            await _context.SaveChangesAsync();
+        }
     }
 }

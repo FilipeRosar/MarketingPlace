@@ -199,6 +199,7 @@ namespace MarketplaceArtesanato.Services.Services
             var user = await _context.Users
                 .Include(u => u.Address)
                 .Include(u => u.SellerProfile)
+                .Include(u => u.CustomerProfile)
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null)
@@ -206,6 +207,17 @@ namespace MarketplaceArtesanato.Services.Services
 
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return new AuthResponseDto { Success = false, Message = "E-mail ou senha inválidos." };
+            
+            // Validar se cliente está banido
+            if (user.Role == UserRole.Customer && user.CustomerProfile?.BannedAt.HasValue == true)
+            {
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Sua conta foi banida e não pode mais acessar a plataforma."
+                };
+            }
+            
             Console.WriteLine($"Vendedor: {user.Name}, Profile Is Null: {user.SellerProfile == null}, Approved: {user.SellerProfile?.IsApproved}");
             if (user.Role == UserRole.Seller)
             {

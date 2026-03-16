@@ -44,46 +44,70 @@ namespace MarketplaceArtesanato.Services.Services
 
         public async Task<List<OrderResponseDto>> GetByUserAsync(Guid userId, string role)
         {
-            IQueryable<Order> query = _context.Orders
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Product)
-                        .ThenInclude(p => p.Seller)
-                .AsNoTracking();
-
-            Guid sellerId = Guid.Empty;
-
-            if (role == "Seller")
+            try
             {
-                sellerId = await _context.Sellers
-                    .Where(s => s.UserId == userId)
-                    .Select(s => s.Id)
-                    .FirstOrDefaultAsync();
+                Guid sellerId = Guid.Empty;
 
-                if (sellerId == Guid.Empty)
-                    return new List<OrderResponseDto>();
+                if (role == "Seller")
+                {
+                    sellerId = await _context.Sellers
+                        .Where(s => s.UserId == userId)
+                        .Select(s => s.Id)
+                        .FirstOrDefaultAsync();
 
-                query = query.Where(o =>
-                    o.Items.Any(i => i.Product.SellerId == sellerId));
+                    if (sellerId == Guid.Empty)
+                        return new List<OrderResponseDto>();
+                }
+
+                // Build the base query with all includes first
+                IQueryable<Order> query = _context.Orders
+                    .Include(o => o.Items)
+                        .ThenInclude(i => i.Product)
+                            .ThenInclude(p => p.Seller)
+                    .AsNoTracking();
+
+                // Apply role-based filtering
+                if (role == "Seller")
+                {
+                    query = query.Where(o =>
+                        o.Items.Any(i => i.SellerId == sellerId));
+                }
+                else if (role != "Admin")
+                {
+                    query = query.Where(o => o.BuyerId == userId);
+                }
+
+                // Filter out invalid orders
+                query = query.Where(o => o.BuyerId != null && o.BuyerId != Guid.Empty);
+
+                var orders = await query
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+                var result = new List<OrderResponseDto>();
+
+                foreach (var order in orders)
+                {
+                    try
+                    {
+                        var dto = _mapper.Map<OrderResponseDto>(order);
+                        EnrichOrderDto(dto, order, sellerId, role);
+                        result.Add(dto);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Erro ao mapear pedido {OrderId}", order?.Id);
+                        // Skip invalid orders
+                    }
+                }
+
+                return result;
             }
-            else if (role != "Admin")
+            catch (Exception ex)
             {
-                query = query.Where(o => o.BuyerId == userId);
+                _logger.LogError(ex, "Erro ao carregar pedidos do usuário {UserId}", userId);
+                throw;
             }
-
-            var orders = await query
-                .OrderByDescending(o => o.CreatedAt)
-                .ToListAsync();
-
-            var result = new List<OrderResponseDto>();
-
-            foreach (var order in orders)
-            {
-                var dto = _mapper.Map<OrderResponseDto>(order);
-                EnrichOrderDto(dto, order, sellerId, role);
-                result.Add(dto);
-            }
-
-            return result;
         }
 
         public async Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role)

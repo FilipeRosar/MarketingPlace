@@ -23,13 +23,15 @@ namespace MarketplaceArtesanato.API.Controllers
         private readonly IStorageService _storageService;
         private readonly IStripeConnectService _stripeConnectService;
         private readonly ISellerSubscriptionService _sellerSubscriptionService;
+        private readonly ISellerAnalyticsService _sellerAnalyticsService;
 
-        public SellersController(ISellerService sellerService, IStorageService storageService, IStripeConnectService stripeConnectService, ISellerSubscriptionService sellerSubscriptionService)
+        public SellersController(ISellerService sellerService, IStorageService storageService, IStripeConnectService stripeConnectService, ISellerSubscriptionService sellerSubscriptionService, ISellerAnalyticsService sellerAnalyticsService)
         {
             _sellerService = sellerService;
             _storageService = storageService;
             _stripeConnectService = stripeConnectService;
             _sellerSubscriptionService = sellerSubscriptionService;
+            _sellerAnalyticsService = sellerAnalyticsService;
 
         }
 
@@ -331,5 +333,321 @@ namespace MarketplaceArtesanato.API.Controllers
 
             return NoContent();
         }
+
+        #region Advanced Analytics (Pro + Premium)
+
+        [HttpGet("analytics/advanced")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetAdvancedAnalytics()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var analytics = await _sellerAnalyticsService.GetAdvancedAnalyticsAsync(seller.Id);
+                return Ok(analytics);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/period-comparison")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetPeriodComparison([FromQuery] int days = 30)
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var comparison = await _sellerAnalyticsService.GetPeriodComparisonAsync(seller.Id, days);
+                return Ok(comparison);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/customer-analysis")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetCustomerAnalysis()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var analysis = await _sellerAnalyticsService.GetCustomerAnalysisAsync(seller.Id);
+                return Ok(analysis);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/products")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetProductPerformance()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var products = await _sellerAnalyticsService.GetProductPerformanceAsync(seller.Id);
+                return Ok(products);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/trends")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetTrends([FromQuery] int days = 90)
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var trends = await _sellerAnalyticsService.GetTrendsAsync(seller.Id, days);
+                return Ok(trends);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/hourly-revenue")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetHourlyRevenueDistribution()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var hourly = await _sellerAnalyticsService.GetHourlyRevenueDistributionAsync(seller.Id);
+                return Ok(hourly);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/coupons")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetCouponEffectiveness()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var coupons = await _sellerAnalyticsService.GetCouponEffectivenessAsync(seller.Id);
+                return Ok(coupons);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/insights")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetAIInsights()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var insights = await _sellerAnalyticsService.GetAIInsightsAsync(seller.Id);
+                return Ok(insights);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/forecast")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetRevenueForecast([FromQuery] int daysAhead = 30)
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var forecast = await _sellerAnalyticsService.GetRevenueForecastAsync(seller.Id, daysAhead);
+                return Ok(forecast);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/segmentation")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetCustomerSegmentation()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var segmentation = await _sellerAnalyticsService.GetCustomerSegmentationAsync(seller.Id);
+                return Ok(segmentation);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/seasonal")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetSeasonalAnalysis()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var seasonal = await _sellerAnalyticsService.GetSeasonalAnalysisAsync(seller.Id);
+                return Ok(seasonal);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/export/csv")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> ExportAnalyticsCSV()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var csvData = await _sellerAnalyticsService.ExportAnalyticsAsCSVAsync(seller.Id);
+                return File(csvData, "text/csv", "analytics.csv");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("analytics/export/pdf")]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> ExportAnalyticsPDF()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var seller = await _sellerService.GetByUserIdAsync(userId);
+                if (seller == null)
+                    return NotFound("Vendedor não encontrado.");
+
+                var pdfData = await _sellerAnalyticsService.ExportAnalyticsAsPDFAsync(seller.Id);
+                return File(pdfData, "application/pdf", "analytics.pdf");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        #endregion
     }
 }

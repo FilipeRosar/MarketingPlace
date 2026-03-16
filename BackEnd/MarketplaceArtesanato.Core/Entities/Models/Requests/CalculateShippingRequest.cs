@@ -26,6 +26,7 @@ namespace MarketplaceArtesanato.Core.Entities.Models.Requests
         public double Width { get; set; }  
         public double Length { get; set; }
         public int Quantity { get; set; }
+        public decimal? InsuranceValue { get; set; }
     }
 
     public class ShippingOptionDto

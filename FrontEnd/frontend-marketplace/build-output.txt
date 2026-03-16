@@ -1,0 +1,220 @@
+
+> frontend-marktplace@0.0.0 build
+> ng build
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[33m>[39m Building...
+[32mÔêÜ[39m Building...
+Application bundle generation failed. [15.353 seconds] - 2026-03-11T19:29:26.392Z
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/components/header/header.component.html:144:44:
+      144 Ôöé                     @if (cat.subcategories?.length) {
+          ÔòÁ                                             ~~~~~~
+
+  Warning occurs in the template of component HeaderComponent.
+
+    src/components/header/header.component.ts:22:15:
+      22 Ôöé   templateUrl: './header.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/components/header/header.component.html:435:44:
+      435 Ôöé                     @if (cat.subcategories?.length) {
+          ÔòÁ                                             ~~~~~~
+
+  Warning occurs in the template of component HeaderComponent.
+
+    src/components/header/header.component.ts:22:15:
+      22 Ôöé   templateUrl: './header.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: RouterLinkActive is not used within the template of HeaderComponent [plugin angular-compiler]
+
+    src/components/header/header.component.ts:19:4:
+      19 Ôöé     RouterLinkActive,
+         ÔòÁ     ~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/components/product-card/product-card.component.html:51:31:
+      51 Ôöé           @if (product.seller?.hasVerifiedBadge) {
+         ÔòÁ                                ~~~~~~~~~~~~~~~~
+
+  Warning occurs in the template of component ProductCardComponent.
+
+    src/components/product-card/product-card.component.ts:18:15:
+      18 Ôöé   templateUrl: './product-card.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/components/seller-analytics/seller-analytics.html:144:63:
+      144 Ôöé ...rgem: {{ formatPercent(analyticsData.roiMetrics?.profitMargin) }}
+          ÔòÁ                                                     ~~~~~~~~~~~~
+
+  Warning occurs in the template of component SellerAnalyticsComponent.
+
+    src/components/seller-analytics/seller-analytics.component.ts:12:15:
+      12 Ôöé   templateUrl: './seller-analytics.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/components/seller-dashboard/seller-dashboard.html:859:37:
+      859 Ôöé ...         {{ editingPromotion?.id ? 'Editar' : 'Nova' }} Promo´┐¢...
+          ÔòÁ                                  ~~
+
+  Warning occurs in the template of component SellerDashboardComponent.
+
+    src/components/seller-dashboard/seller-dashboard.component.ts:49:15:
+      49 Ôöé   templateUrl: './seller-dashboard.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/components/seller-dashboard/seller-dashboard.html:977:72:
+      977 Ôöé ...ando...' : (editingPromotion?.id ? 'Salvar Altera├º├Áes' : 'Cr...
+          ÔòÁ                                  ~~
+
+  Warning occurs in the template of component SellerDashboardComponent.
+
+    src/components/seller-dashboard/seller-dashboard.component.ts:49:15:
+      49 Ôöé   templateUrl: './seller-dashboard.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/pages/admin-dashboard/admin-dashboard.component.html:303:38:
+      303 Ôöé ...               {{ seller.name?.charAt(0)?.toUpperCase() || 'S' }}
+          ÔòÁ                                   ~~~~~~
+
+  Warning occurs in the template of component AdminDashboardComponent.
+
+    src/pages/admin-dashboard/admin-dashboard.component.ts:24:15:
+      24 Ôöé   templateUrl: './admin-dashboard.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: LoadingSpinnerComponent is not used within the template of CategoriesPageComponent [plugin angular-compiler]
+
+    src/pages/categories-page/categories-page.component.ts:34:4:
+      34 Ôöé     LoadingSpinnerComponent
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/pages/chat/chat.component.html:35:44:
+      35 Ôöé ...        {{ thread.customerName?.charAt(0)?.toUpperCase() || 'C' }}
+         ÔòÁ                                    ~~~~~~
+
+  Warning occurs in the template of component ChatComponent.
+
+    src/pages/chat/chat.component.ts:13:15:
+      13 Ôöé   templateUrl: './chat.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/pages/chat/chat.component.html:70:40:
+      70 Ôöé ...          {{ thread.sellerName?.charAt(0)?.toUpperCase() || 'L' }}
+         ÔòÁ                                    ~~~~~~
+
+  Warning occurs in the template of component ChatComponent.
+
+    src/pages/chat/chat.component.ts:13:15:
+      13 Ôöé   templateUrl: './chat.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: RouterLink is not used within the template of ChatComponent [plugin angular-compiler]
+
+    src/pages/chat/chat.component.ts:12:39:
+      12 Ôöé   imports: [CommonModule, FormsModule, RouterLink],
+         ÔòÁ                                        ~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/pages/product-detail/product-detail/product-detail.html:81:38:
+      81 Ôöé ...        {{ (product.sellerName?.charAt(0) || 'V').toUpperCase() }}
+         ÔòÁ                                    ~~~~~~
+
+  Warning occurs in the template of component ProductDetailComponent.
+
+    src/pages/product-detail/product-detail/product-detail.component.ts:21:15:
+      21 Ôöé   templateUrl: './product-detail.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/pages/product-detail/product-detail/product-detail.html:87:37:
+      87 Ôöé                 @if (product.seller?.hasVerifiedBadge) {
+         ÔòÁ                                      ~~~~~~~~~~~~~~~~
+
+  Warning occurs in the template of component ProductDetailComponent.
+
+    src/pages/product-detail/product-detail/product-detail.component.ts:21:15:
+      21 Ôöé   templateUrl: './product-detail.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/pages/product-detail/product-detail/product-detail.html:359:45:
+      359 Ôöé ...     [value]="replyDrafts[review.id] ?? review.sellerReply ?? ''"
+          ÔòÁ                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Warning occurs in the template of component ProductDetailComponent.
+
+    src/pages/product-detail/product-detail/product-detail.component.ts:21:15:
+      21 Ôöé   templateUrl: './product-detail.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/pages/product-detail/product-detail/product-detail.html:359:45:
+      359 Ôöé ...     [value]="replyDrafts[review.id] ?? review.sellerReply ?? ''"
+          ÔòÁ                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Warning occurs in the template of component ProductDetailComponent.
+
+    src/pages/product-detail/product-detail/product-detail.component.ts:21:15:
+      21 Ôöé   templateUrl: './product-detail.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: RouterLink is not used within the template of ResetPasswordComponent [plugin angular-compiler]
+
+    src/pages/reset-password/reset-password.component.ts:11:47:
+      11 Ôöé   imports: [CommonModule, ReactiveFormsModule, RouterLink],
+         ÔòÁ                                                ~~~~~~~~~~
+
+
+X [ERROR] NG6008: Component SellerSubscriptionAnalyticsComponent is standalone, and cannot be declared in an NgModule. Did you mean to import it instead? [plugin angular-compiler]
+
+    src/pages/seller-dashboard/seller-subscription-analytics/seller-subscription-analytics.module.ts:8:4:
+      8 Ôöé     SellerSubscriptionAnalyticsComponent
+        ÔòÁ     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG6004: Can't be exported from this NgModule, as it must be imported first [plugin angular-compiler]
+
+    src/pages/seller-dashboard/seller-subscription-analytics/seller-subscription-analytics.module.ts:15:4:
+      15 Ôöé     SellerSubscriptionAnalyticsComponent
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
