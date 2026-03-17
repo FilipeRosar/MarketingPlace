@@ -28,6 +28,25 @@ namespace MarketplaceArtesanato.Services.Services
             _context = context;
         }
 
+        /// <summary>
+        /// Validates seller exists and has appropriate plan level.
+        /// Centralizes validation logic to reduce duplication.
+        /// </summary>
+        private async Task<Seller> GetSellerWithAuthAsync(Guid sellerId, bool requireProOrPremium = true)
+        {
+            var seller = await _context.Sellers
+                .Include(s => s.Subscription)
+                .FirstOrDefaultAsync(s => s.Id == sellerId && !s.IsDeleted);
+
+            if (seller == null)
+                throw new KeyNotFoundException("Vendedor não encontrado.");
+
+            if (requireProOrPremium && seller.Subscription?.Plan == SellerPlan.Basic)
+                throw new UnauthorizedAccessException("Apenas vendedores Pro e Premium podem acessar este recurso.");
+
+            return seller;
+        }
+
         public async Task<AdvancedAnalyticsDto> GetAdvancedAnalyticsAsync(Guid sellerId)
         {
             var seller = await _context.Sellers
@@ -201,7 +220,6 @@ namespace MarketplaceArtesanato.Services.Services
             var orders = await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Items)
-                .Include(o => o.Items)
                 .Where(o => o.Items.Any(i => i.SellerId == sellerId))
                 .ToListAsync();
 
@@ -246,7 +264,6 @@ namespace MarketplaceArtesanato.Services.Services
             var orders = await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Items)
-                .Include(o => o.Items)
                 .Where(o => o.Items.Any(i => i.SellerId == sellerId) && o.CreatedAt >= startDate)
                 .ToListAsync();
 
@@ -286,7 +303,6 @@ namespace MarketplaceArtesanato.Services.Services
 
             var orders = await _context.Orders
                 .AsNoTracking()
-                .Include(o => o.Items)
                 .Include(o => o.Items)
                 .Where(o => o.Items.Any(i => i.SellerId == sellerId) && o.CreatedAt >= sevenDaysAgo)
                 .ToListAsync();
@@ -402,15 +418,16 @@ namespace MarketplaceArtesanato.Services.Services
                 throw new UnauthorizedAccessException("Apenas vendedores Premium podem acessar previsões.");
 
             var trends = await GetTrendsAsync(sellerId, 90);
-            var avgDailyRevenue = trends.Average(t => t.Revenue);
+            var avgDailyRevenue = trends.Any() ? trends.Average(t => t.Revenue) : 0;
 
             var forecast = new List<ForecastPointDto>();
             var now = DateTime.UtcNow;
+            var random = new Random();
 
             for (int i = 1; i <= daysAhead; i++)
             {
                 var forecastDate = now.AddDays(i);
-                var variation = (decimal)(new Random().NextDouble() * 0.2 - 0.1);
+                var variation = (decimal)(random.NextDouble() * 0.2 - 0.1);
                 var predictedRevenue = avgDailyRevenue * (1 + variation);
 
                 forecast.Add(new ForecastPointDto
@@ -470,8 +487,8 @@ namespace MarketplaceArtesanato.Services.Services
             {
                 Segments = new List<SegmentDto>
                 {
-                    new SegmentDto { Name = "Alto Valor", CustomerCount = highValue.Count, AverageLifetimeValue = (decimal)highValue.Average(c => c.TotalSpent), ChurnRate = 5, PurchaseFrequency = (decimal)highValue.Average(c => c.OrderCount) },
-                    new SegmentDto { Name = "Em Risco", CustomerCount = atRisk.Count, AverageLifetimeValue = (decimal)atRisk.Average(c => c.TotalSpent), ChurnRate = 30, PurchaseFrequency = (decimal)atRisk.Average(c => c.OrderCount) }
+                    new SegmentDto { Name = "Alto Valor", CustomerCount = highValue.Count, AverageLifetimeValue = highValue.Count > 0 ? (decimal)highValue.Average(c => c.TotalSpent) : 0, ChurnRate = 5, PurchaseFrequency = highValue.Count > 0 ? (decimal)highValue.Average(c => c.OrderCount) : 0 },
+                    new SegmentDto { Name = "Em Risco", CustomerCount = atRisk.Count, AverageLifetimeValue = atRisk.Count > 0 ? (decimal)atRisk.Average(c => c.TotalSpent) : 0, ChurnRate = 30, PurchaseFrequency = atRisk.Count > 0 ? (decimal)atRisk.Average(c => c.OrderCount) : 0 }
                 },
                 HighValueSegment = new SegmentDto
                 {
@@ -516,7 +533,6 @@ namespace MarketplaceArtesanato.Services.Services
 
             var orders = await _context.Orders
                 .AsNoTracking()
-                .Include(o => o.Items)
                 .Include(o => o.Items)
                 .Where(o => o.Items.Any(i => i.SellerId == sellerId) && o.CreatedAt >= twoYearsAgo)
                 .ToListAsync();
