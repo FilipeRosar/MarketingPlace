@@ -36,8 +36,8 @@ namespace MarketplaceArtesanato.Tests
                 SellerId = sellerId,
                 Plan = plan,
                 IsActive = true,
-                StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddMonths(1),
+                StartedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMonths(1),
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
             };

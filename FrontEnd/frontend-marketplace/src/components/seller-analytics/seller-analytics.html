@@ -18,31 +18,53 @@
 
   @if (!isLoading && !errorMessage && analyticsData) {
     <!-- Period Selector -->
-    <div class="flex gap-2">
-      <button (click)="changePeriod('week')"
-              [class.bg-primary]="selectedPeriod === 'week'"
-              [class.text-white]="selectedPeriod === 'week'"
-              [class.bg-stone-200]="selectedPeriod !== 'week'"
-              [class.text-gray-700]="selectedPeriod !== 'week'"
-              class="px-4 py-2 rounded-lg font-medium transition-all">
-        Esta semana
-      </button>
-      <button (click)="changePeriod('month')"
-              [class.bg-primary]="selectedPeriod === 'month'"
-              [class.text-white]="selectedPeriod === 'month'"
-              [class.bg-stone-200]="selectedPeriod !== 'month'"
-              [class.text-gray-700]="selectedPeriod !== 'month'"
-              class="px-4 py-2 rounded-lg font-medium transition-all">
-        Este mês
-      </button>
-      <button (click)="changePeriod('quarter')"
-              [class.bg-primary]="selectedPeriod === 'quarter'"
-              [class.text-white]="selectedPeriod === 'quarter'"
-              [class.bg-stone-200]="selectedPeriod !== 'quarter'"
-              [class.text-gray-700]="selectedPeriod !== 'quarter'"
-              class="px-4 py-2 rounded-lg font-medium transition-all">
-        Este trimestre
-      </button>
+    <div class="flex gap-2 justify-between items-center">
+      <div class="flex gap-2">
+        <button (click)="changePeriod('week')"
+                [class.bg-primary]="selectedPeriod === 'week'"
+                [class.text-white]="selectedPeriod === 'week'"
+                [class.bg-stone-200]="selectedPeriod !== 'week'"
+                [class.text-gray-700]="selectedPeriod !== 'week'"
+                class="px-4 py-2 rounded-lg font-medium transition-all">
+          Esta semana
+        </button>
+        <button (click)="changePeriod('month')"
+                [class.bg-primary]="selectedPeriod === 'month'"
+                [class.text-white]="selectedPeriod === 'month'"
+                [class.bg-stone-200]="selectedPeriod !== 'month'"
+                [class.text-gray-700]="selectedPeriod !== 'month'"
+                class="px-4 py-2 rounded-lg font-medium transition-all">
+          Este mês
+        </button>
+        <button (click)="changePeriod('quarter')"
+                [class.bg-primary]="selectedPeriod === 'quarter'"
+                [class.text-white]="selectedPeriod === 'quarter'"
+                [class.bg-stone-200]="selectedPeriod !== 'quarter'"
+                [class.text-gray-700]="selectedPeriod !== 'quarter'"
+                class="px-4 py-2 rounded-lg font-medium transition-all">
+          Este trimestre
+        </button>
+      </div>
+
+      <!-- Export Buttons (Premium Only) -->
+      @if (isPremium) {
+        <div class="flex gap-2">
+          <button (click)="downloadReport('pdf')"
+                  class="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-all flex items-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1 4.5 4.5 0 1-4.384 5.98z"></path>
+            </svg>
+            📄 Exportar PDF
+          </button>
+          <button (click)="downloadReport('csv')"
+                  class="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-all flex items-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1 4.5 4.5 0 1-4.384 5.98z"></path>
+            </svg>
+            📊 Exportar CSV
+          </button>
+        </div>
+      }
     </div>
 
     <!-- Main KPIs Grid -->

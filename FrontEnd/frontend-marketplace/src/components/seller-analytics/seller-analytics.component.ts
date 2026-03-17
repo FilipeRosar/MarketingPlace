@@ -66,6 +66,43 @@ export class SellerAnalyticsComponent implements OnInit {
     this.loadAnalytics();
   }
 
+  getPeriodDates(): { start: string; end: string } {
+    const now = new Date();
+    const end = new Date(now);
+    const start = new Date(now);
+
+    if (this.selectedPeriod === 'week') {
+      start.setDate(now.getDate() - 7);
+    } else if (this.selectedPeriod === 'month') {
+      start.setMonth(now.getMonth() - 1);
+    } else { // quarter
+      start.setMonth(now.getMonth() - 3);
+    }
+
+    return {
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0]
+    };
+  }
+
+  downloadReport(format: 'csv' | 'pdf') {
+    const { start, end } = this.getPeriodDates();
+    this.analyticsService.exportAnalytics(format, start, end).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `analytics_${this.selectedPeriod}_${new Date().toISOString().split('T')[0]}.${format === 'pdf' ? 'pdf' : 'csv'}`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error(`Erro ao baixar relatório ${format.toUpperCase()}:`, err);
+        this.errorMessage = `Erro ao baixar relatório ${format.toUpperCase()}.`;
+      }
+    });
+  }
+
   formatCurrency(value: number | undefined): string {
     if (!value) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', {
