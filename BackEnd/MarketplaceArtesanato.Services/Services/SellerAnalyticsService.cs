@@ -8,6 +8,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CsvHelper;
+using CsvHelper.Configuration;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
+using System.Globalization;
+using System.IO;
 
 namespace MarketplaceArtesanato.Services.Services
 {
@@ -563,13 +571,71 @@ namespace MarketplaceArtesanato.Services.Services
             var analytics = await GetAdvancedAnalyticsAsync(sellerId);
             var productPerformance = await GetProductPerformanceAsync(sellerId);
 
-            var csv = "Produto,Vendas,Receita,Taxa Conversão,Margem\n";
-            foreach (var product in productPerformance.Take(50))
+            using (var memoryStream = new MemoryStream())
             {
-                csv += $"\"{product.ProductName}\",{product.SalesCount},\"{product.Revenue:F2}\",\"{product.ConversionRate:F2}\",\"{product.Margin:F2}\"\n";
-            }
+                using (var streamWriter = new StreamWriter(memoryStream))
+                {
+                    var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                    {
+                        Delimiter = ",",
+                        Encoding = System.Text.Encoding.UTF8
+                    };
 
-            return System.Text.Encoding.UTF8.GetBytes(csv);
+                    using (var csv = new CsvWriter(streamWriter, config))
+                    {
+                        csv.WriteField("Relatório de Analytics");
+                        csv.NextRecord();
+                        csv.WriteField($"Gerado em: {DateTime.UtcNow:dd/MM/yyyy HH:mm}");
+                        csv.NextRecord();
+                        csv.NextRecord();
+
+                        csv.WriteField("Métricas Gerais");
+                        csv.NextRecord();
+                        csv.WriteField("Métrica");
+                        csv.WriteField("Valor");
+                        csv.NextRecord();
+                        csv.WriteField("Receita Total");
+                        csv.WriteField($"R$ {analytics.TotalRevenue:F2}");
+                        csv.NextRecord();
+                        csv.WriteField("Total de Pedidos");
+                        csv.WriteField(analytics.TotalOrders);
+                        csv.NextRecord();
+                        csv.WriteField("Clientes");
+                        csv.WriteField(analytics.TotalCustomers);
+                        csv.NextRecord();
+                        csv.WriteField("Valor Médio de Pedido");
+                        csv.WriteField($"R$ {analytics.AverageOrderValue:F2}");
+                        csv.NextRecord();
+                        csv.WriteField("Taxa de Conversão");
+                        csv.WriteField($"{analytics.ConversionRate:F2}%");
+                        csv.NextRecord();
+                        csv.NextRecord();
+
+                        csv.WriteField("Desempenho de Produtos");
+                        csv.NextRecord();
+                        csv.WriteField("Produto");
+                        csv.WriteField("Posição");
+                        csv.WriteField("Vendas");
+                        csv.WriteField("Receita");
+                        csv.WriteField("Taxa de Conversão");
+                        csv.WriteField("Margem");
+                        csv.NextRecord();
+
+                        foreach (var product in productPerformance.Take(50))
+                        {
+                            csv.WriteField(product.ProductName);
+                            csv.WriteField(product.Rank);
+                            csv.WriteField(product.SalesCount);
+                            csv.WriteField($"R$ {product.Revenue:F2}");
+                            csv.WriteField($"{product.ConversionRate:F2}%");
+                            csv.WriteField($"{product.Margin:F2}%");
+                            csv.NextRecord();
+                        }
+                    }
+                }
+
+                return memoryStream.ToArray();
+            }
         }
 
         public async Task<byte[]> ExportAnalyticsAsPDFAsync(Guid sellerId)
@@ -585,17 +651,86 @@ namespace MarketplaceArtesanato.Services.Services
                 throw new UnauthorizedAccessException("Apenas vendedores Premium podem exportar relatórios.");
 
             var analytics = await GetAdvancedAnalyticsAsync(sellerId);
+            var productPerformance = await GetProductPerformanceAsync(sellerId);
 
-            var pdf = System.Text.Encoding.UTF8.GetBytes(
-                $"Relatório de Analytics\n" +
-                $"Gerado em: {DateTime.UtcNow:dd/MM/yyyy HH:mm}\n\n" +
-                $"Receita Total: R$ {analytics.TotalRevenue:F2}\n" +
-                $"Total de Pedidos: {analytics.TotalOrders}\n" +
-                $"Clientes: {analytics.TotalCustomers}\n" +
-                $"Valor Médio de Pedido: R$ {analytics.AverageOrderValue:F2}\n"
-            );
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var pdfWriter = new PdfWriter(memoryStream))
+                {
+                    using (var pdfDoc = new PdfDocument(pdfWriter))
+                    {
+                        var document = new Document(pdfDoc);
+                        document.SetMargins(20, 20, 20, 20);
 
-            return pdf;
+                        var title = new Paragraph("Relatório de Analytics")
+                            .SetFontSize(24)
+                            .SetBold()
+                            .SetTextAlignment(TextAlignment.CENTER);
+                        document.Add(title);
+
+                        var generatedDate = new Paragraph($"Gerado em: {DateTime.UtcNow:dd/MM/yyyy HH:mm}")
+                            .SetFontSize(10)
+                            .SetTextAlignment(TextAlignment.CENTER);
+                        document.Add(generatedDate);
+
+                        var storeInfo = new Paragraph($"Loja: {seller.StoreName}")
+                            .SetFontSize(11)
+                            .SetBold()
+                            .SetMarginTop(15);
+                        document.Add(storeInfo);
+
+                        document.Add(new Paragraph("\nMétricas Gerais").SetFontSize(14).SetBold());
+
+                        var metricsTable = new Table(2);
+                        metricsTable.AddCell("Métrica");
+                        metricsTable.AddCell("Valor");
+                        metricsTable.AddCell("Receita Total");
+                        metricsTable.AddCell($"R$ {analytics.TotalRevenue:F2}");
+                        metricsTable.AddCell("Total de Pedidos");
+                        metricsTable.AddCell(analytics.TotalOrders.ToString());
+                        metricsTable.AddCell("Clientes");
+                        metricsTable.AddCell(analytics.TotalCustomers.ToString());
+                        metricsTable.AddCell("Valor Médio de Pedido");
+                        metricsTable.AddCell($"R$ {analytics.AverageOrderValue:F2}");
+                        metricsTable.AddCell("Taxa de Conversão");
+                        metricsTable.AddCell($"{analytics.ConversionRate:F2}%");
+
+                        document.Add(metricsTable);
+
+                        document.Add(new Paragraph("\nDesempenho dos Produtos (Top 20)").SetFontSize(14).SetBold().SetMarginTop(20));
+
+                        var productsTable = new Table(6);
+                        productsTable.AddCell("Posição");
+                        productsTable.AddCell("Produto");
+                        productsTable.AddCell("Vendas");
+                        productsTable.AddCell("Receita");
+                        productsTable.AddCell("Conversão");
+                        productsTable.AddCell("Margem");
+
+                        foreach (var product in productPerformance.Take(20))
+                        {
+                            productsTable.AddCell(product.Rank.ToString());
+                            productsTable.AddCell(product.ProductName);
+                            productsTable.AddCell(product.SalesCount.ToString());
+                            productsTable.AddCell($"R$ {product.Revenue:F2}");
+                            productsTable.AddCell($"{product.ConversionRate:F2}%");
+                            productsTable.AddCell($"{product.Margin:F2}%");
+                        }
+
+                        document.Add(productsTable);
+
+                        document.Add(new Paragraph("\nRelatório Confidencial - Uso Restrito")
+                            .SetFontSize(9)
+                            .SetItalic()
+                            .SetMarginTop(20)
+                            .SetTextAlignment(TextAlignment.CENTER));
+
+                        document.Close();
+                    }
+                }
+
+                return memoryStream.ToArray();
+            }
         }
 
         private decimal CalculateConversionRate(int customers, int views)

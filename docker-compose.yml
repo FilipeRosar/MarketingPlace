@@ -9,7 +9,7 @@
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-guest}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-guest}
     healthcheck:
-      test: ["CMD-SHELL", "rabbitmqctl status"]  # Comando nativo do RabbitMQ, sempre disponivel
+      test: ["CMD-SHELL", "rabbitmqctl status"]  
       interval: 10s
       timeout: 5s
       retries: 10
