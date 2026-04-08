@@ -34,6 +34,7 @@ namespace MarketplaceArtesanato.Services.Services
             var baseUrl = _configuration["MelhorEnvio:Url"] ?? "https://sandbox.melhorenvio.com.br";
 
             _httpClient.BaseAddress = new Uri(baseUrl);
+            _httpClient.Timeout = TimeSpan.FromSeconds(30);
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             if (!string.IsNullOrEmpty(token))
@@ -119,23 +120,43 @@ namespace MarketplaceArtesanato.Services.Services
         {
             var result = new Dictionary<string, List<ShippingOptionDto>>();
 
-            foreach (var kvp in itemsBySeller)
-            {
-                var sellerId = kvp.Key;
-                var items = kvp.Value;
-
-                if (Guid.TryParse(sellerId, out var sellerGuid))
+            var tasks = itemsBySeller
+                .Where(kvp => Guid.TryParse(kvp.Key, out _))
+                .Select(async kvp =>
                 {
-                    var request = new CalculateShippingRequest
-                    {
-                        SellerId = sellerGuid,
-                        ZipCodeTo = zipCodeTo,
-                        Items = items
-                    };
+                    var sellerId = kvp.Key;
+                    var items = kvp.Value;
 
-                    var options = await CalculateShippingAsync(request);
-                    result[sellerId] = options;
-                }
+                    if (Guid.TryParse(sellerId, out var sellerGuid))
+                    {
+                        var request = new CalculateShippingRequest
+                        {
+                            SellerId = sellerGuid,
+                            ZipCodeTo = zipCodeTo,
+                            Items = items
+                        };
+
+                        try
+                        {
+                            var options = await CalculateShippingAsync(request);
+                            return (sellerId, options);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[ERRO CALCULAR FRETE VENDEDOR {sellerId}] {ex.Message}");
+                            return (sellerId, new List<ShippingOptionDto>());
+                        }
+                    }
+
+                    return (sellerId, new List<ShippingOptionDto>());
+                })
+                .ToList();
+
+            var results = await Task.WhenAll(tasks);
+
+            foreach (var (sellerId, options) in results)
+            {
+                result[sellerId] = options;
             }
 
             return result;
