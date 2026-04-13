@@ -112,6 +112,18 @@ public class ArtesianDbContext : DbContext
             .HasForeignKey(oi => oi.ProductId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        modelBuilder.Entity<OrderItem>()
+            .HasIndex(oi => oi.SellerId)
+            .HasDatabaseName("IX_OrderItems_SellerId");
+
+        modelBuilder.Entity<OrderItem>()
+            .HasIndex(oi => new { oi.SellerId, oi.ProductId })
+            .HasDatabaseName("IX_OrderItems_SellerId_ProductId");
+
+        modelBuilder.Entity<OrderItem>()
+            .HasIndex(oi => new { oi.SellerId, oi.CreatedAt })
+            .HasDatabaseName("IX_OrderItems_SellerId_CreatedAt");
+
         modelBuilder.Entity<Cart>()
              .HasIndex(c => c.UserId)
              .IsUnique();

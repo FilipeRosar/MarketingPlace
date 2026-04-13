@@ -212,42 +212,51 @@ namespace MarketplaceArtesanato.Services.Services
             if (seller.Subscription?.Plan == SellerPlan.Basic)
                 throw new UnauthorizedAccessException("Apenas vendedores Pro e Premium podem acessar analytics avançado.");
 
+            // Optimized: Single database query with GROUP BY instead of N+1 pattern
+            var productPerformance = await _context.OrderItems
+                .AsNoTracking()
+                .Where(oi => oi.SellerId == sellerId)
+                .GroupBy(oi => new { oi.ProductId, ProductName = _context.Products
+                    .Where(p => p.Id == oi.ProductId)
+                    .Select(p => p.Name)
+                    .FirstOrDefault() })
+                .Select(g => new
+                {
+                    ProductId = g.Key.ProductId,
+                    ProductName = g.Key.ProductName,
+                    SalesCount = g.Sum(oi => oi.Quantity),
+                    Revenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
+                    AveragePrice = g.Average(oi => oi.UnitPrice)
+                })
+                .OrderByDescending(p => p.Revenue)
+                .ToListAsync();
+
+            // Get products for margin calculation
             var products = await _context.Products
                 .AsNoTracking()
                 .Where(p => p.SellerId == sellerId && !p.IsDeleted)
-                .ToListAsync();
-
-            var orders = await _context.Orders
-                .AsNoTracking()
-                .Include(o => o.Items)
-                .Where(o => o.Items.Any(i => i.SellerId == sellerId))
-                .ToListAsync();
+                .ToDictionaryAsync(p => p.Id, p => p.Price);
 
             var result = new List<ProductPerformanceDto>();
             var rank = 1;
 
-            foreach (var product in products)
+            foreach (var perf in productPerformance)
             {
-                var productOrders = orders.Where(o => o.Items.Any(i => i.ProductId == product.Id && i.SellerId == sellerId)).ToList();
-                var salesCount = productOrders.SelectMany(o => o.Items).Where(i => i.ProductId == product.Id && i.SellerId == sellerId).Sum(i => i.Quantity);
-                var revenue = productOrders.SelectMany(o => o.Items).Where(i => i.ProductId == product.Id && i.SellerId == sellerId).Sum(i => i.Subtotal);
-                var viewCount = 0;
-                var conversionRate = viewCount > 0 ? (salesCount / (decimal)viewCount) * 100 : 0;
-
+                var price = products.TryGetValue(perf.ProductId, out var productPrice) ? productPrice : perf.AveragePrice;
                 result.Add(new ProductPerformanceDto
                 {
-                    ProductId = product.Id,
-                    ProductName = product.Name,
-                    SalesCount = salesCount,
-                    Revenue = revenue,
-                    ViewCount = viewCount,
-                    ConversionRate = conversionRate,
-                    Margin = product.Price > 0 ? ((product.Price - product.Price * 0.2m) / product.Price) * 100 : 0,
+                    ProductId = perf.ProductId,
+                    ProductName = perf.ProductName ?? "Unknown",
+                    SalesCount = perf.SalesCount,
+                    Revenue = perf.Revenue,
+                    ViewCount = 0,
+                    ConversionRate = 0,
+                    Margin = price > 0 ? ((price - price * 0.2m) / price) * 100 : 0,
                     Rank = rank++
                 });
             }
 
-            return result.OrderByDescending(p => p.Revenue).ToList();
+            return result;
         }
 
         public async Task<List<TrendDataDto>> GetTrendsAsync(Guid sellerId, int days = 90)
@@ -462,7 +471,6 @@ namespace MarketplaceArtesanato.Services.Services
 
             var orders = await _context.Orders
                 .AsNoTracking()
-                .Include(o => o.Items)
                 .Include(o => o.Items)
                 .Where(o => o.Items.Any(i => i.SellerId == sellerId))
                 .ToListAsync();

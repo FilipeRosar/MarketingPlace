@@ -13,9 +13,6 @@ using ForecastPointDto = MarketplaceArtesanato.Core.Entities.DTO.ForecastPointDt
 
 namespace MarketplaceArtesanato.Services.Services
 {
-    /// <summary>
-    /// Service de Analytics Avançado com métricas completas para vendedores Pro/Premium
-    /// </summary>
     public class SellerAnalyticsAdvancedService : ISellerAnalyticsAdvancedService
     {
         private readonly ArtesianDbContext _context;
@@ -27,9 +24,6 @@ namespace MarketplaceArtesanato.Services.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Dashboard completo com todas as métricas avançadas
-        /// </summary>
         public async Task<AdvancedAnalyticsDashboardDto> GetAdvancedDashboardAsync(Guid sellerId, int days = 30)
         {
             _logger.LogInformation("Gerando dashboard avançado para vendedor {SellerId}", sellerId);
@@ -96,7 +90,6 @@ namespace MarketplaceArtesanato.Services.Services
             var purchaseCount = orders.Count;
             var conversionRate = totalCustomers > 0 ? (decimal)purchaseCount / totalCustomers * 100 : 0;
 
-            // Estimativa de carts abandonados (baseado em ordens processadas)
             var abandonedCarts = Math.Max(0, (int)(totalCustomers * 0.2m)); // 20% de taxa de abandono estimada
             var abandonnementRate = totalCustomers > 0 ? (decimal)abandonedCarts / totalCustomers * 100 : 0;
 
@@ -112,9 +105,6 @@ namespace MarketplaceArtesanato.Services.Services
             };
         }
 
-        /// <summary>
-        /// Métricas de ROI por produto
-        /// </summary>
         public async Task<ROIMetricsDto> GetROIMetricsAsync(Guid sellerId, List<Order> orders, List<Product> products)
         {
             var totalRevenue = orders.SelectMany(o => o.Items)
@@ -140,10 +130,6 @@ namespace MarketplaceArtesanato.Services.Services
                 TopProductsByROI = topProductsByROI
             };
         }
-
-        /// <summary>
-        /// Análise de coortes de clientes
-        /// </summary>
         public async Task<CustomerCohortAnalysisDto> GetCustomerCohortAnalysisAsync(Guid sellerId, List<User> customers, List<Order> orders)
         {
             var totalRevenue = orders.SelectMany(o => o.Items)
@@ -169,9 +155,6 @@ namespace MarketplaceArtesanato.Services.Services
             };
         }
 
-        /// <summary>
-        /// Comparativo de períodos (período atual vs anterior)
-        /// </summary>
         public async Task<PeriodComparisonAdvancedDto> GetPeriodComparisonAsync(Guid sellerId, int days = 30)
         {
             var now = DateTime.UtcNow;
@@ -208,10 +191,6 @@ namespace MarketplaceArtesanato.Services.Services
                 DailyComparison = await GetDailyComparisonAsync(sellerId, currentStart, now, days)
             };
         }
-
-        /// <summary>
-        /// Previsão de vendas usando média móvel simples
-        /// </summary>
         public async Task<SalesForecatDto> GenerateSalesForecastAsync(Guid sellerId, int historicalDays = 30, int forecastDays = 30)
         {
             var now = DateTime.UtcNow;
@@ -355,7 +334,6 @@ namespace MarketplaceArtesanato.Services.Services
         {
             try
             {
-                // First get order IDs to avoid complex LINQ translation issues
                 var orderIds = await _context.OrderItems
                     .AsNoTracking()
                     .Where(oi => oi.SellerId == sellerId)

@@ -19,6 +19,8 @@ namespace MarketplaceArtesanato.Core.Entities
         [ForeignKey("ProductId")]
         public Product Product { get; set; } = null!;
 
+        public Guid SellerId { get; set; }
+
         [Range(1, int.MaxValue, ErrorMessage = "A quantidade deve ser pelo menos 1")]
         public int Quantity { get; set; }
 
@@ -36,8 +38,5 @@ namespace MarketplaceArtesanato.Core.Entities
 
         [NotMapped]
         public decimal Subtotal => UnitPrice * Quantity;
-
-        [NotMapped]
-        public Guid SellerId => Product?.SellerId ?? Guid.Empty;
     }
 }

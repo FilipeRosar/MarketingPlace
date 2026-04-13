@@ -32,7 +32,6 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-// Configura Stripe
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 builder.Services.AddDbContext<ArtesianDbContext>(options =>
@@ -73,9 +72,6 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "MarketplaceArtesanato:";
 });
 
-// ==========================================
-// 2. SERVI�OS DA APLICA��O (DI)
-// ==========================================
 builder.Services.AddAutoMapper(typeof(Program)); 
 builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
@@ -107,7 +103,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-// Inje��o de Depend�ncia dos Servi�os
 builder.Services.AddScoped<ISellerService, SellerService>();
 builder.Services.AddScoped<IStorageService, BlobService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
@@ -134,16 +129,11 @@ builder.Services.AddScoped<IProductService, MarketplaceArtesanato.Services.Servi
 builder.Services.AddScoped<IBannerService, BannerService>();
 builder.Services.Configure<AzureBlobSettings>(builder.Configuration.GetSection("Storage:AzureBlob"));
 
-// Servi�os do Stripe SDK
 builder.Services.AddScoped<Stripe.BillingPortal.SessionService>();
 builder.Services.AddScoped<Stripe.Checkout.SessionService>();
 
-// HttpClient para Shipping
 builder.Services.AddHttpClient<IShippingService, ShippingService>();
 
-// ==========================================
-// 3. AUTHENTICATION & JWT
-// ==========================================
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
 
@@ -172,9 +162,6 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddScoped<IAuthorizationHandler, SellerPlanRequirementHandler>();
 
-// ==========================================
-// 4. CORS (CONFIGURA��O CORRIGIDA)
-// ==========================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
@@ -190,9 +177,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ==========================================
-// 5. MASSTRANSIT (RABBITMQ)
-// ==========================================
+
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<CheckoutConsumer>();
@@ -220,14 +205,11 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-// ==========================================
-// 6. SWAGGER
-// ==========================================
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "MarketplaceArtesanato API", Version = "v1" });
 
-    // Auth no Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
@@ -253,11 +235,6 @@ builder.Services.Configure<TurnstileOptions>(
 );
 var app = builder.Build();
 
-// ==========================================
-// 7. PIPELINE DE REQUISI��O (MIDDLEWARE)
-// ==========================================
-
-// Swagger (Development)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -273,20 +250,16 @@ app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api/webhook"), appBuil
     appBuilder.UseHttpsRedirection();
 });
 
-// 1. CORS deve vir ANTES de Auth e ANTES dos Controllers
 app.UseCors("AllowAngular");
 
-// 2. Autentica��o deve vir ANTES de Autoriza��o
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 
-// 3. Hubs e Controllers
 app.MapHub<ChatHub>("/chatHub");
 app.MapHub<NotificationHub>("/notificationhub");
 app.MapControllers();
 
-// 4. Seed Data
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

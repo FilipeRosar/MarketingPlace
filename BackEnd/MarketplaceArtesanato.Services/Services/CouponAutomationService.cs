@@ -138,7 +138,6 @@ namespace MarketplaceArtesanato.Services.Services
                 var now = DateTime.UtcNow;
                 var affectedCount = 0;
 
-                // Ativar cupons sazonais cuja data de início chegou
                 var couponsToActivate = await _context.Coupons
                     .Where(c => !c.IsActive && 
                                c.ValidFrom <= now && 
