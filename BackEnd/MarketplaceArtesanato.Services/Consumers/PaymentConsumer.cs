@@ -30,7 +30,7 @@ public class PaymentConsumer : IConsumer<PaymentProcessedEvent>
         try
         {
             var orderQuery = _context.Orders
-                .Include(o => o.Items)
+                .Include(o => o.Items.Where(i => i.SellerId != Guid.Empty))
                     .ThenInclude(i => i.Product)
                 .Include(o => o.Buyer);
 
@@ -59,7 +59,7 @@ public class PaymentConsumer : IConsumer<PaymentProcessedEvent>
             {
                 if (item.Product == null)
                 {
-                    _logger.LogError("Produto nÆo encontrado no item do pedido {OrderId}", order.Id);
+                    _logger.LogError("Produto nï¿½o encontrado no item do pedido {OrderId}", order.Id);
                     return;
                 }
 
@@ -100,7 +100,7 @@ public class PaymentConsumer : IConsumer<PaymentProcessedEvent>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao processar pagamento para sessÆo {SessionId}", evt.StripeSessionId);
+            _logger.LogError(ex, "Erro ao processar pagamento para sessï¿½o {SessionId}", evt.StripeSessionId);
             throw; // Para retry automatico
         }
     }

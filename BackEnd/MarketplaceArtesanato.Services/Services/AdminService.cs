@@ -154,7 +154,7 @@ namespace MarketplaceArtesanato.Services.Services
                     o.Status == OrderStatus.Confirmed ||
                     o.Status == OrderStatus.Sent ||
                     o.Status == OrderStatus.Delivered)
-                .Include(o => o.Items)
+                .Include(o => o.Items.Where(i => i.SellerId != Guid.Empty))
                     .ThenInclude(i => i.Product)
                         .ThenInclude(p => p.Seller)
                             .ThenInclude(s => s.User)
@@ -167,7 +167,11 @@ namespace MarketplaceArtesanato.Services.Services
                 var orderTotal = order.Items.Sum(i => i.UnitPrice * i.Quantity);
                 if (orderTotal <= 0) continue;
 
-                var grouped = order.Items.GroupBy(i => i.Product.SellerId);
+                // Filter out items without a valid seller
+                var validItems = order.Items.Where(i => i.Product?.Seller != null).ToList();
+                if (!validItems.Any()) continue;
+
+                var grouped = validItems.GroupBy(i => i.Product.SellerId);
                 foreach (var group in grouped)
                 {
                     var seller = group.First().Product.Seller;

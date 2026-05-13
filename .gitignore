@@ -2,6 +2,7 @@
 appsettings.Development.json
 secrets.json
 *.env
+.env.example
 
 # Pastas do .NET
 bin/

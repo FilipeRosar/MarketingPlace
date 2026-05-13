@@ -61,7 +61,7 @@ namespace MarketplaceArtesanato.Services.Services
 
                 // Build the base query with all includes first
                 IQueryable<Order> query = _context.Orders
-                    .Include(o => o.Items)
+                    .Include(o => o.Items.Where(i => i.SellerId != Guid.Empty))
                         .ThenInclude(i => i.Product)
                             .ThenInclude(p => p.Seller)
                     .AsNoTracking();
@@ -113,8 +113,8 @@ namespace MarketplaceArtesanato.Services.Services
         public async Task<OrderResponseDto> GetByIdAsync(Guid orderId, Guid userId, string role)
         {
             var order = await _context.Orders
-                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
-                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
+                .Include(o => o.Items.Where(i => i.SellerId != Guid.Empty)).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
+                .Include(o => o.Items.Where(i => i.SellerId != Guid.Empty)).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
                 .Include(o => o.Buyer)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 

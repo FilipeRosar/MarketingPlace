@@ -4,6 +4,7 @@ using MarketplaceArtesanato.Data.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MarketplaceArtesanato.Data.Migrations
 {
     [DbContext(typeof(ArtesianDbContext))]
-    partial class ArtesianDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420160436_AddSellerIdToOrderItems")]
+    partial class AddSellerIdToOrderItems
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -622,7 +625,7 @@ namespace MarketplaceArtesanato.Data.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SellerCommissions");
 
-                    b.Property<Guid>("SellerId1")
+                    b.Property<Guid>("SellerId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("ServiceFee")
@@ -678,7 +681,7 @@ namespace MarketplaceArtesanato.Data.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.HasIndex("SellerId1");
+                    b.HasIndex("SellerId");
 
                     b.ToTable("Orders");
                 });
@@ -1414,7 +1417,7 @@ namespace MarketplaceArtesanato.Data.Migrations
 
                     b.HasOne("MarketplaceArtesanato.Core.Entities.Seller", null)
                         .WithMany("OrdersReceived")
-                        .HasForeignKey("SellerId1")
+                        .HasForeignKey("SellerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

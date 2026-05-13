@@ -60,19 +60,12 @@ namespace MarketplaceArtesanato.API.Controllers
                 CreatedAt = DateTime.UtcNow,
                 SellerCommissions = new Dictionary<Guid, decimal>(),
                 ShippingCarrier = string.Empty,
-                ShippingService = string.Empty
+                ShippingService = string.Empty,
+                ShippingCostBySeller = new Dictionary<Guid, decimal>()
             };
 
             var lineItems = new List<SessionLineItemOptions>();
             decimal totalProductAmount = 0;
-            var shippingFee = request.ShippingFee;
-            var shippingName = string.IsNullOrWhiteSpace(request.ShippingName) ? "Frete" : request.ShippingName.Trim();
-            
-            if (shippingFee < 0)
-            {
-                return BadRequest(new { message = "Valor de frete inválido." });
-            }
-            
             var eventItems = new List<CheckoutItemEvent>();
 
             var cartItems = new List<(MarketplaceArtesanato.Core.Entities.Product Product, CheckoutItemDto Item, decimal ItemTotal)>();
@@ -81,7 +74,7 @@ namespace MarketplaceArtesanato.API.Controllers
             foreach (var itemDto in items)
             {
                 var product = await _context.Products.FindAsync(itemDto.ProductId);
-                if (product == null) return BadRequest($"Produto {itemDto.ProductId} n?o encontrado.");
+                if (product == null) return BadRequest($"Produto {itemDto.ProductId} não encontrado.");
                 if (product.StockQuantity < itemDto.Quantity) return BadRequest($"Estoque insuficiente: {product.Name}");
 
                 var priceResult = await _priceCalculationService.CalculateProductPriceAsync(product, customerId);
@@ -173,8 +166,48 @@ namespace MarketplaceArtesanato.API.Controllers
                 Quantity = 1
             });
 
-            if (shippingFee > 0)
+            // Process shipping fees
+            decimal totalShippingFee = 0m;
+            
+            // Support new ShippingData (per seller) or legacy ShippingFee
+            if (request.ShippingData != null && request.ShippingData.Any())
             {
+                foreach (var shippingData in request.ShippingData)
+                {
+                    if (!Guid.TryParse(shippingData.SellerId, out var sellerGuid))
+                        return BadRequest(new { message = $"SellerId inválido: {shippingData.SellerId}" });
+
+                    if (shippingData.ShippingFee < 0)
+                        return BadRequest(new { message = "Valor de frete inválido." });
+
+                    if (shippingData.ShippingFee > 0)
+                    {
+                        order.ShippingCostBySeller[sellerGuid] = shippingData.ShippingFee;
+                        totalShippingFee += shippingData.ShippingFee;
+
+                        lineItems.Add(new SessionLineItemOptions
+                        {
+                            PriceData = new SessionLineItemPriceDataOptions
+                            {
+                                Currency = "brl",
+                                ProductData = new SessionLineItemPriceDataProductDataOptions
+                                {
+                                    Name = string.IsNullOrWhiteSpace(shippingData.ShippingName) 
+                                        ? "Frete" 
+                                        : shippingData.ShippingName.Trim()
+                                },
+                                UnitAmount = (long)(shippingData.ShippingFee * 100)
+                            },
+                            Quantity = 1
+                        });
+                    }
+                }
+            }
+            else if (request.ShippingFee > 0)
+            {
+                // Legacy: single shipping fee - distribute among sellers
+                var shippingName = string.IsNullOrWhiteSpace(request.ShippingName) ? "Frete" : request.ShippingName.Trim();
+                
                 lineItems.Add(new SessionLineItemOptions
                 {
                     PriceData = new SessionLineItemPriceDataOptions
@@ -184,14 +217,23 @@ namespace MarketplaceArtesanato.API.Controllers
                         {
                             Name = shippingName
                         },
-                        UnitAmount = (long)(shippingFee * 100)
+                        UnitAmount = (long)(request.ShippingFee * 100)
                     },
                     Quantity = 1
                 });
+
+                totalShippingFee = request.ShippingFee;
+                
+                // Try to distribute among sellers if only one
+                if (sellerTotals.Count == 1)
+                {
+                    var sellerId = sellerTotals.Keys.First();
+                    order.ShippingCostBySeller[sellerId] = request.ShippingFee;
+                }
             }
 
-            order.TotalAmount = totalProductAmount + serviceFeeAmount + shippingFee;
-            order.ShippingCost = shippingFee;
+            order.TotalAmount = totalProductAmount + serviceFeeAmount + totalShippingFee;
+            order.ShippingCost = totalShippingFee;
             order.ServiceFee = serviceFeeAmount;
             order.PlatformRevenue = serviceFeeAmount + order.SellerCommissions.Sum(x => x.Value);
 

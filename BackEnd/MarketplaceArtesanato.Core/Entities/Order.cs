@@ -67,6 +67,19 @@ public class Order : BaseEntity
     }
 
     [NotMapped]
+    public Dictionary<Guid, decimal> ShippingCostBySeller { get; set; } = new();
+
+    public string? ShippingCostBySellerJson
+    {
+        get => ShippingCostBySeller == null || !ShippingCostBySeller.Any()
+            ? null
+            : JsonSerializer.Serialize(ShippingCostBySeller);
+        set => ShippingCostBySeller = string.IsNullOrEmpty(value)
+            ? new()
+            : JsonSerializer.Deserialize<Dictionary<Guid, decimal>>(value)!;
+    }
+
+    [NotMapped]
     public Dictionary<Guid, string> TrackingCodes { get; set; } = new();
 
     public string? TrackingCodesJson

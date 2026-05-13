@@ -36,6 +36,6 @@ namespace MarketplaceArtesanato.Core.Entities
         // Image dimensions
         public int? ImageWidth { get; set; } = 1200;
         public int? ImageHeight { get; set; } = 400;
-        public string? ImageObjectFit { get; set; } = "cover"; // cover, contain, fill, etc
+        public string? ImageObjectFit { get; set; } = "cover";
     }
 }

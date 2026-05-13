@@ -68,7 +68,6 @@ export class AuthService {
     return !!this.getToken() && !!this.currentUserValue;
   }
 
-  // ====================== PRIVATE HELPERS ======================
   private handleAuthSuccess(response: AuthResponse) {
     this.setStorageItem('token', response.token);
     this.setStorageItem('user', JSON.stringify(response.user));
@@ -92,7 +91,6 @@ export class AuthService {
     }
   }
 
-  // Métodos seguros para localStorage (nunca quebram no SSR)
   private setStorageItem(key: string, value: string) {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem(key, value);

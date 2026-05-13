@@ -179,7 +179,7 @@ namespace MarketplaceArtesanato.Services.Services
             var orderId = Guid.Parse(session.Metadata["OrderId"]);
 
             var order = await _context.Orders
-                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
+                .Include(o => o.Items.Where(i => i.SellerId != Guid.Empty)).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             if (order == null || order.Status == OrderStatus.Confirmed)
@@ -205,7 +205,7 @@ namespace MarketplaceArtesanato.Services.Services
                 return;
 
             var order = await _context.Orders
-                .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
+                .Include(o => o.Items.Where(i => i.SellerId != Guid.Empty)).ThenInclude(i => i.Product).ThenInclude(p => p.Seller)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             if (order == null || order.Status == OrderStatus.Confirmed)

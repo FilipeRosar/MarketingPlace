@@ -37,7 +37,7 @@ namespace MarketplaceArtesanato.API.Mapping
                 .ForMember(dest => dest.IsBoosted, opt => opt.MapFrom(src =>
                     src.BoostedUntil.HasValue && src.BoostedUntil.Value > DateTime.UtcNow))
                 .ForMember(dest => dest.AverageRating, opt => opt.MapFrom(src =>
-                    src.Ratings != null && src.Ratings.Any() ? src.Ratings.Average(r => r.Stars) : 0))
+                    src.Ratings != null && src.Ratings.Any() ? src.Ratings.Average(r => r.Stars) : 5.0))
                 .ForMember(dest => dest.TotalRatings, opt => opt.MapFrom(src =>
                     src.Ratings != null ? src.Ratings.Count : 0))
                 .ForMember(dest => dest.Tags, apt => apt.MapFrom(src =>

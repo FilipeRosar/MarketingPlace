@@ -14,10 +14,7 @@ using System.Threading.Tasks;
 
 namespace MarketplaceArtesanato.Services.Services
 {
-    /// <summary>
-    /// Implementação do serviço de cálculo de preços
-    /// Usa padrão Chain of Responsibility para aplicar múltiplas regras de preço
-    /// </summary>
+
     public class PriceCalculationService : IPriceCalculationService
     {
         private readonly ArtesianDbContext _context;
@@ -54,7 +51,6 @@ namespace MarketplaceArtesanato.Services.Services
                 CurrentPrice = product.Price
             };
 
-            // Aplica cada regra de preço em ordem de prioridade
             foreach (var rule in _priceRules)
             {
                 try

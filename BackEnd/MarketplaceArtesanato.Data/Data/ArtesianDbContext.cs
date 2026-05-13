@@ -1,5 +1,6 @@
 ﻿using MarketplaceArtesanato.Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,6 +11,13 @@ namespace MarketplaceArtesanato.Data.Data;
 public class ArtesianDbContext : DbContext
 {
     public ArtesianDbContext(DbContextOptions<ArtesianDbContext> options) : base(options) { }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        // Suppress the PendingModelChangesWarning as we handle migrations manually
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    }
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Seller> Sellers => Set<Seller>();
@@ -99,6 +107,9 @@ public class ArtesianDbContext : DbContext
             .WithMany(u => u.OrdersAsBuyer)
             .HasForeignKey(o => o.BuyerId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Order>()
+            .Ignore(o => o.SellerId);  // Remove SellerId - Order doesn't have a single seller
 
         modelBuilder.Entity<OrderItem>()
             .HasOne(oi => oi.Order)
